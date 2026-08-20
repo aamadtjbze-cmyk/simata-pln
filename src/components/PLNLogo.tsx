@@ -13,51 +13,48 @@ interface PLNLogoProps {
 
 export default function PLNLogo({ className = '', size = 'md', showText = true }: PLNLogoProps) {
   const dimensions = {
-    sm: { svg: 'h-8 w-6', mainText: 'text-base', subText: 'text-[9px]' },
-    md: { svg: 'h-11 w-8.5', mainText: 'text-2xl', subText: 'text-[11px]' },
-    lg: { svg: 'h-14 w-10.5', mainText: 'text-3xl', subText: 'text-[13px]' },
+    sm: { svg: 'h-7 w-7', mainText: 'text-base', subText: 'text-[9px]' },
+    md: { svg: 'h-10 w-10', mainText: 'text-2xl', subText: 'text-[11px]' },
+    lg: { svg: 'h-13 w-13', mainText: 'text-3xl', subText: 'text-[13px]' },
   }[size];
 
   return (
     <div className={`flex items-center gap-2.5 select-none ${className}`}>
-      {/* Official High-Fidelity PLN Emblem Badge */}
-      <div className={`relative ${dimensions.svg} bg-[#005DA6] rounded-none p-0.5 flex items-center justify-center border-[2.5px] border-[#FFD500] shadow-sm overflow-hidden shrink-0`}>
+      {/* Official Yellow Square PLN Emblem (Kotak Kuning, Gelombang Cyan, Petir Merah) */}
+      <div className={`relative ${dimensions.svg} bg-[#FFE500] rounded-none p-1 flex items-center justify-center shadow-sm overflow-hidden shrink-0`}>
         <svg
-          viewBox="0 0 90 115"
+          viewBox="0 0 100 100"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           className="w-full h-full"
         >
-          {/* 3 Tiga Gelombang Merah PLN (Corporate Red Waves) */}
+          {/* 3 Tiga Gelombang Biru Cyan / Air PLN */}
           <path
-            d="M 8 52 C 20 44, 38 60, 52 52 C 62 45, 74 55, 82 50"
-            stroke="#E52320"
+            d="M 12 42 C 26 35, 44 49, 58 42 C 72 35, 84 46, 88 42"
+            stroke="#00A0E9"
             strokeWidth="7"
             strokeLinecap="round"
             fill="none"
           />
           <path
-            d="M 8 67 C 20 59, 38 75, 52 67 C 62 60, 74 70, 82 65"
-            stroke="#E52320"
+            d="M 12 57 C 26 50, 44 64, 58 57 C 72 50, 84 61, 88 57"
+            stroke="#00A0E9"
             strokeWidth="7"
             strokeLinecap="round"
             fill="none"
           />
           <path
-            d="M 8 82 C 20 74, 38 90, 52 82 C 62 75, 74 85, 82 80"
-            stroke="#E52320"
+            d="M 12 72 C 26 65, 44 79, 58 72 C 72 65, 84 76, 88 72"
+            stroke="#00A0E9"
             strokeWidth="7"
             strokeLinecap="round"
             fill="none"
           />
 
-          {/* Petir Kuning Keemasan PLN (Yellow Lightning Bolt) */}
+          {/* Petir Merah PLN (Red Lightning Bolt) */}
           <path
-            d="M 64 8 L 26 62 H 46 L 20 106 L 76 50 H 54 Z"
-            fill="#FFD500"
-            stroke="#005DA6"
-            strokeWidth="2"
-            strokeLinejoin="miter"
+            d="M 62 10 L 28 55 H 48 L 22 92 L 72 45 H 52 Z"
+            fill="#E52320"
           />
         </svg>
       </div>
@@ -65,11 +62,11 @@ export default function PLNLogo({ className = '', size = 'md', showText = true }
       {showText && (
         <div className="flex flex-col justify-center leading-none">
           <div className="flex items-center gap-1.5">
-            <span className={`font-sans font-black tracking-tight text-[#005DA6] dark:text-sky-400 ${dimensions.mainText}`}>
+            <span className={`font-sans font-black tracking-tight text-[#00A0E9] ${dimensions.mainText}`}>
               PLN
             </span>
-            <div className="h-4 sm:h-5 w-[2.5px] bg-[#FFD500] shrink-0"></div>
-            <span className="font-sans font-extrabold text-[#005DA6] dark:text-sky-300 uppercase tracking-widest text-xs sm:text-sm">
+            <div className="h-4 sm:h-5 w-[2.5px] bg-[#FFE500] shrink-0"></div>
+            <span className="font-sans font-extrabold text-[#00A0E9] uppercase tracking-widest text-xs sm:text-sm">
               PERSERO
             </span>
           </div>
