@@ -778,24 +778,26 @@ export default function VisitorTable({
 
       {/* Interactive Visitor Quick Action / Reschedule Menu Modal */}
       {quickActionVisitor && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in font-sans">
-          <div className="premium-glass max-w-lg w-full rounded-none shadow-2xl border border-[#005DA6]/25 dark:border-[#FFD500]/25 overflow-hidden my-auto">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in font-sans overflow-y-auto">
+          <div className="premium-glass max-w-lg w-full rounded-none shadow-2xl border border-[#005DA6]/25 dark:border-[#FFD500]/25 overflow-hidden my-auto max-h-[90vh] flex flex-col">
             {/* Header */}
-            <div className="bg-[#005DA6] text-white px-5 py-4 flex items-center justify-between border-b-2 border-[#FFD500]">
-              <div>
-                <span className="text-[9px] uppercase font-bold tracking-widest text-[#FFD500]">Menu Aksi & Alokasi Jadwal Tamu</span>
-                <h3 className="text-base font-black uppercase tracking-tight font-display">{quickActionVisitor.visitorName}</h3>
+            <div className="bg-[#005DA6] text-white px-4 sm:px-5 py-3.5 flex items-center justify-between border-b-2 border-[#FFD500] shrink-0">
+              <div className="min-w-0 flex-1 pr-2">
+                <span className="text-[9px] uppercase font-bold tracking-widest text-[#FFD500] block">Menu Aksi & Alokasi Jadwal Tamu</span>
+                <h3 className="text-sm sm:text-base font-black uppercase tracking-tight font-display text-white truncate" title={quickActionVisitor.visitorName}>
+                  {quickActionVisitor.visitorName}
+                </h3>
               </div>
               <button
                 onClick={() => setQuickActionVisitor(null)}
-                className="p-1 hover:bg-white/20 rounded-none text-white transition-colors cursor-pointer"
+                className="p-1 hover:bg-white/20 rounded-none text-white transition-colors cursor-pointer shrink-0"
               >
                 <X size={18} />
               </button>
             </div>
 
             {/* Visitor Detail Content */}
-            <div className="p-5 space-y-4">
+            <div className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-950/40 p-3.5 border border-slate-200 dark:border-slate-800">
                 <div>
                   <span className="text-[9px] uppercase font-bold text-slate-400 block">Form ID</span>

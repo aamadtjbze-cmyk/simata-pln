@@ -134,11 +134,11 @@ export default function ThemeStudioModal({
   return (
     <div 
       id="theme-studio-backdrop" 
-      className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex justify-center items-start md:items-center p-4 overflow-y-auto animate-fade-in font-sans"
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in font-sans"
     >
       <div 
         id="theme-studio-container"
-        className="premium-glass w-full max-w-4xl p-5 md:p-8 rounded-none shadow-2xl relative text-slate-800 dark:text-slate-150 transition-colors my-8 border border-[#005DA6]/15 dark:border-white/10"
+        className="premium-glass w-full max-w-4xl p-4 sm:p-6 md:p-8 rounded-none shadow-2xl relative text-slate-800 dark:text-slate-150 transition-colors my-auto max-h-[92vh] overflow-y-auto border border-[#005DA6]/15 dark:border-white/10"
       >
         {/* Symmetrical Corporate Corner Marks */}
         <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-[#005DA6]"></div>

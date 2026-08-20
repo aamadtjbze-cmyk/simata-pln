@@ -114,7 +114,7 @@ export default function BadgeModal({ visitor, onClose, onBookAppointment }: Badg
             
             {/* PLN Header */}
             <div className="flex items-center justify-between border-b pb-2 mb-2 sm:pb-2.5 sm:mb-2.5 border-slate-100 dark:border-slate-800">
-              <PLNLogo size="sm" showText={true} />
+              <PLNLogo size="sm" showText={false} />
               <div className="text-right">
                 <span className="inline-block px-1.5 py-0.5 text-[7.5px] sm:text-[8px] font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-none dark:bg-rose-950/20 dark:border-rose-900 font-sans uppercase">
                   SECURE PASS

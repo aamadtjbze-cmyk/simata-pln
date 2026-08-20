@@ -37,32 +37,32 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in font-sans">
-      <div className="premium-glass max-w-md w-full shadow-2xl overflow-hidden border-2 border-[#005DA6] rounded-none">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto animate-fade-in font-sans">
+      <div className="premium-glass max-w-md w-full shadow-2xl overflow-hidden border-2 border-[#005DA6] rounded-none my-auto max-h-[90vh] flex flex-col">
         
         {/* Modal Header */}
-        <div className="bg-[#005DA6] border-b-2 border-[#FFD500] p-5 text-white flex items-center justify-between">
+        <div className="bg-[#005DA6] border-b-2 border-[#FFD500] p-4 sm:p-5 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <PLNLogo showText={false} size="sm" className="shrink-0" />
             <div>
               <span className="text-[10px] font-mono font-bold text-[#FFD500] uppercase tracking-widest block">
                 SIMATA v2 PLN UIK TANJUNG JATI B
               </span>
-              <h3 className="text-base font-black uppercase tracking-tight font-display text-white">
+              <h3 className="text-sm sm:text-base font-black uppercase tracking-tight font-display text-white">
                 Portal Otentikasi Admin & Security
               </h3>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-300 hover:text-white transition-colors cursor-pointer p-1"
+            className="text-slate-300 hover:text-white transition-colors cursor-pointer p-1 shrink-0"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Modal Form Content */}
-        <form onSubmit={handleLogin} className="p-6 space-y-4 text-xs text-slate-800 dark:text-slate-200">
+        <form onSubmit={handleLogin} className="p-4 sm:p-6 space-y-4 text-xs text-slate-800 dark:text-slate-200 overflow-y-auto flex-1">
           
           <div className="bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900 p-3 rounded-none flex items-start gap-2.5">
             <Lock size={18} className="text-[#005DA6] dark:text-[#FFD500] shrink-0 mt-0.5" />

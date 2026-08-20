@@ -139,29 +139,29 @@ export default function CheckInModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in">
-      <div className="premium-glass max-w-2xl w-full shadow-2xl overflow-hidden my-8 border border-[#005DA6]/25 dark:border-[#FFD500]/25 rounded-none">
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto animate-fade-in">
+      <div className="premium-glass max-w-2xl w-full shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col border border-[#005DA6]/25 dark:border-[#FFD500]/25 rounded-none">
         
         {/* Header banner */}
-        <div className="bg-[#005DA6] border-b-2 border-[#FFD500] px-6 py-5 text-white flex items-center justify-between">
+        <div className="bg-[#005DA6] border-b-2 border-[#FFD500] px-4 sm:px-6 py-4 text-white flex items-center justify-between shrink-0">
           <div>
             <span className="text-[10px] uppercase font-bold tracking-widest text-[#FFD500] font-sans">
               {visitorToEdit ? 'Ubah Informasi' : 'Registrasi Masuk'}
             </span>
-            <h3 className="text-xl font-black tracking-tight mt-0.5 uppercase font-display">
+            <h3 className="text-base sm:text-xl font-black tracking-tight mt-0.5 uppercase font-display text-white">
               {visitorToEdit ? 'Ubah Data Kunjungan' : 'Registrasi Tamu Baru (Check-In)'}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-none text-white transition-colors cursor-pointer"
+            className="p-1.5 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-none text-white transition-colors cursor-pointer shrink-0"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1 max-h-[78vh]">
           {/* Mode Registration Switcher */}
           {!visitorToEdit && (
             <div className="bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-none flex items-center gap-2 border border-slate-200 dark:border-slate-700">
