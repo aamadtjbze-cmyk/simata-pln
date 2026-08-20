@@ -39,7 +39,6 @@ import AdminLoginModal from './components/AdminLoginModal';
 import ReportModule from './components/ReportModule';
 import NotificationCenter from './components/NotificationCenter';
 import ThemeStudioModal from './components/ThemeStudioModal';
-import SupabaseConfigModal from './components/SupabaseConfigModal';
 import UserManagement from './components/UserManagement';
 import { createNotification } from './lib/notificationHelper';
 import { Visitor, VisitorStatus, SystemNotification } from './types';
@@ -61,7 +60,7 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<'buku-tamu' | 'janji-temu' | 'pengajuan-tamu' | 'notifikasi' | 'laporan' | 'kelola-user'>('buku-tamu');
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const [isThemeStudioOpen, setIsThemeStudioOpen] = useState(false);
-  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
+  const [isCheckingDb, setIsCheckingDb] = useState(false);
   const [isSupabaseActive, setIsSupabaseActive] = useState(false);
   const [visitorToEdit, setVisitorToEdit] = useState<Visitor | null>(null);
   const [visitorForBadge, setVisitorForBadge] = useState<Visitor | null>(null);
@@ -317,6 +316,26 @@ export default function App() {
     localStorage.setItem('simata_user_role', 'GUEST');
     localStorage.removeItem('simata_admin_name');
     triggerToast('Anda telah Logout dari akun Admin. Kembali ke Mode Tamu.', 'info');
+  };
+
+  // Quick database connection health check on click (no popup menu)
+  const handleCheckDatabaseConnection = async () => {
+    setIsCheckingDb(true);
+    triggerToast('Mengecek status koneksi database...', 'info');
+    const res = await checkSupabaseHealth();
+    setIsSupabaseActive(res.connected);
+    setIsCheckingDb(false);
+    if (res.connected) {
+      triggerToast(`Koneksi Database: TERHUBUNG NORMAL (${res.latency || 100}ms)`, 'success');
+      fetchVisitorsFromSupabase().then((data) => {
+        if (data && data.length > 0) {
+          setVisitors(data);
+          localStorage.setItem('simata_visitors', JSON.stringify(data));
+        }
+      });
+    } else {
+      triggerToast(`Koneksi Database: ADA KENDALA / TIDAK TERHUBUNG (${res.message})`, 'danger');
+    }
   };
 
   // Close badge modal handler - Redirects scanned pass to guest pre-booking form if scanned
@@ -786,19 +805,51 @@ export default function App() {
               <span className="hidden sm:inline">Pilihan Tema</span>
             </button>
 
-            {/* Database Connect Status Indicator Button */}
+            {/* Database Connection Status Box (Direct Visual Indicator - No Popups) */}
             <button
-              onClick={() => setIsSupabaseModalOpen(true)}
-              className={`flex items-center gap-1.5 py-2 px-3 rounded-none text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all shadow-xs border ${
-                isSupabaseActive
-                  ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 border-emerald-500 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 border-rose-500 text-rose-700 dark:text-rose-300'
+              onClick={handleCheckDatabaseConnection}
+              disabled={isCheckingDb}
+              className={`flex items-center gap-2 py-2 px-3 rounded-none text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all shadow-xs border ${
+                isCheckingDb
+                  ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-500 text-amber-700 dark:text-amber-300'
+                  : isSupabaseActive
+                  ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 border-rose-500 text-rose-700 dark:text-rose-300'
               }`}
-              title={isSupabaseActive ? 'Database Connect: Aktif & Terhubung Normal (Hijau)' : 'Database Connect: Terputus / Gangguan (Merah)'}
+              title={
+                isCheckingDb
+                  ? 'Sedang mengecek koneksi...'
+                  : isSupabaseActive
+                  ? 'Koneksi Database: TERHUBUNG (Klik untuk refresh/sinkron)'
+                  : 'Koneksi Database: ADA KENDALA / TIDAK TERHUBUNG (Klik untuk cek ulang)'
+              }
             >
-              <Database size={13} className={isSupabaseActive ? 'text-emerald-500 animate-pulse' : 'text-rose-500'} />
-              <span className="hidden sm:inline">Database Connect</span>
-              <span className={`w-2 h-2 rounded-full ${isSupabaseActive ? 'bg-emerald-500 shadow-[0_0_6px_#10b981]' : 'bg-rose-500 shadow-[0_0_6px_#f43f5e]'}`}></span>
+              <Database
+                size={13}
+                className={
+                  isCheckingDb
+                    ? 'animate-spin text-amber-600'
+                    : isSupabaseActive
+                    ? 'text-emerald-500 animate-pulse'
+                    : 'text-rose-500'
+                }
+              />
+              <span className="font-bold">
+                {isCheckingDb
+                  ? 'Mengecek...'
+                  : isSupabaseActive
+                  ? 'Terhubung'
+                  : 'Ada Kendala'}
+              </span>
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isCheckingDb
+                    ? 'bg-amber-500'
+                    : isSupabaseActive
+                    ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]'
+                    : 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'
+                }`}
+              ></span>
             </button>
 
             {/* Light/Dark Toggle */}
@@ -1199,24 +1250,6 @@ export default function App() {
         />
       )}
 
-      {/* Supabase Cloud Configuration Modal */}
-      {isSupabaseModalOpen && (
-        <SupabaseConfigModal
-          isOpen={isSupabaseModalOpen}
-          onClose={() => setIsSupabaseModalOpen(false)}
-          onConfigSaved={() => {
-            setIsSupabaseActive(true);
-            fetchVisitorsFromSupabase().then((data) => {
-              if (data && data.length > 0) {
-                setVisitors(data);
-                localStorage.setItem('simata_visitors', JSON.stringify(data));
-              }
-            });
-            setIsSupabaseModalOpen(false);
-          }}
-          triggerToast={triggerToast}
-        />
-      )}
 
       {/* Safety & SOP Reference area Modal */}
       {isSopOpen && (
