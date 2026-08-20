@@ -186,6 +186,28 @@ export default function App() {
         }
       }
     }
+
+    // Realtime storage sync across browser tabs and devices
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'simata_visitors' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setVisitors(parsed);
+        } catch (err) {}
+      }
+      if (e.key === 'simata_notifications' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setNotifications(parsed);
+        } catch (err) {}
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const handleAdminLoginSuccess = (roleName: string) => {
