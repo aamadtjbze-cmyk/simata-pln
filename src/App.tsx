@@ -481,7 +481,7 @@ export default function App() {
     const today = new Date();
     const pad = (num: number) => String(num).padStart(2, '0');
     const day = today.getDate();
-    const monthNames = ["June", "January", "February", "March", "April", "May", "July", "August", "September", "October", "November", "December"];
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const monthName = monthNames[today.getMonth()];
     const year = today.getFullYear();
     const hours = pad(today.getHours());
@@ -556,7 +556,8 @@ export default function App() {
 
     const today = new Date();
     const pad = (num: number) => String(num).padStart(2, '0');
-    const formattedInTime = `${today.getDate()} June ${today.getFullYear()} - ${pad(today.getHours())}.${pad(today.getMinutes())}`;
+    const sampleMonthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const formattedInTime = `${today.getDate()} ${sampleMonthNames[today.getMonth()]} ${today.getFullYear()} - ${pad(today.getHours())}.${pad(today.getMinutes())}`;
 
     const sampleGuest: Visitor = {
       id: newId,
@@ -600,11 +601,12 @@ export default function App() {
       
       triggerToast(`Notifikasi ${target.id} berhasil dikirim ulang via ${target.channel} pada ${timeStr}.`, 'success');
       
+      const resendMonthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
       const updatedNotifs = notifications.map(n => {
         if (n.id === notifId) {
           return {
             ...n,
-            timestamp: `${now.getDate()} June ${now.getFullYear()} - ${timeStr} (Resent)`
+            timestamp: `${now.getDate()} ${resendMonthNames[now.getMonth()]} ${now.getFullYear()} - ${timeStr} (Resent)`
           };
         }
         return n;
