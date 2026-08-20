@@ -316,42 +316,18 @@ export default function CheckInModal({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Tujuan Kunjungan <span className="text-rose-500">*</span>
+                  Tujuan / Keperluan Kunjungan <span className="text-rose-500">*</span>
                 </label>
-                <div className="relative">
-                  <select
-                    value={COMMON_PURPOSES.includes(purpose) ? purpose : (purpose ? 'Lainnya' : '')}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === 'Lainnya') {
-                        setPurpose(' ');
-                      } else {
-                        setPurpose(val);
-                      }
-                      if (errors.purpose) setErrors({ ...errors, purpose: '' });
-                    }}
-                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-semibold focus:outline-none mb-2 focus:ring-2 focus:ring-[#005DA6]"
-                  >
-                    <option value="">-- Pilih Keperluan Kunjungan --</option>
-                    {COMMON_PURPOSES.map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                    <option value="Lainnya">Lainnya (Keperluan Khusus)</option>
-                  </select>
-                  
-                  {(!COMMON_PURPOSES.includes(purpose) && purpose !== '') && (
-                    <input
-                      type="text"
-                      value={purpose.trim()}
-                      onChange={(e) => {
-                        setPurpose(e.target.value);
-                        if (errors.purpose) setErrors({ ...errors, purpose: '' });
-                      }}
-                      placeholder="Tulis tujuan khusus..."
-                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
-                    />
-                  )}
-                </div>
+                <input
+                  type="text"
+                  value={purpose}
+                  onChange={(e) => {
+                    setPurpose(e.target.value);
+                    if (errors.purpose) setErrors({ ...errors, purpose: '' });
+                  }}
+                  placeholder="Contoh: Rapat Koordinasi Proyek / Auditing K3L / Maintenance Alat"
+                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.purpose ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
+                />
                 {errors.purpose && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.purpose}</span>}
               </div>
 

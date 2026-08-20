@@ -40,8 +40,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
   const [email, setEmail] = useState('');
   const [visitedOption, setVisitedOption] = useState('');
   const [visitedCustomText, setVisitedCustomText] = useState('');
-  const [purposeOption, setPurposeOption] = useState('');
-  const [purposeCustomText, setPurposeCustomText] = useState('');
+  const [purpose, setPurpose] = useState('');
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('09.00');
   const [validityOption, setValidityOption] = useState<'SAME_DAY' | '1_DAY' | '3_DAYS' | '1_WEEK'>('SAME_DAY');
@@ -63,13 +62,12 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     const newErrors: { [key: string]: string } = {};
 
     const finalVisited = visitedOption === 'Lainnya' ? visitedCustomText : visitedOption;
-    const finalPurpose = purposeOption === 'Lainnya' ? purposeCustomText : purposeOption;
 
     if (!visitorName.trim()) newErrors.visitorName = 'Nama lengkap tamu wajib diisi';
     if (!company.trim()) newErrors.company = 'Instansi/Perusahaan wajib diisi';
     if (!phone.trim()) newErrors.phone = 'Nomor Telepon/WA wajib diisi';
     if (!finalVisited.trim()) newErrors.visited = 'Pegawai/Divisi tujuan wajib dipilih';
-    if (!finalPurpose.trim()) newErrors.purpose = 'Tujuan kunjungan wajib dipilih';
+    if (!purpose.trim()) newErrors.purpose = 'Tujuan / Keperluan kunjungan wajib diisi';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -121,7 +119,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
       mainGatePass: '',
       secondGatePass: '',
       company: company.toUpperCase(),
-      purpose: finalPurpose,
+      purpose: purpose.trim(),
       visited: finalVisited.toUpperCase(),
       status: 'PENDING',
       phone,
@@ -145,8 +143,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     setEmail('');
     setVisitedOption('');
     setVisitedCustomText('');
-    setPurposeOption('');
-    setPurposeCustomText('');
+    setPurpose('');
     setNotes('');
     setErrors({});
   };
@@ -412,33 +409,16 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                 <label className="block text-xs font-semibold mb-1">
                   Tujuan / Keperluan Kunjungan <span className="text-rose-500">*</span>
                 </label>
-                <select
-                  value={purposeOption}
+                <input
+                  type="text"
+                  value={purpose}
                   onChange={(e) => {
-                    setPurposeOption(e.target.value);
+                    setPurpose(e.target.value);
                     if (errors.purpose) setErrors({ ...errors, purpose: '' });
                   }}
+                  placeholder="Contoh: Rapat Koordinasi Proyek / Auditing K3L / Pengiriman Barang"
                   className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.purpose ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
-                >
-                  <option value="">-- Pilih Keperluan Kunjungan --</option>
-                  {COMMON_PURPOSES.map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                  <option value="Lainnya">Lainnya (Keperluan Khusus)</option>
-                </select>
-
-                {purposeOption === 'Lainnya' && (
-                  <input
-                    type="text"
-                    value={purposeCustomText}
-                    onChange={(e) => {
-                      setPurposeCustomText(e.target.value);
-                      if (errors.purpose) setErrors({ ...errors, purpose: '' });
-                    }}
-                    placeholder="Tulis keperluan khusus..."
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-xs font-semibold mt-1.5 focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
-                  />
-                )}
+                />
                 {errors.purpose && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.purpose}</span>}
               </div>
             </div>
