@@ -55,15 +55,25 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
     refresh(); resetForms();
   };
 
-  const handleDelete = (username: string) => {
-    if (username === currentUsername) {
+  const currentUser = users.find(u => u.username.toLowerCase() === currentUsername.toLowerCase());
+
+  const handleDelete = (targetUser: AppUser) => {
+    if (targetUser.username.toLowerCase() === currentUsername.toLowerCase()) {
       triggerToast('Tidak bisa menghapus akun yang sedang aktif.', 'danger');
       return;
     }
-    if (!confirm(`Hapus user "${username}"?`)) return;
-    const err = deleteUser(username);
+    if (targetUser.username.toLowerCase() === 'admin') {
+      triggerToast('Akun Admin Utama (admin) terlindungi & tidak dapat dihapus!', 'danger');
+      return;
+    }
+    if (currentUser?.role === 'SECURITY' && targetUser.role === 'SEKRETARIAT') {
+      triggerToast('Role Security tidak diizinkan untuk menghapus akun Admin Sekretariat!', 'danger');
+      return;
+    }
+    if (!confirm(`Hapus user "${targetUser.username}" (${targetUser.displayName})?`)) return;
+    const err = deleteUser(targetUser.username, currentUsername);
     if (err) { triggerToast(err, 'danger'); return; }
-    triggerToast(`User "${username}" berhasil dihapus.`, 'danger');
+    triggerToast(`User "${targetUser.username}" berhasil dihapus.`, 'danger');
     refresh();
   };
 
@@ -115,37 +125,49 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
               </tr>
             </thead>
             <tbody>
-              {users.map((u, i) => (
-                <tr key={u.username} className={i % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800/50'}>
-                  <td className="px-3 py-2.5 font-mono font-bold">
-                    {u.username}
-                    {u.username === currentUsername && (
-                      <span className="ml-2 text-[9px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 px-1.5 py-0.5 font-black uppercase">Aktif</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2.5">{u.displayName}</td>
-                  <td className="px-3 py-2.5">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase ${
-                      u.role === 'SEKRETARIAT'
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                        : 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300'
-                    }`}>
-                      <ShieldCheck size={9} />
-                      {u.role === 'SEKRETARIAT' ? 'Sekretariat' : 'Security'}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-center">
-                    <button
-                      onClick={() => handleDelete(u.username)}
-                      disabled={u.username === currentUsername}
-                      className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                      title="Hapus user"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {users.map((u, i) => {
+                const isSelf = u.username.toLowerCase() === currentUsername.toLowerCase();
+                const isMainAdmin = u.username.toLowerCase() === 'admin';
+                const isSecurityDeletingSekretariat = currentUser?.role === 'SECURITY' && u.role === 'SEKRETARIAT';
+                const isDisabled = isSelf || isMainAdmin || isSecurityDeletingSekretariat;
+                
+                let tooltip = "Hapus user";
+                if (isSelf) tooltip = "Tidak dapat menghapus akun Anda sendiri";
+                else if (isMainAdmin) tooltip = "Akun Admin Utama (admin) terlindungi";
+                else if (isSecurityDeletingSekretariat) tooltip = "Role Security tidak dapat menghapus akun Admin Sekretariat";
+
+                return (
+                  <tr key={u.username} className={i % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800/50'}>
+                    <td className="px-3 py-2.5 font-mono font-bold">
+                      {u.username}
+                      {isSelf && (
+                        <span className="ml-2 text-[9px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 px-1.5 py-0.5 font-black uppercase">Aktif</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5">{u.displayName}</td>
+                    <td className="px-3 py-2.5">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase ${
+                        u.role === 'SEKRETARIAT'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                          : 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300'
+                      }`}>
+                        <ShieldCheck size={9} />
+                        {u.role === 'SEKRETARIAT' ? 'Sekretariat' : 'Security'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <button
+                        onClick={() => handleDelete(u)}
+                        disabled={isDisabled}
+                        className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 disabled:opacity-25 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                        title={tooltip}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -68,11 +68,25 @@ export const changePassword = (username: string, newPassword: string): string | 
   return null;
 };
 
-export const deleteUser = (username: string): string | null => {
+export const deleteUser = (targetUsername: string, operatorUsername?: string): string | null => {
   const users = loadUsers();
   if (users.length <= 1) return 'Tidak boleh menghapus user terakhir.';
-  const filtered = users.filter(u => u.username.toLowerCase() !== username.toLowerCase());
-  if (filtered.length === users.length) return 'User tidak ditemukan.';
+
+  const target = users.find(u => u.username.toLowerCase() === targetUsername.toLowerCase());
+  if (!target) return 'User tidak ditemukan.';
+
+  if (target.username.toLowerCase() === 'admin') {
+    return 'Akun Admin Utama (admin) tidak dapat dihapus.';
+  }
+
+  if (operatorUsername) {
+    const operator = users.find(u => u.username.toLowerCase() === operatorUsername.toLowerCase());
+    if (operator && operator.role === 'SECURITY' && target.role === 'SEKRETARIAT') {
+      return 'Role Security tidak memiliki izin untuk menghapus akun Admin Sekretariat!';
+    }
+  }
+
+  const filtered = users.filter(u => u.username.toLowerCase() !== targetUsername.toLowerCase());
   saveUsers(filtered);
   return null;
 };
