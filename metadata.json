@@ -1,0 +1,6 @@
+{
+  "name": "SIMATA PLN",
+  "description": "Sistem Informasi Manajemen Tamu (SIMATA) PT PLN (Persero) untuk pencatatan, pemantauan, dan penerbitan kartu masuk tamu (gate pass) secara digital.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
