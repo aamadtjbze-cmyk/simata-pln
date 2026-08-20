@@ -38,8 +38,10 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
   const [company, setCompany] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [visited, setVisited] = useState('');
-  const [purpose, setPurpose] = useState('');
+  const [visitedOption, setVisitedOption] = useState('');
+  const [visitedCustomText, setVisitedCustomText] = useState('');
+  const [purposeOption, setPurposeOption] = useState('');
+  const [purposeCustomText, setPurposeCustomText] = useState('');
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('09.00');
   const [validityOption, setValidityOption] = useState<'SAME_DAY' | '1_DAY' | '3_DAYS' | '1_WEEK'>('SAME_DAY');
@@ -60,11 +62,14 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
 
+    const finalVisited = visitedOption === 'Lainnya' ? visitedCustomText : visitedOption;
+    const finalPurpose = purposeOption === 'Lainnya' ? purposeCustomText : purposeOption;
+
     if (!visitorName.trim()) newErrors.visitorName = 'Nama lengkap tamu wajib diisi';
     if (!company.trim()) newErrors.company = 'Instansi/Perusahaan wajib diisi';
     if (!phone.trim()) newErrors.phone = 'Nomor Telepon/WA wajib diisi';
-    if (!visited.trim()) newErrors.visited = 'Pegawai/Divisi tujuan wajib dipilih';
-    if (!purpose.trim()) newErrors.purpose = 'Tujuan kunjungan wajib dipilih';
+    if (!finalVisited.trim()) newErrors.visited = 'Pegawai/Divisi tujuan wajib dipilih';
+    if (!finalPurpose.trim()) newErrors.purpose = 'Tujuan kunjungan wajib dipilih';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -116,8 +121,8 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
       mainGatePass: '',
       secondGatePass: '',
       company: company.toUpperCase(),
-      purpose,
-      visited: visited.toUpperCase(),
+      purpose: finalPurpose,
+      visited: finalVisited.toUpperCase(),
       status: 'PENDING',
       phone,
       email: email ? email.toLowerCase() : `${visitorName.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
@@ -138,8 +143,10 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     setCompany('');
     setPhone('');
     setEmail('');
-    setVisited('');
-    setPurpose('');
+    setVisitedOption('');
+    setVisitedCustomText('');
+    setPurposeOption('');
+    setPurposeCustomText('');
     setNotes('');
     setErrors({});
   };
@@ -372,32 +379,30 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                   Pegawai / Divisi PLN Tujuan <span className="text-rose-500">*</span>
                 </label>
                 <select
-                  value={PLN_DIVISIONS.includes(visited) ? visited : (visited ? 'Lainnya' : '')}
+                  value={visitedOption}
                   onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === 'Lainnya') setVisited('');
-                    else setVisited(val);
+                    setVisitedOption(e.target.value);
                     if (errors.visited) setErrors({ ...errors, visited: '' });
                   }}
                   className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.visited ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
                 >
-                  <option value="">-- Pilih Divisi / Pegawai --</option>
+                  <option value="">-- Pilih Divisi / Pegawai Tujuan --</option>
                   {PLN_DIVISIONS.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
-                  <option value="Lainnya">Lainnya (Tulis Manual)</option>
+                  <option value="Lainnya">Lainnya (Tulis Nama Pegawai / Divisi Manual)</option>
                 </select>
 
-                {(!PLN_DIVISIONS.includes(visited) || visited === '') && (
+                {visitedOption === 'Lainnya' && (
                   <input
                     type="text"
-                    value={visited}
+                    value={visitedCustomText}
                     onChange={(e) => {
-                      setVisited(e.target.value);
+                      setVisitedCustomText(e.target.value);
                       if (errors.visited) setErrors({ ...errors, visited: '' });
                     }}
-                    placeholder="Tulis nama pegawai/divisi tujuan..."
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-xs font-semibold mt-1 focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+                    placeholder="Ketik nama pegawai atau divisi tujuan spesifik..."
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-xs font-semibold mt-1.5 focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
                   />
                 )}
                 {errors.visited && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.visited}</span>}
@@ -408,32 +413,30 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                   Tujuan / Keperluan Kunjungan <span className="text-rose-500">*</span>
                 </label>
                 <select
-                  value={COMMON_PURPOSES.includes(purpose) ? purpose : (purpose ? 'Lainnya' : '')}
+                  value={purposeOption}
                   onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === 'Lainnya') setPurpose('');
-                    else setPurpose(val);
+                    setPurposeOption(e.target.value);
                     if (errors.purpose) setErrors({ ...errors, purpose: '' });
                   }}
                   className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.purpose ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
                 >
-                  <option value="">-- Pilih Keperluan --</option>
+                  <option value="">-- Pilih Keperluan Kunjungan --</option>
                   {COMMON_PURPOSES.map((p) => (
                     <option key={p} value={p}>{p}</option>
                   ))}
                   <option value="Lainnya">Lainnya (Keperluan Khusus)</option>
                 </select>
 
-                {(!COMMON_PURPOSES.includes(purpose) || purpose === '') && (
+                {purposeOption === 'Lainnya' && (
                   <input
                     type="text"
-                    value={purpose}
+                    value={purposeCustomText}
                     onChange={(e) => {
-                      setPurpose(e.target.value);
+                      setPurposeCustomText(e.target.value);
                       if (errors.purpose) setErrors({ ...errors, purpose: '' });
                     }}
                     placeholder="Tulis keperluan khusus..."
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-xs font-semibold mt-1 focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-xs font-semibold mt-1.5 focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
                   />
                 )}
                 {errors.purpose && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.purpose}</span>}

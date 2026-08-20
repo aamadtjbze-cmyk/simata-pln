@@ -320,11 +320,11 @@ export default function CheckInModal({
                 </label>
                 <div className="relative">
                   <select
-                    value={COMMON_PURPOSES.includes(purpose) ? purpose : 'Lainnya'}
+                    value={COMMON_PURPOSES.includes(purpose) ? purpose : (purpose ? 'Lainnya' : '')}
                     onChange={(e) => {
                       const val = e.target.value;
                       if (val === 'Lainnya') {
-                        setPurpose('');
+                        setPurpose(' ');
                       } else {
                         setPurpose(val);
                       }
@@ -332,16 +332,17 @@ export default function CheckInModal({
                     }}
                     className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-semibold focus:outline-none mb-2 focus:ring-2 focus:ring-[#005DA6]"
                   >
-                    <option value="">-- Pilih Tujuan --</option>
+                    <option value="">-- Pilih Keperluan Kunjungan --</option>
                     {COMMON_PURPOSES.map((p) => (
                       <option key={p} value={p}>{p}</option>
                     ))}
+                    <option value="Lainnya">Lainnya (Keperluan Khusus)</option>
                   </select>
                   
-                  {(!COMMON_PURPOSES.includes(purpose) || purpose === '') && (
+                  {(!COMMON_PURPOSES.includes(purpose) && purpose !== '') && (
                     <input
                       type="text"
-                      value={purpose}
+                      value={purpose.trim()}
                       onChange={(e) => {
                         setPurpose(e.target.value);
                         if (errors.purpose) setErrors({ ...errors, purpose: '' });
@@ -360,11 +361,11 @@ export default function CheckInModal({
                 </label>
                 <div className="relative">
                   <select
-                    value={PLN_DIVISIONS.includes(visited) ? visited : 'Lainnya'}
+                    value={PLN_DIVISIONS.includes(visited) ? visited : (visited ? 'Lainnya' : '')}
                     onChange={(e) => {
                       const val = e.target.value;
                       if (val === 'Lainnya') {
-                        setVisited('');
+                        setVisited(' ');
                       } else {
                         setVisited(val);
                       }
@@ -372,16 +373,17 @@ export default function CheckInModal({
                     }}
                     className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-semibold focus:outline-none mb-2 focus:ring-2 focus:ring-[#005DA6]"
                   >
-                    <option value="">-- Pilih Pegawai/Divisi --</option>
+                    <option value="">-- Pilih Pegawai/Divisi Tujuan --</option>
                     {PLN_DIVISIONS.map((d) => (
                       <option key={d} value={d}>{d}</option>
                     ))}
+                    <option value="Lainnya">Lainnya (Tulis Manual)</option>
                   </select>
 
-                  {(!PLN_DIVISIONS.includes(visited) || visited === '') && (
+                  {(!PLN_DIVISIONS.includes(visited) && visited !== '') && (
                     <input
                       type="text"
-                      value={visited}
+                      value={visited.trim()}
                       onChange={(e) => {
                         setVisited(e.target.value);
                         if (errors.visited) setErrors({ ...errors, visited: '' });
