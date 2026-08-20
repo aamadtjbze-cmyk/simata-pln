@@ -1,0 +1,180 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Visitor } from '../types';
+
+// Environment variables or localStorage fallback for dynamic runtime configuration
+export const getSupabaseConfig = () => {
+  const env = (import.meta as any).env || {};
+  const envUrl = env.VITE_SUPABASE_URL || '';
+  const envKey = env.VITE_SUPABASE_ANON_KEY || '';
+
+  const localUrl = typeof window !== 'undefined' ? localStorage.getItem('simata_supabase_url') || '' : '';
+  const localKey = typeof window !== 'undefined' ? localStorage.getItem('simata_supabase_key') || '' : '';
+
+  return {
+    url: localUrl || envUrl,
+    anonKey: localKey || envKey,
+  };
+};
+
+export const saveSupabaseConfig = (url: string, anonKey: string) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('simata_supabase_url', url.trim());
+    localStorage.setItem('simata_supabase_key', anonKey.trim());
+  }
+};
+
+let clientInstance: SupabaseClient | null = null;
+let currentConfigKey = '';
+
+export const getSupabaseClient = (): SupabaseClient | null => {
+  const config = getSupabaseConfig();
+  if (!config.url || !config.anonKey) return null;
+
+  const key = `${config.url}_${config.anonKey}`;
+  if (clientInstance && currentConfigKey === key) {
+    return clientInstance;
+  }
+
+  try {
+    clientInstance = createClient(config.url, config.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    });
+    currentConfigKey = key;
+    return clientInstance;
+  } catch (err) {
+    console.error('Failed to initialize Supabase client:', err);
+    return null;
+  }
+};
+
+export const isSupabaseConfigured = (): boolean => {
+  const config = getSupabaseConfig();
+  return Boolean(config.url && config.anonKey && config.url.startsWith('https://'));
+};
+
+/**
+ * Format Visitor object to DB row format
+ */
+export const visitorToRow = (v: Visitor) => ({
+  id: v.id,
+  visitor_name: v.visitorName,
+  company: v.company,
+  phone: v.phone || '',
+  email: v.email || '',
+  identify_no: v.identifyNo || '',
+  gender: v.gender || 'Laki-laki',
+  visited: v.visited,
+  purpose: v.purpose,
+  schedule: v.schedule,
+  in_time: v.inTime,
+  out_time: v.outTime,
+  status: v.status,
+  main_gate_pass: v.mainGatePass || 'TJB-PASS-01',
+  second_gate_pass: v.secondGatePass || 'TJB-PASS-02',
+  valid_until: v.validUntil || '',
+  validity_option: v.validityOption || 'SAME_DAY',
+  notes: v.notes || '',
+  updated_at: new Date().toISOString(),
+});
+
+/**
+ * Format DB row to Visitor object
+ */
+export const rowToVisitor = (row: any): Visitor => ({
+  id: row.id,
+  visitorName: row.visitor_name,
+  company: row.company,
+  phone: row.phone || undefined,
+  email: row.email || undefined,
+  identifyNo: row.identify_no || undefined,
+  gender: row.gender || undefined,
+  visited: row.visited,
+  purpose: row.purpose,
+  schedule: row.schedule,
+  inTime: row.in_time || null,
+  outTime: row.out_time || null,
+  status: row.status,
+  mainGatePass: row.main_gate_pass,
+  secondGatePass: row.second_gate_pass,
+  validUntil: row.valid_until || undefined,
+  validityOption: row.validity_option || undefined,
+  notes: row.notes || undefined,
+});
+
+/**
+ * Fetch all visitors from Supabase
+ */
+export const fetchVisitorsFromSupabase = async (): Promise<Visitor[] | null> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('visitors')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('Supabase fetch error:', error.message);
+      return null;
+    }
+
+    if (Array.isArray(data)) {
+      return data.map(rowToVisitor);
+    }
+    return [];
+  } catch (err) {
+    console.error('Supabase network error:', err);
+    return null;
+  }
+};
+
+/**
+ * Insert or Upsert a visitor record
+ */
+export const saveVisitorToSupabase = async (visitor: Visitor): Promise<boolean> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) return false;
+
+  try {
+    const row = visitorToRow(visitor);
+    const { error } = await supabase.from('visitors').upsert(row);
+
+    if (error) {
+      console.error('Supabase upsert error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Supabase save error:', err);
+    return false;
+  }
+};
+
+/**
+ * Delete a visitor record
+ */
+export const deleteVisitorFromSupabase = async (id: string): Promise<boolean> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) return false;
+
+  try {
+    const { error } = await supabase.from('visitors').delete().eq('id', id);
+    if (error) {
+      console.error('Supabase delete error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Supabase delete error:', err);
+    return false;
+  }
+};

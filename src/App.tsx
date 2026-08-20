@@ -25,6 +25,7 @@ import {
   LogIn,
   LogOut,
   ShieldCheck,
+  Database,
   X
 } from 'lucide-react';
 import PLNLogo from './components/PLNLogo';
@@ -38,10 +39,19 @@ import AdminLoginModal from './components/AdminLoginModal';
 import ReportModule from './components/ReportModule';
 import NotificationCenter from './components/NotificationCenter';
 import ThemeStudioModal from './components/ThemeStudioModal';
+import SupabaseConfigModal from './components/SupabaseConfigModal';
 import { createNotification } from './lib/notificationHelper';
 import { Visitor, VisitorStatus, SystemNotification } from './types';
 import { INITIAL_VISITORS } from './data/mockData';
 import { decodePassToken } from './utils/security';
+import {
+  isSupabaseConfigured,
+  getSupabaseClient,
+  fetchVisitorsFromSupabase,
+  saveVisitorToSupabase,
+  deleteVisitorFromSupabase,
+  rowToVisitor,
+} from './lib/supabase';
 
 export default function App() {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
@@ -49,6 +59,8 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<'buku-tamu' | 'janji-temu' | 'pengajuan-tamu' | 'notifikasi' | 'laporan'>('buku-tamu');
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const [isThemeStudioOpen, setIsThemeStudioOpen] = useState(false);
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
+  const [isSupabaseActive, setIsSupabaseActive] = useState(false);
   const [visitorToEdit, setVisitorToEdit] = useState<Visitor | null>(null);
   const [visitorForBadge, setVisitorForBadge] = useState<Visitor | null>(null);
   const [visitorForEmailSentModal, setVisitorForEmailSentModal] = useState<Visitor | null>(null);
@@ -217,8 +229,46 @@ export default function App() {
 
     window.addEventListener('storage', handleStorageChange);
 
+    // Supabase Cloud Initialization & Realtime Subscription
+    let supabaseChannel: any = null;
+    if (isSupabaseConfigured()) {
+      setIsSupabaseActive(true);
+      fetchVisitorsFromSupabase().then((data) => {
+        if (data && data.length > 0) {
+          setVisitors(data);
+          localStorage.setItem('simata_visitors', JSON.stringify(data));
+        }
+      });
+
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        supabaseChannel = supabase
+          .channel('realtime_visitors')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'visitors' },
+            (payload: any) => {
+              if (payload.eventType === 'INSERT') {
+                const newV = rowToVisitor(payload.new);
+                setVisitors((prev) => [newV, ...prev.filter((v) => v.id !== newV.id)]);
+              } else if (payload.eventType === 'UPDATE') {
+                const updatedV = rowToVisitor(payload.new);
+                setVisitors((prev) => prev.map((v) => (v.id === updatedV.id ? updatedV : v)));
+              } else if (payload.eventType === 'DELETE' && payload.old) {
+                setVisitors((prev) => prev.filter((v) => v.id !== payload.old.id));
+              }
+            }
+          )
+          .subscribe();
+      }
+    }
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      if (supabaseChannel) {
+        const supabase = getSupabaseClient();
+        if (supabase) supabase.removeChannel(supabaseChannel);
+      }
     };
   }, []);
 
@@ -266,9 +316,16 @@ export default function App() {
   };
 
   // Save changes helper
-  const saveAndSync = (newVisitors: Visitor[]) => {
+  const saveAndSync = (newVisitors: Visitor[], singleUpdatedVisitor?: Visitor) => {
     setVisitors(newVisitors);
     localStorage.setItem('simata_visitors', JSON.stringify(newVisitors));
+    if (isSupabaseConfigured()) {
+      if (singleUpdatedVisitor) {
+        saveVisitorToSupabase(singleUpdatedVisitor);
+      } else {
+        newVisitors.forEach((v) => saveVisitorToSupabase(v));
+      }
+    }
   };
 
   // Toast feedback notice trigger
@@ -327,7 +384,7 @@ export default function App() {
       saveAndSyncNotifications(newNotifs);
     }
     
-    saveAndSync(updated);
+    saveAndSync(updated, savedVisitor);
     setIsCheckInOpen(false);
     setVisitorToEdit(null);
   };
@@ -347,7 +404,7 @@ export default function App() {
 
     const notif = createNotification(updatedVisitor, original.status);
     saveAndSyncNotifications([notif, ...notifications]);
-    saveAndSync(updated);
+    saveAndSync(updated, updatedVisitor);
 
     // Open email notification confirmation popup
     setVisitorForEmailSentModal(updatedVisitor);
@@ -380,7 +437,7 @@ export default function App() {
 
     const notif = createNotification(updatedVisitor, original.status);
     saveAndSyncNotifications([notif, ...notifications]);
-    saveAndSync(updated);
+    saveAndSync(updated, updatedVisitor);
   };
 
   // Check-Out Single Visitor
@@ -396,31 +453,27 @@ export default function App() {
     const formattedOutTime = `${day} ${monthName} ${year} - ${hours}.${mins}`;
 
     const original = visitors.find((v) => v.id === visitorId);
+    let updatedVisitor: Visitor | undefined;
     const updated = visitors.map((v) => {
       if (v.id === visitorId) {
-        return {
+        updatedVisitor = {
           ...v,
           status: 'DONE' as VisitorStatus,
           outTime: formattedOutTime,
         };
+        return updatedVisitor;
       }
       return v;
     });
 
-    if (original) {
+    if (original && updatedVisitor) {
       triggerToast(`Tamu ${original.visitorName} telah berhasil Check-Out.`, 'success');
-      
-      const updatedVisitor: Visitor = {
-        ...original,
-        status: 'DONE',
-        outTime: formattedOutTime
-      };
       
       const notif = createNotification(updatedVisitor, original.status);
       const newNotifs = [notif, ...notifications];
       saveAndSyncNotifications(newNotifs);
     }
-    saveAndSync(updated);
+    saveAndSync(updated, updatedVisitor);
   };
 
   // Check-Out Batch selected visitors
@@ -445,6 +498,9 @@ export default function App() {
         };
         const notif = createNotification(updatedVisitor, 'IN-PROGRESS');
         newNotifs = [notif, ...newNotifs];
+        if (isSupabaseConfigured()) {
+          saveVisitorToSupabase(updatedVisitor);
+        }
         return updatedVisitor;
       }
       return v;
@@ -465,6 +521,9 @@ export default function App() {
     if (confirm(confirmMsg)) {
       const updated = visitors.filter((v) => v.id !== visitorId);
       triggerToast(`Catatan tamu ${target?.visitorName || ''} berhasil dihapus.`, 'danger');
+      if (isSupabaseConfigured()) {
+        deleteVisitorFromSupabase(visitorId);
+      }
       saveAndSync(updated);
     }
   };
@@ -708,6 +767,21 @@ export default function App() {
             >
               <Palette size={13} className="text-[#005DA6] dark:text-[#FFD500]" />
               <span className="hidden sm:inline">Pilihan Tema</span>
+            </button>
+
+            {/* Supabase Cloud Connection Button */}
+            <button
+              onClick={() => setIsSupabaseModalOpen(true)}
+              className={`flex items-center gap-1.5 py-2 px-3 rounded-none text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all shadow-xs border ${
+                isSupabaseActive
+                  ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+              }`}
+              title={isSupabaseActive ? 'Database Supabase Cloud Terhubung (Aktif)' : 'Hubungkan Supabase Cloud Database'}
+            >
+              <Database size={13} className={isSupabaseActive ? 'text-emerald-500 animate-pulse' : 'text-[#005DA6] dark:text-[#FFD500]'} />
+              <span className="hidden sm:inline">{isSupabaseActive ? 'Supabase' : 'Koneksi DB'}</span>
+              <span className={`w-2 h-2 rounded-full ${isSupabaseActive ? 'bg-emerald-500' : 'bg-amber-400'}`}></span>
             </button>
 
             {/* Light/Dark Toggle */}
@@ -1083,6 +1157,25 @@ export default function App() {
           isOpen={isAdminLoginModalOpen}
           onClose={() => setIsAdminLoginModalOpen(false)}
           onLoginSuccess={handleAdminLoginSuccess}
+          triggerToast={triggerToast}
+        />
+      )}
+
+      {/* Supabase Cloud Configuration Modal */}
+      {isSupabaseModalOpen && (
+        <SupabaseConfigModal
+          isOpen={isSupabaseModalOpen}
+          onClose={() => setIsSupabaseModalOpen(false)}
+          onConfigSaved={() => {
+            setIsSupabaseActive(true);
+            fetchVisitorsFromSupabase().then((data) => {
+              if (data && data.length > 0) {
+                setVisitors(data);
+                localStorage.setItem('simata_visitors', JSON.stringify(data));
+              }
+            });
+            setIsSupabaseModalOpen(false);
+          }}
           triggerToast={triggerToast}
         />
       )}
