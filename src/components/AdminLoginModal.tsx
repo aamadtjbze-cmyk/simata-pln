@@ -43,12 +43,12 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
         {/* Modal Header */}
         <div className="bg-[#005DA6] border-b-2 border-[#FFD500] p-5 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <PLNLogo className="w-8 h-8" />
+            <PLNLogo showText={false} size="sm" className="shrink-0" />
             <div>
               <span className="text-[10px] font-mono font-bold text-[#FFD500] uppercase tracking-widest block">
                 SIMATA v2 PLN UIK TANJUNG JATI B
               </span>
-              <h3 className="text-base font-black uppercase tracking-tight font-display">
+              <h3 className="text-base font-black uppercase tracking-tight font-display text-white">
                 Portal Otentikasi Admin & Security
               </h3>
             </div>

@@ -237,20 +237,20 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
       <div className="premium-glass border-2 border-[#005DA6] shadow-2xl overflow-hidden">
         
         {/* Banner Header Portal */}
-        <div className="bg-[#005DA6] border-b-2 border-[#FFD500] p-6 text-white flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <PLNLogo className="w-8 h-8" />
-              <span className="text-xs font-mono font-bold text-[#FFD500] uppercase tracking-widest">
+        <div className="bg-[#005DA6] border-b-2 border-[#FFD500] p-5 sm:p-6 text-white">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <PLNLogo showText={false} size="sm" className="shrink-0 mt-0.5 sm:mt-0" />
+            <div className="space-y-0.5">
+              <span className="text-[10.5px] font-mono font-bold text-[#FFD500] uppercase tracking-widest block">
                 PORTAL MANDIRI TAMU UIK TANJUNG JATI B
               </span>
+              <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight font-display text-white">
+                Formulir Pengajuan Kunjungan & Janji Temu
+              </h2>
+              <p className="text-xs text-sky-100 max-w-xl pt-0.5">
+                Isi data diri dan rencana kunjungan Anda. Kode QR Pass Masuk Digital akan dikirimkan otomatis setelah disetujui Sekretariat.
+              </p>
             </div>
-            <h2 className="text-xl font-black uppercase tracking-tight font-display">
-              Formulir Pengajuan Kunjungan & Janji Temu
-            </h2>
-            <p className="text-xs text-sky-100 max-w-lg">
-              Isi data diri dan rencana kunjungan Anda. Kode QR Pass Masuk Digital akan dikirimkan otomatis setelah disetujui Sekretariat.
-            </p>
           </div>
         </div>
 
