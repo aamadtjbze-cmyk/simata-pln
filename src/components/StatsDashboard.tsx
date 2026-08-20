@@ -12,11 +12,11 @@ interface StatsDashboardProps {
 }
 
 export default function StatsDashboard({ visitors }: StatsDashboardProps) {
-  const [time, setTime] = useState(new Date('2026-06-19T22:25:12-07:00'));
+  const [time, setTime] = useState<Date>(() => new Date());
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTime((prevTime) => new Date(prevTime.getTime() + 1000));
+      setTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -39,21 +39,25 @@ export default function StatsDashboard({ visitors }: StatsDashboardProps) {
     .slice(0, 4);
 
   const formatClock = (date: Date) => {
-    return date.toLocaleTimeString('id-ID', {
+    const options: Intl.DateTimeFormatOptions = {
+      timeZone: 'Asia/Jakarta',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
       hour12: false,
-    }) + ' WIB';
+    };
+    return new Intl.DateTimeFormat('id-ID', options).format(date).replace(/:/g, '.') + ' WIB';
   };
 
   const formatDayDate = (date: Date) => {
-    return date.toLocaleDateString('id-ID', {
+    const options: Intl.DateTimeFormatOptions = {
+      timeZone: 'Asia/Jakarta',
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-    });
+    };
+    return new Intl.DateTimeFormat('id-ID', options).format(date);
   };
 
   return (
@@ -63,7 +67,7 @@ export default function StatsDashboard({ visitors }: StatsDashboardProps) {
         <div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase font-bold tracking-widest text-[#FFD500] font-sans">
-              Waktu Distribusi
+              Waktu Setempat (WIB)
             </span>
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
           </div>
