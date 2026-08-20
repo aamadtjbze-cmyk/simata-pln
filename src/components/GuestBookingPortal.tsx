@@ -319,7 +319,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                     setCompany(e.target.value);
                     if (errors.company) setErrors({ ...errors, company: '' });
                   }}
-                  placeholder="Contoh: PT PLN INDONESIA POWER"
+                  placeholder="Contoh: PT PLN UIK Tanjung Jati B"
                   className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.company ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
                 />
                 {errors.company && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.company}</span>}
