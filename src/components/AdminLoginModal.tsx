@@ -4,20 +4,20 @@
  */
 
 import React, { useState } from 'react';
-import { Lock, User, KeyRound, ShieldAlert, LogIn, CheckCircle, X, ShieldCheck } from 'lucide-react';
+import { Lock, User, KeyRound, ShieldAlert, LogIn, X } from 'lucide-react';
 import PLNLogo from './PLNLogo';
+import { verifyUser } from '../lib/userManager';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (roleName: string) => void;
+  onLoginSuccess: (roleName: string, username: string) => void;
   triggerToast: (msg: string, type?: 'success' | 'info' | 'danger') => void;
 }
 
 export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, triggerToast }: AdminLoginModalProps) {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin');
-  const [roleSelection, setRoleSelection] = useState<'SEKRETARIAT' | 'SECURITY'>('SEKRETARIAT');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
   if (!isOpen) return null;
@@ -25,27 +25,15 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-
-    // Demo Authentication verification (admin/admin or pln/admin123)
-    if (
-      (username.toLowerCase() === 'admin' && password === 'admin') ||
-      (username.toLowerCase() === 'pln' && password === 'admin123') ||
-      (username.toLowerCase() === 'security' && password === 'security')
-    ) {
-      triggerToast(`Login Berhasil! Selamat datang, Admin (${roleSelection === 'SEKRETARIAT' ? 'Sekretariat PLN' : 'Petugas Security Unit'}).`, 'success');
-      onLoginSuccess(roleSelection === 'SEKRETARIAT' ? 'Sekretariat PLN' : 'Petugas Security');
+    const user = verifyUser(username, password);
+    if (user) {
+      triggerToast(`Login Berhasil! Selamat datang, ${user.displayName}.`, 'success');
+      onLoginSuccess(user.displayName, user.username);
       onClose();
     } else {
-      setErrorMsg('Username atau kata sandi tidak valid. (Gunakan admin / admin)');
+      setErrorMsg('Username atau kata sandi tidak valid.');
       triggerToast('Login gagal! Periksa username & kata sandi Anda.', 'danger');
     }
-  };
-
-  const handleQuickLogin = (role: 'SEKRETARIAT' | 'SECURITY') => {
-    setRoleSelection(role);
-    triggerToast(`Login Berhasil! Selamat datang, Admin (${role === 'SEKRETARIAT' ? 'Sekretariat PLN' : 'Petugas Security Unit'}).`, 'success');
-    onLoginSuccess(role === 'SEKRETARIAT' ? 'Sekretariat PLN' : 'Petugas Security');
-    onClose();
   };
 
   return (
@@ -95,35 +83,6 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
             </div>
           )}
 
-          <div>
-            <label className="block text-xs font-semibold mb-1">
-              Pilih Role Petugas
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setRoleSelection('SEKRETARIAT')}
-                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer border ${
-                  roleSelection === 'SEKRETARIAT'
-                    ? 'bg-[#005DA6] text-white border-[#005DA6]'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                }`}
-              >
-                Sekretariat PLN
-              </button>
-              <button
-                type="button"
-                onClick={() => setRoleSelection('SECURITY')}
-                className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer border ${
-                  roleSelection === 'SECURITY'
-                    ? 'bg-[#005DA6] text-white border-[#005DA6]'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                }`}
-              >
-                Pos Security
-              </button>
-            </div>
-          </div>
 
           <div>
             <label className="block text-xs font-semibold mb-1">
@@ -157,19 +116,9 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
             </div>
           </div>
 
-          {/* Preset Kredensial Uji Coba */}
-          <div className="p-2.5 bg-slate-100 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 text-[10.5px]">
-            <span className="font-bold text-slate-500 uppercase block mb-1">
-              💡 Kredensial Login Default:
-            </span>
-            <div className="flex items-center justify-between font-mono text-slate-700 dark:text-slate-300">
-              <span>Username: <strong>admin</strong></span>
-              <span>Password: <strong>admin</strong></span>
-            </div>
-          </div>
 
           {/* Form Actions */}
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
             <button
               type="submit"
               className="w-full py-3 bg-[#005DA6] hover:bg-[#004070] text-white font-black text-xs uppercase tracking-wider border-b-2 border-r-2 border-[#FFD500] cursor-pointer shadow-md flex items-center justify-center gap-2"
@@ -177,31 +126,6 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
               <LogIn size={16} />
               Masuk Sistem Admin SIMATA
             </button>
-
-            <div className="flex items-center gap-2 my-1">
-              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase">Atau Akses Cepat</span>
-              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('SEKRETARIAT')}
-                className="py-2 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-[10.5px] uppercase tracking-wider rounded-none cursor-pointer flex items-center justify-center gap-1 border-b border-r border-slate-900"
-              >
-                <ShieldCheck size={13} />
-                Demo Sekretariat
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('SECURITY')}
-                className="py-2 px-3 bg-sky-600 hover:bg-sky-700 text-white font-black text-[10.5px] uppercase tracking-wider rounded-none cursor-pointer flex items-center justify-center gap-1 border-b border-r border-sky-950"
-              >
-                <ShieldCheck size={13} />
-                Demo Security
-              </button>
-            </div>
           </div>
 
         </form>
