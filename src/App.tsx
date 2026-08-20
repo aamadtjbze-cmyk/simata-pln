@@ -48,6 +48,7 @@ import { decodePassToken } from './utils/security';
 import {
   isSupabaseConfigured,
   getSupabaseClient,
+  checkSupabaseHealth,
   fetchVisitorsFromSupabase,
   saveVisitorToSupabase,
   deleteVisitorFromSupabase,
@@ -236,11 +237,19 @@ export default function App() {
     // Supabase Cloud Initialization & Realtime Subscription
     let supabaseChannel: any = null;
     if (isSupabaseConfigured()) {
-      setIsSupabaseActive(true);
+      checkSupabaseHealth().then((res) => {
+        setIsSupabaseActive(res.connected);
+      });
+
       fetchVisitorsFromSupabase().then((data) => {
         if (data && data.length > 0) {
           setVisitors(data);
           localStorage.setItem('simata_visitors', JSON.stringify(data));
+          setIsSupabaseActive(true);
+        } else if (data === null) {
+          setIsSupabaseActive(false);
+        } else {
+          setIsSupabaseActive(true);
         }
       });
 
@@ -777,19 +786,19 @@ export default function App() {
               <span className="hidden sm:inline">Pilihan Tema</span>
             </button>
 
-            {/* Supabase Cloud Connection Button */}
+            {/* Database Connect Status Indicator Button */}
             <button
               onClick={() => setIsSupabaseModalOpen(true)}
               className={`flex items-center gap-1.5 py-2 px-3 rounded-none text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all shadow-xs border ${
                 isSupabaseActive
                   ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 border-emerald-500 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                  : 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 border-rose-500 text-rose-700 dark:text-rose-300'
               }`}
-              title={isSupabaseActive ? 'Database Supabase Cloud Terhubung (Aktif)' : 'Hubungkan Supabase Cloud Database'}
+              title={isSupabaseActive ? 'Database Connect: Aktif & Terhubung Normal (Hijau)' : 'Database Connect: Terputus / Gangguan (Merah)'}
             >
-              <Database size={13} className={isSupabaseActive ? 'text-emerald-500 animate-pulse' : 'text-[#005DA6] dark:text-[#FFD500]'} />
-              <span className="hidden sm:inline">{isSupabaseActive ? 'Supabase' : 'Koneksi DB'}</span>
-              <span className={`w-2 h-2 rounded-full ${isSupabaseActive ? 'bg-emerald-500' : 'bg-amber-400'}`}></span>
+              <Database size={13} className={isSupabaseActive ? 'text-emerald-500 animate-pulse' : 'text-rose-500'} />
+              <span className="hidden sm:inline">Database Connect</span>
+              <span className={`w-2 h-2 rounded-full ${isSupabaseActive ? 'bg-emerald-500 shadow-[0_0_6px_#10b981]' : 'bg-rose-500 shadow-[0_0_6px_#f43f5e]'}`}></span>
             </button>
 
             {/* Light/Dark Toggle */}

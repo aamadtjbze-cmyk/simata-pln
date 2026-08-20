@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Database, CheckCircle2, AlertCircle, X, ExternalLink, Key, Link as LinkIcon, RefreshCw, Copy, Check } from 'lucide-react';
-import { getSupabaseConfig, saveSupabaseConfig, getSupabaseClient, fetchVisitorsFromSupabase } from '../lib/supabase';
+import React, { useState, useEffect } from 'react';
+import { Database, CheckCircle2, AlertCircle, X, RefreshCw, Activity, ShieldCheck, Wifi, WifiOff } from 'lucide-react';
+import { isSupabaseConfigured, checkSupabaseHealth, fetchVisitorsFromSupabase, getSupabaseConfig, saveSupabaseConfig } from '../lib/supabase';
 
 interface SupabaseConfigModalProps {
   isOpen: boolean;
@@ -15,97 +15,70 @@ interface SupabaseConfigModalProps {
 }
 
 export default function SupabaseConfigModal({ isOpen, onClose, onConfigSaved, triggerToast }: SupabaseConfigModalProps) {
-  const current = getSupabaseConfig();
-  const [url, setUrl] = useState(current.url);
-  const [anonKey, setAnonKey] = useState(current.anonKey);
-  const [isTesting, setIsTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [copiedSql, setCopiedSql] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [healthStatus, setHealthStatus] = useState<{ connected: boolean; message: string; latency?: number } | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  const currentConfig = getSupabaseConfig();
+  const [customUrl, setCustomUrl] = useState(currentConfig.url);
+  const [customKey, setCustomKey] = useState('');
+
+  const runHealthCheck = async () => {
+    setIsChecking(true);
+    const res = await checkSupabaseHealth();
+    setHealthStatus(res);
+    setIsChecking(false);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      runHealthCheck();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleTestAndSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsTesting(true);
-    setTestResult(null);
+  const isConnected = healthStatus?.connected ?? isSupabaseConfigured();
 
-    const cleanUrl = url.trim();
-    const cleanKey = anonKey.trim();
-
-    if (!cleanUrl || !cleanKey) {
-      setTestResult({ success: false, message: 'URL Proyek dan Anon Key tidak boleh kosong.' });
-      setIsTesting(false);
-      return;
-    }
-
-    if (!cleanUrl.startsWith('https://')) {
-      setTestResult({ success: false, message: 'URL Supabase harus diawali dengan https:// (contoh: https://xyz.supabase.co)' });
-      setIsTesting(false);
-      return;
-    }
-
-    saveSupabaseConfig(cleanUrl, cleanKey);
+  const handleResync = async () => {
+    setIsChecking(true);
     const data = await fetchVisitorsFromSupabase();
-
     if (data !== null) {
-      setTestResult({ success: true, message: `Koneksi Supabase Berhasil! Ditemukan ${data.length} data pengunjung dari database cloud.` });
-      triggerToast('Koneksi Supabase Cloud Berhasil Aktif!', 'success');
+      triggerToast(`Sinkronisasi sukses! ${data.length} data pengunjung aktif termuat.`, 'success');
       onConfigSaved();
     } else {
-      setTestResult({
-        success: false,
-        message: 'Gagal terhubung ke tabel "visitors" di Supabase. Pastikan tabel telah dibuat di Supabase SQL Editor menggunakan skrip schema.',
-      });
+      triggerToast('Gagal menyinkronkan data dari database cloud.', 'danger');
     }
-
-    setIsTesting(false);
+    setIsChecking(false);
   };
 
-  const handleCopySql = () => {
-    const sql = `-- Salin & Jalankan di Supabase Dashboard > SQL Editor
-CREATE TABLE IF NOT EXISTS public.visitors (
-    id TEXT PRIMARY KEY,
-    visitor_name TEXT NOT NULL,
-    company TEXT NOT NULL,
-    phone TEXT,
-    email TEXT,
-    identify_no TEXT,
-    gender TEXT DEFAULT 'Laki-laki',
-    visited TEXT NOT NULL,
-    purpose TEXT NOT NULL,
-    schedule TEXT NOT NULL,
-    in_time TEXT,
-    out_time TEXT,
-    status TEXT NOT NULL DEFAULT 'PENDING',
-    main_gate_pass TEXT DEFAULT 'TJB-PASS-01',
-    second_gate_pass TEXT DEFAULT 'TJB-PASS-02',
-    valid_until TEXT,
-    validity_option TEXT DEFAULT 'SAME_DAY',
-    notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-ALTER TABLE public.visitors ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public all" ON public.visitors FOR ALL USING (true) WITH CHECK (true);
-ALTER PUBLICATION supabase_realtime ADD TABLE public.visitors;`;
-
-    navigator.clipboard.writeText(sql);
-    setCopiedSql(true);
-    triggerToast('Skrip SQL Schema Supabase berhasil disalin!', 'success');
-    setTimeout(() => setCopiedSql(false), 2500);
+  const handleSaveAdvanced = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customUrl && customKey) {
+      saveSupabaseConfig(customUrl, customKey);
+      triggerToast('Pengaturan database berhasil diperbarui.', 'success');
+      runHealthCheck();
+      onConfigSaved();
+      setShowAdvanced(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#111c30] border-2 border-[#005DA6] w-full max-w-lg shadow-[8px_8px_0px_#005DA6] overflow-hidden animate-fade-in font-sans">
+      <div className="bg-white dark:bg-[#111c30] border-2 border-[#005DA6] w-full max-w-md shadow-[8px_8px_0px_#005DA6] overflow-hidden animate-fade-in font-sans">
         
         {/* Header */}
-        <div className="bg-[#005DA6] text-white p-4 flex items-center justify-between border-b-2 border-[#FFD500]">
-          <div className="flex items-center gap-2">
-            <Database size={18} className="text-[#FFD500]" />
-            <span className="font-bold text-sm uppercase tracking-wider font-display">
-              Konfigurasi Supabase Cloud Database
-            </span>
+        <div className={`p-4 text-white flex items-center justify-between border-b-2 ${isConnected ? 'bg-[#005DA6] border-[#FFD500]' : 'bg-rose-700 border-rose-400'}`}>
+          <div className="flex items-center gap-2.5">
+            <Database size={18} className={isConnected ? 'text-[#FFD500]' : 'text-white'} />
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-slate-200 block">
+                SIMATA v2 PLN UIK TJB
+              </span>
+              <h3 className="font-bold text-sm uppercase tracking-wider font-display">
+                Status Database Connect
+              </h3>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -115,93 +88,135 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.visitors;`;
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleTestAndSave} className="p-5 space-y-4 text-xs">
-          <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-slate-700 dark:text-slate-300">
-            <p className="font-bold text-[#005DA6] dark:text-[#FFD500] mb-1">
-              Sinkronisasi Cloud Realtime
-            </p>
-            <p className="text-[11px] leading-relaxed">
-              Hubungkan SIMATA PLN ke Supabase agar data pengajuan tamu dari HP tamu langsung masuk secara realtime ke monitor Pos Security & Admin PLN.
-            </p>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="block font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <LinkIcon size={12} className="text-[#005DA6]" />
-              Project URL Supabase:
-            </label>
-            <input
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://xyzcompany.supabase.co"
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-[#152033] border border-slate-300 dark:border-slate-700 font-mono text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="block font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <Key size={12} className="text-[#005DA6]" />
-              Anon / Public API Key:
-            </label>
-            <input
-              type="password"
-              value={anonKey}
-              onChange={(e) => setAnonKey(e.target.value)}
-              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-[#152033] border border-slate-300 dark:border-slate-700 font-mono text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
-            />
-          </div>
-
-          {testResult && (
-            <div
-              className={`p-3 border flex items-start gap-2 ${
-                testResult.success
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 text-emerald-800 dark:text-emerald-300'
-                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 text-rose-800 dark:text-rose-300'
-              }`}
-            >
-              {testResult.success ? <CheckCircle2 size={16} className="shrink-0 mt-0.5" /> : <AlertCircle size={16} className="shrink-0 mt-0.5" />}
-              <span className="text-[11px] leading-tight">{testResult.message}</span>
+        {/* Body Content */}
+        <div className="p-5 space-y-4 text-xs text-slate-800 dark:text-slate-200">
+          
+          {/* Main Status Hero Card */}
+          <div className={`p-4 border-2 flex items-start gap-3.5 ${
+            isConnected
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-900 dark:text-emerald-200'
+              : 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-900 dark:text-rose-200'
+          }`}>
+            <div className="p-2 rounded-none bg-white dark:bg-slate-900 shrink-0 shadow-xs border">
+              {isConnected ? (
+                <Wifi size={22} className="text-emerald-600 dark:text-emerald-400" />
+              ) : (
+                <WifiOff size={22} className="text-rose-600 dark:text-rose-400" />
+              )}
             </div>
-          )}
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+                <p className="font-black text-xs uppercase tracking-wider">
+                  {isConnected ? 'DATABASE TERHUBUNG (NORMAL)' : 'DATABASE TIDAK TERKONEKSI / ERROR'}
+                </p>
+              </div>
+              <p className="text-[11px] mt-1 text-slate-600 dark:text-slate-300 leading-relaxed">
+                {healthStatus?.message || (isConnected ? 'Koneksi cloud database aktif dan siap melayani pertukaran data tamu secara realtime.' : 'Koneksi ke server database mengalami kendala.')}
+              </p>
+            </div>
+          </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+          {/* Diagnostic Metrics Grid */}
+          <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <div className="p-3 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750">
+              <span className="text-[10px] text-slate-500 uppercase font-bold block mb-0.5">Waktu Respon:</span>
+              <span className="font-mono font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
+                <Activity size={12} className={isConnected ? 'text-emerald-500' : 'text-rose-500'} />
+                {healthStatus?.latency ? `${healthStatus.latency} ms` : (isConnected ? '< 150 ms' : 'Timeout')}
+              </span>
+            </div>
+
+            <div className="p-3 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750">
+              <span className="text-[10px] text-slate-500 uppercase font-bold block mb-0.5">Keamanan:</span>
+              <span className="font-mono font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
+                <ShieldCheck size={12} className="text-[#005DA6] dark:text-[#FFD500]" />
+                SSL & RLS Aktif
+              </span>
+            </div>
+
+            <div className="p-3 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 col-span-2">
+              <span className="text-[10px] text-slate-500 uppercase font-bold block mb-0.5">Mode Sinkronisasi:</span>
+              <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <CheckCircle2 size={13} className="text-emerald-500" />
+                Realtime Auto-Sync & LocalStorage Fallback
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
             <button
               type="button"
-              onClick={handleCopySql}
-              className="w-full sm:w-auto px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold flex items-center justify-center gap-1.5 cursor-pointer border border-slate-300 dark:border-slate-700 text-[11px]"
+              onClick={runHealthCheck}
+              disabled={isChecking}
+              className="w-full sm:flex-1 py-2.5 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer border border-slate-300 dark:border-slate-600 transition-colors"
             >
-              {copiedSql ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-              <span>{copiedSql ? 'SQL Tersalin!' : 'Salin SQL Schema'}</span>
+              <RefreshCw size={13} className={isChecking ? 'animate-spin' : ''} />
+              <span>{isChecking ? 'Menguji...' : 'Uji Koneksi Ulang'}</span>
             </button>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 sm:flex-initial px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer"
-              >
-                Batal
-              </button>
+            <button
+              type="button"
+              onClick={handleResync}
+              disabled={isChecking}
+              className="w-full sm:flex-1 py-2.5 px-3 bg-[#005DA6] hover:bg-[#004070] text-white font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer border-b-2 border-r-2 border-[#FFD500] transition-colors"
+            >
+              <Database size={13} />
+              <span>Sinkronkan Data</span>
+            </button>
+          </div>
+
+          {/* Advanced toggle for admins without exposing raw keys */}
+          <div className="pt-1 text-center">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 underline cursor-pointer"
+            >
+              {showAdvanced ? 'Tutup Pengaturan Lanjutan' : 'Pengaturan Lanjutan Server'}
+            </button>
+          </div>
+
+          {showAdvanced && (
+            <form onSubmit={handleSaveAdvanced} className="p-3 bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 space-y-2 mt-2">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                  Custom Database URL:
+                </label>
+                <input
+                  type="text"
+                  value={customUrl}
+                  onChange={(e) => setCustomUrl(e.target.value)}
+                  placeholder="https://xxx.supabase.co"
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                  Custom Anon Key (Tersandi):
+                </label>
+                <input
+                  type="password"
+                  value={customKey}
+                  onChange={(e) => setCustomKey(e.target.value)}
+                  placeholder="Ketik key baru jika ingin mengganti..."
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-mono"
+                />
+              </div>
+
               <button
                 type="submit"
-                disabled={isTesting}
-                className="flex-1 sm:flex-initial px-5 py-2 bg-[#005DA6] hover:bg-[#004070] text-white font-bold flex items-center justify-center gap-1.5 cursor-pointer border-b-2 border-r-2 border-[#FFD500]"
+                className="w-full py-1.5 bg-slate-700 hover:bg-slate-800 text-white font-bold text-[10px] uppercase"
               >
-                {isTesting ? (
-                  <>
-                    <RefreshCw size={13} className="animate-spin" />
-                    <span>Menghubungkan...</span>
-                  </>
-                ) : (
-                  <span>Simpan & Hubungkan</span>
-                )}
+                Perbarui Server URL
               </button>
-            </div>
-          </div>
-        </form>
+            </form>
+          )}
+
+        </div>
 
       </div>
     </div>

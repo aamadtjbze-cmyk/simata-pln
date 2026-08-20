@@ -178,3 +178,29 @@ export const deleteVisitorFromSupabase = async (id: string): Promise<boolean> =>
     return false;
   }
 };
+
+/**
+ * Check Database Health & Connectivity
+ */
+export const checkSupabaseHealth = async (): Promise<{ connected: boolean; message: string; latency?: number }> => {
+  if (!isSupabaseConfigured()) {
+    return { connected: false, message: 'Kredensial database belum dikonfigurasi.' };
+  }
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { connected: false, message: 'Gagal inisialisasi koneksi database.' };
+  }
+
+  const start = Date.now();
+  try {
+    const { data, error } = await supabase.from('visitors').select('id').limit(1);
+    const latency = Date.now() - start;
+    if (error) {
+      return { connected: false, message: `Database error: ${error.message}` };
+    }
+    return { connected: true, message: `Koneksi database aktif & normal (${latency}ms).`, latency };
+  } catch (err: any) {
+    return { connected: false, message: `Gagal terhubung ke database: ${err?.message || 'Network Timeout'}` };
+  }
+};
+
