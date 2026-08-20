@@ -158,17 +158,29 @@ export default function App() {
     const savedAdminName = localStorage.getItem('simata_admin_name');
     if (savedRole) {
       setUserRole(savedRole);
-      if (savedRole === 'GUEST') {
-        setCurrentTab('pengajuan-tamu');
-      }
     } else {
       setUserRole('GUEST');
-      setCurrentTab('pengajuan-tamu');
     }
     if (savedAdminName) setAdminRoleName(savedAdminName);
 
-    // Auto open badge modal if encrypted QR code token is opened (?token=... or ?passId=...)
+    // Direct link parameter routing (e.g. ?portal=tamu or ?tab=pengajuan)
     const urlParams = new URLSearchParams(window.location.search);
+    const portalParam = urlParams.get('portal');
+    const tabParam = urlParams.get('tab') || urlParams.get('menu') || urlParams.get('form');
+
+    if (portalParam === 'tamu' || tabParam === 'pengajuan' || tabParam === 'tamu' || tabParam === 'form') {
+      setCurrentTab('pengajuan-tamu');
+      setUserRole('GUEST');
+    } else if (savedRole === 'ADMIN') {
+      if (tabParam === 'janji-temu') setCurrentTab('janji-temu');
+      else if (tabParam === 'notifikasi') setCurrentTab('notifikasi');
+      else if (tabParam === 'laporan') setCurrentTab('laporan');
+      else setCurrentTab('buku-tamu');
+    } else {
+      setCurrentTab('pengajuan-tamu');
+    }
+
+    // Auto open badge modal if encrypted QR code token is opened (?token=... or ?passId=...)
     const rawToken = urlParams.get('token') || urlParams.get('passId') || urlParams.get('badge');
     if (rawToken) {
       setIsScannedPass(true);
@@ -210,10 +222,25 @@ export default function App() {
     };
   }, []);
 
+  const handleSelectTab = (tab: 'buku-tamu' | 'janji-temu' | 'pengajuan-tamu' | 'notifikasi' | 'laporan') => {
+    setCurrentTab(tab);
+    try {
+      const url = new URL(window.location.href);
+      if (tab === 'pengajuan-tamu') {
+        url.searchParams.set('portal', 'tamu');
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.delete('portal');
+        url.searchParams.set('tab', tab);
+      }
+      window.history.replaceState(null, '', url.toString());
+    } catch (e) {}
+  };
+
   const handleAdminLoginSuccess = (roleName: string) => {
     setUserRole('ADMIN');
     setAdminRoleName(roleName);
-    setCurrentTab('buku-tamu');
+    handleSelectTab('buku-tamu');
     localStorage.setItem('simata_user_role', 'ADMIN');
     localStorage.setItem('simata_admin_name', roleName);
   };
@@ -221,7 +248,7 @@ export default function App() {
   const handleAdminLogout = () => {
     setUserRole('GUEST');
     setAdminRoleName('');
-    setCurrentTab('pengajuan-tamu');
+    handleSelectTab('pengajuan-tamu');
     localStorage.setItem('simata_user_role', 'GUEST');
     localStorage.removeItem('simata_admin_name');
     triggerToast('Anda telah Logout dari akun Admin. Kembali ke Mode Tamu.', 'info');
@@ -775,7 +802,7 @@ export default function App() {
         <div className="mb-3 border-b-2 border-slate-200 dark:border-slate-800 flex items-center justify-start gap-1 select-none flex-shrink-0 overflow-x-auto pb-0.5">
           {/* Form Pengajuan Tamu - Always Accessible for Guests & Admin */}
           <button
-            onClick={() => setCurrentTab('pengajuan-tamu')}
+            onClick={() => handleSelectTab('pengajuan-tamu')}
             className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 border-t-2 border-l-2 border-r-2 cursor-pointer relative shrink-0 ${
               currentTab === 'pengajuan-tamu'
                 ? 'bg-white dark:bg-[#111c30] text-[#005DA6] dark:text-[#FFD500] border-t-2 border-r-2 border-l-2 border-[#005DA6] dark:border-[#005DA6] -mb-[2px] z-10 font-black'
@@ -793,7 +820,7 @@ export default function App() {
                 setIsAdminLoginModalOpen(true);
                 triggerToast('Akses Buku Tamu Aktif memerlukan Login Admin / Security.', 'info');
               } else {
-                setCurrentTab('buku-tamu');
+                handleSelectTab('buku-tamu');
               }
             }}
             className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 border-t-2 border-l-2 border-r-2 cursor-pointer shrink-0 ${
@@ -812,7 +839,7 @@ export default function App() {
                 setIsAdminLoginModalOpen(true);
                 triggerToast('Akses Kelola Janji Temu memerlukan Login Admin.', 'info');
               } else {
-                setCurrentTab('janji-temu');
+                handleSelectTab('janji-temu');
               }
             }}
             className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 border-t-2 border-l-2 border-r-2 cursor-pointer relative shrink-0 ${
@@ -833,7 +860,7 @@ export default function App() {
           {userRole === 'ADMIN' && (
             <>
               <button
-                onClick={() => setCurrentTab('notifikasi')}
+                onClick={() => handleSelectTab('notifikasi')}
                 className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 border-t-2 border-l-2 border-r-2 cursor-pointer relative shrink-0 ${
                   currentTab === 'notifikasi'
                     ? 'bg-white dark:bg-[#111c30] text-[#005DA6] dark:text-[#FFD500] border-t-2 border-r-2 border-l-2 border-[#005DA6] dark:border-[#005DA6] -mb-[2px] z-10 font-black'
@@ -850,7 +877,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => setCurrentTab('laporan')}
+                onClick={() => handleSelectTab('laporan')}
                 className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 border-t-2 border-l-2 border-r-2 cursor-pointer shrink-0 ${
                   currentTab === 'laporan'
                     ? 'bg-white dark:bg-[#111c30] text-[#005DA6] dark:text-[#FFD500] border-t-2 border-r-2 border-l-2 border-[#005DA6] dark:border-[#005DA6] -mb-[2px] z-10 font-black'
