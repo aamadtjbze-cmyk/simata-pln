@@ -13,62 +13,67 @@ interface PLNLogoProps {
 
 export default function PLNLogo({ className = '', size = 'md', showText = true }: PLNLogoProps) {
   const dimensions = {
-    sm: { svg: 'h-8 w-6', text: 'text-sm' },
-    md: { svg: 'h-12 w-9', text: 'text-xl' },
-    lg: { svg: 'h-16 w-12', text: 'text-2xl' },
+    sm: { svg: 'h-8 w-6', mainText: 'text-base', subText: 'text-[9px]' },
+    md: { svg: 'h-11 w-8.5', mainText: 'text-2xl', subText: 'text-[11px]' },
+    lg: { svg: 'h-14 w-10.5', mainText: 'text-3xl', subText: 'text-[13px]' },
   }[size];
 
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      {/* High fidelity vector PLN Logo badge */}
-      <div className={`relative ${dimensions.svg} bg-[#005DA6] rounded-none p-1 flex items-center justify-center border-2 border-[#FFD500] shadow-sm overflow-hidden`}>
+    <div className={`flex items-center gap-2.5 select-none ${className}`}>
+      {/* Official High-Fidelity PLN Emblem Badge */}
+      <div className={`relative ${dimensions.svg} bg-[#005DA6] rounded-none p-0.5 flex items-center justify-center border-[2.5px] border-[#FFD500] shadow-sm overflow-hidden shrink-0`}>
         <svg
-          viewBox="0 0 100 130"
+          viewBox="0 0 90 115"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           className="w-full h-full"
         >
-          {/* Red corporate accent lines at the back */}
+          {/* 3 Tiga Gelombang Merah PLN (Corporate Red Waves) */}
           <path
-            d="M 12 65 C 12 55, 30 50, 45 60 C 60 70, 85 55, 88 45"
-            stroke="#DA251C"
-            strokeWidth="8"
-            strokeLinecap="square"
+            d="M 8 52 C 20 44, 38 60, 52 52 C 62 45, 74 55, 82 50"
+            stroke="#E52320"
+            strokeWidth="7"
+            strokeLinecap="round"
             fill="none"
-            opacity="0.9"
           />
           <path
-            d="M 12 85 C 12 75, 30 70, 45 80 C 60 90, 85 75, 88 65"
-            stroke="#DA251C"
-            strokeWidth="8"
-            strokeLinecap="square"
+            d="M 8 67 C 20 59, 38 75, 52 67 C 62 60, 74 70, 82 65"
+            stroke="#E52320"
+            strokeWidth="7"
+            strokeLinecap="round"
             fill="none"
-            opacity="0.9"
+          />
+          <path
+            d="M 8 82 C 20 74, 38 90, 52 82 C 62 75, 74 85, 82 80"
+            stroke="#E52320"
+            strokeWidth="7"
+            strokeLinecap="round"
+            fill="none"
           />
 
-          {/* Yellow Lightning Strike (Petir PLN) */}
+          {/* Petir Kuning Keemasan PLN (Yellow Lightning Bolt) */}
           <path
-            d="M75 10 L25 72 L45 72 L15 120 L85 52 L58 52 Z"
+            d="M 64 8 L 26 62 H 46 L 20 106 L 76 50 H 54 Z"
             fill="#FFD500"
             stroke="#005DA6"
-            strokeWidth="3.5"
+            strokeWidth="2"
             strokeLinejoin="miter"
           />
         </svg>
       </div>
 
       {showText && (
-        <div className="flex flex-col select-none">
+        <div className="flex flex-col justify-center leading-none">
           <div className="flex items-center gap-1.5">
-            <span className="font-sans font-extrabold tracking-tighter text-[#005DA6] text-2xl dark:text-sky-350">
+            <span className={`font-sans font-black tracking-tight text-[#005DA6] dark:text-sky-400 ${dimensions.mainText}`}>
               PLN
             </span>
-            <div className="h-5 w-[2px] bg-[#FFD500]"></div>
-            <span className="font-sans font-black text-xs tracking-widest text-[#005DA6]/90 uppercase dark:text-sky-300">
-              Persero
+            <div className="h-4 sm:h-5 w-[2.5px] bg-[#FFD500] shrink-0"></div>
+            <span className="font-sans font-extrabold text-[#005DA6] dark:text-sky-300 uppercase tracking-widest text-xs sm:text-sm">
+              PERSERO
             </span>
           </div>
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest -mt-1 dark:text-slate-400">
+          <span className={`font-sans font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1 ${dimensions.subText}`}>
             Sistem Manajemen Tamu
           </span>
         </div>
