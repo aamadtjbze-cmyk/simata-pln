@@ -126,7 +126,12 @@ export default function BadgeModal({ visitor, onClose, onBookAppointment }: Badg
             </div>
 
             {/* Main Pass Type visual belt */}
-            {passExpiration.isExpired ? (
+            {visitor.status === 'REJECTED' ? (
+              <div className="bg-rose-600 text-white text-center py-1 px-2.5 rounded-none font-black text-xs tracking-widest uppercase mb-2 border-b border-rose-900 flex items-center justify-center gap-1.5">
+                <XCircle size={14} className="text-white" />
+                <span>PENGAJUAN DITOLAK / REJECTED</span>
+              </div>
+            ) : passExpiration.isExpired ? (
               <div className="bg-rose-600 text-white text-center py-1 px-2.5 rounded-none font-black text-xs tracking-widest uppercase mb-2 border-b border-rose-900 flex items-center justify-center gap-1.5 animate-pulse">
                 <AlertTriangle size={13} className="text-[#FFD500]" />
                 <span>PASS EXPIRED / KADALUARSA</span>
@@ -184,15 +189,25 @@ export default function BadgeModal({ visitor, onClose, onBookAppointment }: Badg
                   </p>
                 </div>
                 <div>
-                  <span className="text-[7.5px] uppercase font-bold text-slate-400 tracking-wider">Masa Berlaku Pas</span>
-                  <p className={`text-[9.5px] sm:text-[10px] font-mono font-bold mt-0.5 truncate ${passExpiration.isExpired ? 'text-rose-600' : 'text-emerald-600'}`}>
-                    {visitor.validUntil || 'Hari ini - 23.59'}
+                  <span className="text-[7.5px] uppercase font-bold text-slate-400 tracking-wider">Status Pass</span>
+                  <p className={`text-[9.5px] sm:text-[10px] font-mono font-bold mt-0.5 truncate ${visitor.status === 'REJECTED' ? 'text-rose-600' : passExpiration.isExpired ? 'text-rose-600' : 'text-emerald-600'}`}>
+                    {visitor.status === 'REJECTED' ? 'DITOLAK' : visitor.validUntil || 'Hari ini - 23.59'}
                   </p>
                 </div>
               </div>
             </div>
 
-            {passExpiration.isExpired && (
+            {/* Rejection / Expiration Warning banner */}
+            {visitor.status === 'REJECTED' ? (
+              <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 p-2 text-center my-1.5 rounded-none">
+                <span className="text-[8.5px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-wider block">
+                  🚫 PENGAJUAN DITOLAK
+                </span>
+                <span className="text-[7.5px] text-rose-500 font-semibold block mt-0.5">
+                  Barcode QR Pass tidak diterbitkan untuk permohonan yang ditolak.
+                </span>
+              </div>
+            ) : passExpiration.isExpired ? (
               <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 p-1.5 text-center my-1.5 rounded-none">
                 <span className="text-[8.5px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-wider block">
                   ⚠️ PAS TIDAK BERLAKU UNTUK AKSES MASUK
@@ -201,53 +216,73 @@ export default function BadgeModal({ visitor, onClose, onBookAppointment }: Badg
                   {passExpiration.reason}
                 </span>
               </div>
-            )}
+            ) : null}
 
-            {/* Real Scannable Digital QR Code & Verification Link */}
-            <div className="flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 p-2 sm:p-2.5 rounded-none border border-slate-200 dark:border-slate-800 mt-2 gap-1 text-center relative overflow-hidden">
-              
-              <div className={`p-1 bg-white rounded-none border-2 ${passExpiration.isExpired ? 'border-rose-500 opacity-30 grayscale' : 'border-[#005DA6]'} shadow-xs relative group`}>
-                <img
-                  src={qrApiUrl}
-                  alt={`QR Code Pass ${visitor.id}`}
-                  className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
-                  loading="eager"
-                />
+            {/* Real Scannable Digital QR Code vs Rejection Card */}
+            {visitor.status === 'REJECTED' ? (
+              <div className="flex flex-col items-center justify-center bg-rose-50 dark:bg-rose-950/40 p-3 rounded-none border-2 border-rose-500 mt-2 text-center space-y-1.5">
+                <div className="p-2 bg-rose-100 dark:bg-rose-900/50 rounded-full text-rose-600 dark:text-rose-300">
+                  <XCircle size={32} />
+                </div>
+                <div>
+                  <span className="font-black text-xs uppercase tracking-wider text-rose-700 dark:text-rose-300 block">
+                    BARCODE / QR CODE TIDAK DITERBITKAN
+                  </span>
+                  <p className="text-[9.5px] text-rose-600 dark:text-rose-400 font-semibold mt-0.5 leading-tight">
+                    Permohonan kunjungan ditolak oleh Admin Sekretariat.
+                  </p>
+                  {visitor.notes && (
+                    <div className="mt-2 text-[9px] font-mono text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 p-2 border border-rose-200 dark:border-rose-800 text-left">
+                      <span className="font-bold text-rose-600 block uppercase text-[8px]">Alasan Penolakan:</span>
+                      {visitor.notes}
+                    </div>
+                  )}
+                </div>
               </div>
-
-              {passExpiration.isExpired && (
-                <div className="absolute inset-0 bg-rose-950/85 backdrop-blur-[1px] flex flex-col items-center justify-center p-2 text-white text-center">
-                  <XCircle size={24} className="text-rose-400 mb-0.5 animate-bounce" />
-                  <span className="font-black text-[11px] uppercase tracking-widest text-rose-300">PASS EXPIRED</span>
-                  <span className="text-[7.5px] font-semibold text-rose-200 mt-0.5 max-w-[180px] leading-tight">
-                    {passExpiration.reason}
-                  </span>
+            ) : (
+              <div className="flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 p-2 sm:p-2.5 rounded-none border border-slate-200 dark:border-slate-800 mt-2 gap-1 text-center relative overflow-hidden">
+                <div className={`p-1 bg-white rounded-none border-2 ${passExpiration.isExpired ? 'border-rose-500 opacity-30 grayscale' : 'border-[#005DA6]'} shadow-xs relative group`}>
+                  <img
+                    src={qrApiUrl}
+                    alt={`QR Code Pass ${visitor.id}`}
+                    className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
+                    loading="eager"
+                  />
                 </div>
-              )}
 
-              {/* Copy Link Button (System QR Link Encrypted, URL text hidden from display) */}
-              {!passExpiration.isExpired && (
-                <div className="no-print w-full flex flex-col items-center gap-0.5 mt-0.5">
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(passUrl);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    }}
-                    className="px-2.5 py-0.5 bg-white dark:bg-slate-900 hover:bg-[#005DA6] hover:text-white dark:hover:bg-[#FFD500] dark:hover:text-slate-900 text-slate-700 dark:text-slate-300 text-[9.5px] font-bold rounded-none transition-all flex items-center gap-1 cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs"
-                    title="Salin Link QR Terenkripsi ke Clipboard"
-                  >
-                    {copied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
-                    <span>{copied ? 'Link Pass Terenkripsi Tersalin!' : 'Salin Link Pass'}</span>
-                  </button>
+                {passExpiration.isExpired && (
+                  <div className="absolute inset-0 bg-rose-950/85 backdrop-blur-[1px] flex flex-col items-center justify-center p-2 text-white text-center">
+                    <XCircle size={24} className="text-rose-400 mb-0.5 animate-bounce" />
+                    <span className="font-black text-[11px] uppercase tracking-widest text-rose-300">PASS EXPIRED</span>
+                    <span className="text-[7.5px] font-semibold text-rose-200 mt-0.5 max-w-[180px] leading-tight">
+                      {passExpiration.reason}
+                    </span>
+                  </div>
+                )}
 
-                  <span className="text-[7.5px] text-slate-400 font-bold flex items-center justify-center gap-1 uppercase tracking-wider">
-                    <span className="inline-block w-1.5 h-1.5 bg-emerald-500 rounded-none animate-pulse"></span>
-                    Sistem QR Terenkripsi Aktif
-                  </span>
-                </div>
-              )}
-            </div>
+                {!passExpiration.isExpired && (
+                  <div className="no-print w-full flex flex-col items-center gap-0.5 mt-0.5">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(passUrl);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="px-2.5 py-0.5 bg-white dark:bg-slate-900 hover:bg-[#005DA6] hover:text-white dark:hover:bg-[#FFD500] dark:hover:text-slate-900 text-slate-700 dark:text-slate-300 text-[9.5px] font-bold rounded-none transition-all flex items-center gap-1 cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs"
+                      title="Salin Link QR Terenkripsi ke Clipboard"
+                    >
+                      {copied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                      <span>{copied ? 'Link Pass Terenkripsi Tersalin!' : 'Salin Link Pass'}</span>
+                    </button>
+
+                    <span className="text-[7.5px] text-slate-400 font-bold flex items-center justify-center gap-1 uppercase tracking-wider">
+                      <span className="inline-block w-1.5 h-1.5 bg-emerald-500 rounded-none animate-pulse"></span>
+                      Sistem QR Terenkripsi Aktif
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Guard Warning notice */}
             <div className="mt-1.5 text-[7.5px] sm:text-[8px] text-slate-400 text-center uppercase tracking-wide leading-normal">
@@ -274,13 +309,23 @@ export default function BadgeModal({ visitor, onClose, onBookAppointment }: Badg
           )}
 
           <div className="flex items-center gap-2 w-full">
-            <button
-              onClick={handlePrint}
-              className="flex-1 py-2.5 px-3 bg-[#005DA6] hover:bg-[#004070] active:bg-[#003056] text-white rounded-none font-bold flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider border-b-2 border-r-2 border-[#FFD500] cursor-pointer"
-            >
-              <Printer size={15} />
-              Cetak Pas Masuk
-            </button>
+            {visitor.status === 'REJECTED' ? (
+              <button
+                disabled
+                className="flex-1 py-2.5 px-3 bg-rose-200 dark:bg-rose-950 text-rose-500 rounded-none font-bold flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider border border-rose-300 dark:border-rose-900 cursor-not-allowed opacity-75"
+              >
+                <XCircle size={15} />
+                Pengajuan Ditolak
+              </button>
+            ) : (
+              <button
+                onClick={handlePrint}
+                className="flex-1 py-2.5 px-3 bg-[#005DA6] hover:bg-[#004070] active:bg-[#003056] text-white rounded-none font-bold flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider border-b-2 border-r-2 border-[#FFD500] cursor-pointer"
+              >
+                <Printer size={15} />
+                Cetak Pas Masuk
+              </button>
+            )}
             <button
               onClick={onClose}
               className="py-2.5 px-4 bg-white dark:bg-[#111c30] hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-none font-bold text-xs uppercase tracking-wider border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
