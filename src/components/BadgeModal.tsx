@@ -13,9 +13,19 @@ interface BadgeModalProps {
   visitor: Visitor | null;
   onClose: () => void;
   onBookAppointment?: () => void;
+  onCheckInAppointment?: (visitorId: string) => void;
+  onSecondGateCheckIn?: (visitorId: string, customPass?: string) => void;
+  onCheckOut?: (visitorId: string) => void;
 }
 
-export default function BadgeModal({ visitor, onClose, onBookAppointment }: BadgeModalProps) {
+export default function BadgeModal({
+  visitor,
+  onClose,
+  onBookAppointment,
+  onCheckInAppointment,
+  onSecondGateCheckIn,
+  onCheckOut,
+}: BadgeModalProps) {
   const [copied, setCopied] = useState(false);
   if (!visitor) return null;
 
@@ -181,18 +191,24 @@ export default function BadgeModal({ visitor, onClose, onBookAppointment }: Badg
                 </div>
               </div>
 
-              <div className="pt-1 text-center border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-2 gap-1.5">
-                <div>
-                  <span className="text-[7.5px] uppercase font-bold text-slate-400 tracking-wider">Waktu Masuk</span>
-                  <p className="text-[9.5px] sm:text-[10px] font-mono font-semibold text-slate-700 dark:text-slate-300 mt-0.5 truncate">
-                    {visitor.inTime || visitor.schedule || 'Belum Check-In'}
-                  </p>
+              <div className="pt-1.5 pb-1 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-3 gap-1 text-center font-sans">
+                <div className="bg-slate-50 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[6.5px] uppercase font-bold text-slate-400 block tracking-tighter">Check-In 1 (Pos 1)</span>
+                  <span className="text-[8px] sm:text-[8.5px] font-mono font-bold text-slate-800 dark:text-slate-200 block truncate mt-0.5">
+                    {visitor.inTime || 'Belum In'}
+                  </span>
                 </div>
-                <div>
-                  <span className="text-[7.5px] uppercase font-bold text-slate-400 tracking-wider">Status Pass</span>
-                  <p className={`text-[9.5px] sm:text-[10px] font-mono font-bold mt-0.5 truncate ${visitor.status === 'REJECTED' ? 'text-rose-600' : passExpiration.isExpired ? 'text-rose-600' : 'text-emerald-600'}`}>
-                    {visitor.status === 'REJECTED' ? 'DITOLAK' : visitor.validUntil || 'Hari ini - 23.59'}
-                  </p>
+                <div className="bg-sky-50/50 dark:bg-sky-950/30 p-1 border border-sky-200/60 dark:border-sky-800">
+                  <span className="text-[6.5px] uppercase font-bold text-sky-600 dark:text-sky-400 block tracking-tighter">Check-In 2 (Pos 2)</span>
+                  <span className="text-[8px] sm:text-[8.5px] font-mono font-bold text-sky-700 dark:text-sky-300 block truncate mt-0.5">
+                    {visitor.secondGateTime || 'Belum In'}
+                  </span>
+                </div>
+                <div className="bg-amber-500/10 dark:bg-amber-950/30 p-1 border border-amber-500/20 dark:border-amber-800">
+                  <span className="text-[6.5px] uppercase font-bold text-amber-600 dark:text-amber-400 block tracking-tighter">Check-Out (Keluar)</span>
+                  <span className="text-[8px] sm:text-[8.5px] font-mono font-bold text-amber-700 dark:text-amber-300 block truncate mt-0.5">
+                    {visitor.outTime || 'Belum Out'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -281,6 +297,68 @@ export default function BadgeModal({ visitor, onClose, onBookAppointment }: Badg
                     </span>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Interactive 3-Stage Gate Check-In Buttons for Digital Pass */}
+            {visitor.status !== 'REJECTED' && (
+              <div className="no-print w-full mt-2.5 p-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-none text-center space-y-1.5">
+                <span className="text-[9px] uppercase font-black tracking-wider text-[#005DA6] dark:text-[#FFD500] block">
+                  Presensi Gate Masuk / Keluar Tamu
+                </span>
+
+                <div className="grid grid-cols-3 gap-1.5">
+                  {/* Button Check-In 1 */}
+                  <button
+                    type="button"
+                    onClick={() => onCheckInAppointment && onCheckInAppointment(visitor.id)}
+                    className={`py-2 px-1 rounded-none text-[9.5px] font-black uppercase tracking-wider flex flex-col items-center justify-center transition-all ${
+                      visitor.inTime
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 cursor-default'
+                        : 'bg-[#005DA6] hover:bg-[#004070] text-white border-b-2 border-r-2 border-[#FFD500] cursor-pointer active:scale-95'
+                    }`}
+                  >
+                    <span className="text-[7.5px] font-normal opacity-80">Pos 1 Utama</span>
+                    <span className="flex items-center gap-1 mt-0.5">
+                      {visitor.inTime ? <Check size={11} /> : null}
+                      {visitor.inTime ? 'IN 1 OK' : 'Check-In 1'}
+                    </span>
+                  </button>
+
+                  {/* Button Check-In 2 (Pos 2 / Stakeholder) */}
+                  <button
+                    type="button"
+                    onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(visitor.id)}
+                    className={`py-2 px-1 rounded-none text-[9.5px] font-black uppercase tracking-wider flex flex-col items-center justify-center transition-all ${
+                      visitor.secondGateTime
+                        ? 'bg-sky-100 text-sky-800 border border-sky-300 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800 cursor-default'
+                        : 'bg-sky-600 hover:bg-sky-700 text-white border-b-2 border-r-2 border-sky-300 cursor-pointer active:scale-95'
+                    }`}
+                  >
+                    <span className="text-[7.5px] font-normal opacity-80">Pos 2 Dalam</span>
+                    <span className="flex items-center gap-1 mt-0.5">
+                      {visitor.secondGateTime ? <Check size={11} /> : null}
+                      {visitor.secondGateTime ? 'IN 2 OK' : 'Check-In 2'}
+                    </span>
+                  </button>
+
+                  {/* Button Check-Out */}
+                  <button
+                    type="button"
+                    onClick={() => onCheckOut && onCheckOut(visitor.id)}
+                    className={`py-2 px-1 rounded-none text-[9.5px] font-black uppercase tracking-wider flex flex-col items-center justify-center transition-all ${
+                      visitor.outTime
+                        ? 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 cursor-default'
+                        : 'bg-amber-500 hover:bg-amber-600 text-white border-b-2 border-r-2 border-amber-300 cursor-pointer active:scale-95'
+                    }`}
+                  >
+                    <span className="text-[7.5px] font-normal opacity-80">Kepulangan</span>
+                    <span className="flex items-center gap-1 mt-0.5">
+                      {visitor.outTime ? <Check size={11} /> : null}
+                      {visitor.outTime ? 'OUT OK' : 'Check-Out'}
+                    </span>
+                  </button>
+                </div>
               </div>
             )}
 

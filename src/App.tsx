@@ -514,6 +514,9 @@ export default function App() {
 
     const updated = visitors.map((v) => (v.id === visitorId ? updatedVisitor : v));
     triggerToast(`Akses Pos 2 (${assignedPass}) untuk ${original.visitorName} berhasil dikonfirmasi!`, 'info');
+    if (visitorForBadge && visitorForBadge.id === visitorId) {
+      setVisitorForBadge(updatedVisitor);
+    }
 
     const notif = createNotification(updatedVisitor, original.status);
     saveAndSyncNotifications([notif, ...notifications]);
@@ -548,6 +551,9 @@ export default function App() {
 
     if (original && updatedVisitor) {
       triggerToast(`Tamu ${original.visitorName} telah berhasil Check-Out.`, 'success');
+      if (visitorForBadge && visitorForBadge.id === visitorId) {
+        setVisitorForBadge(updatedVisitor);
+      }
       
       const notif = createNotification(updatedVisitor, original.status);
       const newNotifs = [notif, ...notifications];
@@ -1269,6 +1275,9 @@ export default function App() {
         <BadgeModal
           visitor={visitorForBadge}
           onClose={handleCloseBadgeModal}
+          onCheckInAppointment={handleCheckInAppointment}
+          onSecondGateCheckIn={handleSecondGateCheckIn}
+          onCheckOut={handleCheckOut}
           onBookAppointment={() => {
             setVisitorForBadge(null);
             setIsScannedPass(false);
