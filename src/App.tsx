@@ -505,10 +505,18 @@ export default function App() {
     if (!original) return;
 
     const assignedPass = customPass || original.secondGatePass || `TJB-PASS-${Math.floor(10 + Math.random() * 89)}`;
+    const noteMarker = `[Pos 2: ${formattedNow}]`;
+    const updatedNotes = original.notes
+      ? original.notes.includes('[Pos 2:')
+        ? original.notes.replace(/\[Pos 2: .*?\]/, noteMarker)
+        : `${original.notes} | ${noteMarker}`
+      : noteMarker;
+
     const updatedVisitor: Visitor = {
       ...original,
       secondGatePass: assignedPass,
       secondGateTime: formattedNow,
+      notes: updatedNotes,
       status: 'IN-PROGRESS',
     };
 

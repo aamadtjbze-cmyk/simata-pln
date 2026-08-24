@@ -76,6 +76,7 @@ export const visitorToRow = (v: Visitor) => ({
   schedule: v.schedule,
   in_time: v.inTime,
   out_time: v.outTime,
+  second_gate_time: v.secondGateTime || null,
   status: v.status,
   main_gate_pass: v.mainGatePass || 'TJB-PASS-01',
   second_gate_pass: v.secondGatePass || 'TJB-PASS-02',
@@ -88,26 +89,37 @@ export const visitorToRow = (v: Visitor) => ({
 /**
  * Format DB row to Visitor object
  */
-export const rowToVisitor = (row: any): Visitor => ({
-  id: row.id,
-  visitorName: row.visitor_name,
-  company: row.company,
-  phone: row.phone || undefined,
-  email: row.email || undefined,
-  identifyNo: row.identify_no || undefined,
-  gender: row.gender || undefined,
-  visited: row.visited,
-  purpose: row.purpose,
-  schedule: row.schedule,
-  inTime: row.in_time || null,
-  outTime: row.out_time || null,
-  status: row.status,
-  mainGatePass: row.main_gate_pass,
-  secondGatePass: row.second_gate_pass,
-  validUntil: row.valid_until || undefined,
-  validityOption: row.validity_option || undefined,
-  notes: row.notes || undefined,
-});
+export const rowToVisitor = (row: any): Visitor => {
+  let extractedSecondGateTime = row.second_gate_time || row.secondGateTime || null;
+  if (!extractedSecondGateTime && row.notes && typeof row.notes === 'string') {
+    const match = row.notes.match(/\[Pos 2: (.*?)\]/);
+    if (match && match[1]) {
+      extractedSecondGateTime = match[1];
+    }
+  }
+
+  return {
+    id: row.id,
+    visitorName: row.visitor_name,
+    company: row.company,
+    phone: row.phone || undefined,
+    email: row.email || undefined,
+    identifyNo: row.identify_no || undefined,
+    gender: row.gender || undefined,
+    visited: row.visited,
+    purpose: row.purpose,
+    schedule: row.schedule,
+    inTime: row.in_time || null,
+    outTime: row.out_time || null,
+    secondGateTime: extractedSecondGateTime,
+    status: row.status,
+    mainGatePass: row.main_gate_pass,
+    secondGatePass: row.second_gate_pass,
+    validUntil: row.valid_until || undefined,
+    validityOption: row.validity_option || undefined,
+    notes: row.notes || undefined,
+  };
+};
 
 /**
  * Fetch all visitors from Supabase
@@ -149,8 +161,13 @@ export const saveVisitorToSupabase = async (visitor: Visitor): Promise<boolean> 
     const { error } = await supabase.from('visitors').upsert(row);
 
     if (error) {
-      console.error('Supabase upsert error:', error.message);
-      return false;
+      console.warn('Supabase upsert with second_gate_time failed, retrying without column:', error.message);
+      const { second_gate_time, ...fallbackRow } = row;
+      const fallbackResult = await supabase.from('visitors').upsert(fallbackRow);
+      if (fallbackResult.error) {
+        console.error('Supabase fallback upsert error:', fallbackResult.error.message);
+        return false;
+      }
     }
     return true;
   } catch (err) {

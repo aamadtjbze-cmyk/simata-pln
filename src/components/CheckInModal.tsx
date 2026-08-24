@@ -118,6 +118,7 @@ export default function CheckInModal({
       id: formId,
       schedule,
       inTime: visitorToEdit ? visitorToEdit.inTime : (status === 'IN-PROGRESS' ? formattedInTime : null),
+      secondGateTime: visitorToEdit ? visitorToEdit.secondGateTime : null,
       outTime: visitorToEdit ? visitorToEdit.outTime : null,
       visitorName: visitorName.toUpperCase(),
       mainGatePass,
