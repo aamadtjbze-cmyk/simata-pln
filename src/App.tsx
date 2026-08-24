@@ -444,6 +444,26 @@ export default function App() {
     setVisitorForEmailSentModal(updatedVisitor);
   };
 
+  // Reject / Decline Janji Temu (PENDING/SCHEDULED -> REJECTED)
+  const handleRejectBooking = (visitorId: string, reason: string) => {
+    const original = visitors.find((v) => v.id === visitorId);
+    if (!original) return;
+
+    const formattedReason = reason.trim() ? `Catatan Rejek: ${reason.trim()}` : 'Pengajuan ditolak oleh Admin Sekretariat.';
+    const updatedVisitor: Visitor = {
+      ...original,
+      status: 'REJECTED',
+      notes: original.notes ? `${original.notes} | ${formattedReason}` : formattedReason,
+    };
+
+    const updated = visitors.map((v) => (v.id === visitorId ? updatedVisitor : v));
+    triggerToast(`Pengajuan Janji Temu ${original.visitorName} telah DITOLAK. Notifikasi penolakan dikirim ke tamu.`, 'danger');
+
+    const notif = createNotification(updatedVisitor, original.status);
+    saveAndSyncNotifications([notif, ...notifications]);
+    saveAndSync(updated, updatedVisitor);
+  };
+
   // Konfirmasi Kedatangan Janji Temu (SCHEDULED/PENDING -> IN-PROGRESS)
   const handleCheckInAppointment = (visitorId: string) => {
     const today = new Date();
@@ -1081,6 +1101,7 @@ export default function App() {
                 }}
                 onAddSampleData={handleAddSampleVisitor}
                 onApproveBooking={handleApproveBooking}
+                onRejectBooking={handleRejectBooking}
                 onCheckInAppointment={handleCheckInAppointment}
               />
             </div>
@@ -1100,13 +1121,13 @@ export default function App() {
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                   <span className="px-2.5 py-1 bg-amber-500 text-slate-950 border-b border-r border-slate-900 rounded-none text-[9px] font-black uppercase tracking-wide font-mono">
-                    {visitors.filter((v) => v.status === 'PENDING' || v.status === 'SCHEDULED').length} Permohonan Janji
+                    {visitors.filter((v) => v.status === 'PENDING' || v.status === 'SCHEDULED' || v.status === 'REJECTED').length} Permohonan Janji
                   </span>
                 </div>
               </div>
 
               <VisitorTable
-                visitors={visitors.filter((v) => v.status === 'PENDING' || v.status === 'SCHEDULED')}
+                visitors={visitors.filter((v) => v.status === 'PENDING' || v.status === 'SCHEDULED' || v.status === 'REJECTED')}
                 onCheckOut={handleCheckOut}
                 onCheckOutBatch={handleCheckOutBatch}
                 onEdit={(visitor) => {
@@ -1119,6 +1140,7 @@ export default function App() {
                 }}
                 onAddSampleData={handleAddSampleVisitor}
                 onApproveBooking={handleApproveBooking}
+                onRejectBooking={handleRejectBooking}
                 onCheckInAppointment={handleCheckInAppointment}
               />
             </div>

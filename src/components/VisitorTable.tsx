@@ -36,6 +36,7 @@ interface VisitorTableProps {
   onViewBadge: (visitor: Visitor) => void;
   onAddSampleData: () => void;
   onApproveBooking?: (visitorId: string) => void;
+  onRejectBooking?: (visitorId: string, reason: string) => void;
   onCheckInAppointment?: (visitorId: string) => void;
 }
 
@@ -50,6 +51,7 @@ export default function VisitorTable({
   onViewBadge,
   onAddSampleData,
   onApproveBooking,
+  onRejectBooking,
   onCheckInAppointment,
 }: VisitorTableProps) {
   // Filtering states
@@ -64,15 +66,17 @@ export default function VisitorTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
 
+  // Quick Action Modal & Rejection state
+  const [quickActionVisitor, setQuickActionVisitor] = useState<Visitor | null>(null);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+
   // Sorting states
   const [sortField, setSortField] = useState<SortField>('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // Multi-select row state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
-  // Interactive Visitor Quick Action Drawer / Modal state
-  const [quickActionVisitor, setQuickActionVisitor] = useState<Visitor | null>(null);
 
   // Unique companies / purposes for dropdown filters
   const uniquePurposes = Array.from(new Set(visitors.map((v) => v.purpose))).filter(Boolean);
@@ -234,6 +238,12 @@ export default function VisitorTable({
         return (
           <span className="inline-flex items-center px-2 py-1 rounded-none text-xs font-bold bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900 font-sans">
             EXPIRED
+          </span>
+        );
+      case 'REJECTED':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-none text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 font-sans">
+            DITOLAK / REJECTED
           </span>
         );
     }
@@ -789,7 +799,11 @@ export default function VisitorTable({
                 </h3>
               </div>
               <button
-                onClick={() => setQuickActionVisitor(null)}
+                onClick={() => {
+                  setQuickActionVisitor(null);
+                  setIsRejecting(false);
+                  setRejectReason('');
+                }}
                 className="p-1 hover:bg-white/20 rounded-none text-white transition-colors cursor-pointer shrink-0"
               >
                 <X size={18} />
@@ -857,6 +871,7 @@ export default function VisitorTable({
                     onClick={() => {
                       if (onApproveBooking) onApproveBooking(quickActionVisitor.id);
                       setQuickActionVisitor(null);
+                      setIsRejecting(false);
                     }}
                     className="w-full p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-none text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-2xs group"
                   >
@@ -866,11 +881,88 @@ export default function VisitorTable({
                       </div>
                       <div className="text-left">
                         <span className="block font-black uppercase">Setujui Janji Temu (Approval Sekretariat)</span>
-                        <span className="text-[10px] text-emerald-100 font-normal">Ubah status menjadi SCHEDULED & kirim notifikasi</span>
+                        <span className="text-[10px] text-emerald-100 font-normal">Ubah status menjadi SCHEDULED & terbitkan QR Pass ke email</span>
                       </div>
                     </div>
                     <ChevronRight size={16} className="text-emerald-200 group-hover:translate-x-0.5 transition-transform" />
                   </button>
+                )}
+
+                {/* Action 3: Reject / Decline Appointment */}
+                {(quickActionVisitor.status === 'PENDING' || quickActionVisitor.status === 'SCHEDULED') && (
+                  <div className="space-y-2">
+                    {!isRejecting ? (
+                      <button
+                        onClick={() => setIsRejecting(true)}
+                        className="w-full p-3 bg-rose-600 hover:bg-rose-700 text-white rounded-none text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-2xs group"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 bg-rose-500/20 text-white">
+                            <X size={15} />
+                          </div>
+                          <div className="text-left">
+                            <span className="block font-black uppercase">Tolak / Rejek Pengajuan Kunjungan</span>
+                            <span className="text-[10px] text-rose-100 font-normal">Tolak permohonan kunjungan & sertakan alasan penolakan</span>
+                          </div>
+                        </div>
+                        <ChevronRight size={16} className="text-rose-200 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+                    ) : (
+                      <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-500 rounded-none space-y-2.5 text-xs animate-fade-in">
+                        <div className="flex items-center justify-between">
+                          <span className="font-black text-rose-700 dark:text-rose-300 uppercase tracking-wide flex items-center gap-1.5">
+                            <AlertTriangle size={14} /> Form Alasan Penolakan Kunjungan
+                          </span>
+                          <button
+                            onClick={() => setIsRejecting(false)}
+                            className="text-xs text-slate-400 hover:text-slate-600 underline font-semibold cursor-pointer"
+                          >
+                            Batal
+                          </button>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            'Pegawai Tujuan sedang Dinas Luar / Cuti',
+                            'Jadwal Pertemuan Bertabrakan',
+                            'Dokumen / Persyaratan Belum Lengkap',
+                            'Perubahan Agenda Internal PLN'
+                          ].map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => setRejectReason(preset)}
+                              className="text-[9.5px] font-bold px-2 py-1 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-rose-400 cursor-pointer"
+                            >
+                              + {preset}
+                            </button>
+                          ))}
+                        </div>
+
+                        <textarea
+                          rows={2}
+                          value={rejectReason}
+                          onChange={(e) => setRejectReason(e.target.value)}
+                          placeholder="Tuliskan catatan alasan penolakan secara spesifik..."
+                          className="w-full px-3 py-2 bg-white dark:bg-[#152033] border border-rose-300 dark:border-rose-800 rounded-none text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500"
+                        />
+
+                        <button
+                          onClick={() => {
+                            if (onRejectBooking) {
+                              onRejectBooking(quickActionVisitor.id, rejectReason);
+                            }
+                            setQuickActionVisitor(null);
+                            setIsRejecting(false);
+                            setRejectReason('');
+                          }}
+                          className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs uppercase tracking-wider rounded-none cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
+                        >
+                          <X size={14} /> Konfirmasi Tolak Pengajuan
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Action 3: Confirm Arrival (if SCHEDULED or PENDING) */}

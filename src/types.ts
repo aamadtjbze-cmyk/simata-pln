@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type VisitorStatus = 'DONE' | 'IN-PROGRESS' | 'SCHEDULED' | 'PENDING' | 'EXPIRED';
+export type VisitorStatus = 'DONE' | 'IN-PROGRESS' | 'SCHEDULED' | 'PENDING' | 'EXPIRED' | 'REJECTED';
 
 export interface Visitor {
   id: string; // Form ID e.g. TJB-VST-002934
