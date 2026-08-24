@@ -221,3 +221,30 @@ export const checkSupabaseHealth = async (): Promise<{ connected: boolean; messa
   }
 };
 
+/**
+ * Saran Audit #1: Pastikan kolom second_gate_time ada di tabel visitors.
+ * Dijalankan sekali saat app startup jika Supabase dikonfigurasi.
+ * Jika kolom sudah ada: tidak ada perubahan. Jika belum: coba tambahkan via RPC.
+ * Jika tidak ada privilege DDL, fallback ke notes-tag yang sudah berjalan.
+ */
+export const ensureSecondGateTimeColumn = async (): Promise<void> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) return;
+
+  try {
+    // Cek apakah kolom sudah ada
+    const { error } = await supabase
+      .from('visitors')
+      .select('second_gate_time')
+      .limit(1);
+
+    if (!error) return; // Kolom sudah ada ✅
+
+    // Kolom belum ada — coba buat via rpc exec (butuh service_role key)
+    await supabase.rpc('exec', {
+      query: 'ALTER TABLE visitors ADD COLUMN IF NOT EXISTS second_gate_time TEXT;',
+    });
+  } catch {
+    // Silent fail — sistem tetap berjalan dengan fallback notes-tag
+  }
+};
