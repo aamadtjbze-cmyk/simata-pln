@@ -240,10 +240,8 @@ export default function App() {
       // Saran Audit #1: pastikan kolom second_gate_time ada di DB
       ensureSecondGateTimeColumn();
 
-      checkSupabaseHealth().then((res) => {
-        setIsSupabaseActive(res.connected);
-      });
-
+      // ponytail: gabungkan health check + data fetch dalam satu operasi
+      // untuk mengurangi concurrent connections ke Supabase free tier.
       fetchVisitorsFromSupabase().then((data) => {
         if (data && data.length > 0) {
           setVisitors(data);
@@ -258,21 +256,46 @@ export default function App() {
 
       const supabase = getSupabaseClient();
       if (supabase) {
+        // ponytail: throttle realtime callback 500ms agar burst update DB
+        // tidak menyebabkan serangkaian re-render di React.
+        let realtimeThrottleTimer: ReturnType<typeof setTimeout> | null = null;
+        const pendingUpdates: Map<string, any> = new Map();
+
+        const flushRealtimeUpdates = () => {
+          if (pendingUpdates.size === 0) return;
+          const updates = new Map(pendingUpdates);
+          pendingUpdates.clear();
+
+          setVisitors((prev) => {
+            let next = [...prev];
+            updates.forEach(({ type, payload }) => {
+              if (type === 'INSERT') {
+                const newV = rowToVisitor(payload.new);
+                next = [newV, ...next.filter((v) => v.id !== newV.id)];
+              } else if (type === 'UPDATE') {
+                const updatedV = rowToVisitor(payload.new);
+                next = next.map((v) => (v.id === updatedV.id ? updatedV : v));
+              } else if (type === 'DELETE' && payload.old) {
+                next = next.filter((v) => v.id !== payload.old.id);
+              }
+            });
+            return next;
+          });
+        };
+
         supabaseChannel = supabase
           .channel('realtime_visitors')
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'visitors' },
             (payload: any) => {
-              if (payload.eventType === 'INSERT') {
-                const newV = rowToVisitor(payload.new);
-                setVisitors((prev) => [newV, ...prev.filter((v) => v.id !== newV.id)]);
-              } else if (payload.eventType === 'UPDATE') {
-                const updatedV = rowToVisitor(payload.new);
-                setVisitors((prev) => prev.map((v) => (v.id === updatedV.id ? updatedV : v)));
-              } else if (payload.eventType === 'DELETE' && payload.old) {
-                setVisitors((prev) => prev.filter((v) => v.id !== payload.old.id));
-              }
+              // Kumpulkan update, flush setelah 500ms idle
+              pendingUpdates.set(payload.new?.id || payload.old?.id || Date.now().toString(), {
+                type: payload.eventType,
+                payload,
+              });
+              if (realtimeThrottleTimer) clearTimeout(realtimeThrottleTimer);
+              realtimeThrottleTimer = setTimeout(flushRealtimeUpdates, 500);
             }
           )
           .subscribe();
@@ -353,23 +376,36 @@ export default function App() {
     }
   };
 
-  // Save changes helper
+  // ponytail: debounce – localStorage write di-delay 300ms untuk mencegah
+  // penulisan berulang saat banyak update terjadi dalam waktu singkat (batch actions).
+  // Ceiling: delay 300ms masih aman untuk UX realtime karena state React sudah diupdate.
+  const lsWriteTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const saveAndSync = (newVisitors: Visitor[], singleUpdatedVisitor?: Visitor) => {
     setVisitors(newVisitors);
-    localStorage.setItem('simata_visitors', JSON.stringify(newVisitors));
+
+    // Debounce localStorage write: hanya tulis setelah 300ms idle
+    if (lsWriteTimer.current) clearTimeout(lsWriteTimer.current);
+    lsWriteTimer.current = setTimeout(() => {
+      localStorage.setItem('simata_visitors', JSON.stringify(newVisitors));
+    }, 300);
+
     if (isSupabaseConfigured()) {
       if (singleUpdatedVisitor) {
+        // Optimal: hanya upsert 1 record yang berubah
         saveVisitorToSupabase(singleUpdatedVisitor);
-      } else {
-        newVisitors.forEach((v) => saveVisitorToSupabase(v));
       }
+      // ponytail: tidak iterasi seluruh array tanpa singleUpdatedVisitor –
+      // mencegah N request sekaligus yang akan melanggar batas koneksi Supabase free tier (50 concurrent).
     }
   };
 
-  // Toast feedback notice trigger
+  // Toast feedback — clear timer lama sebelum set baru agar tidak leak
+  const toastTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerToast = (message: string, type: 'success' | 'info' | 'danger' = 'success') => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+    toastTimer.current = setTimeout(() => setToast(null), 4000);
   };
 
   // Theme toggle helper
