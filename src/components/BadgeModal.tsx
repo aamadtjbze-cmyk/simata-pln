@@ -35,6 +35,41 @@ export default function BadgeModal({
   const passUrl = typeof window !== 'undefined' ? `${window.location.origin}/?token=${secureToken}` : `http://localhost:3000/?token=${secureToken}`;
   const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(passUrl)}`;
 
+  const formatDateTimeDisplay = (str: string | null | undefined, fallback: string) => {
+    if (!str) return <span className="text-slate-400 font-sans italic text-[8.5px] block mt-1">{fallback}</span>;
+
+    const parts = str.split(' - ');
+    if (parts.length === 2) {
+      const datePart = parts[0];
+      const timePart = parts[1];
+      const compactDate = datePart
+        .replace(/August/i, 'Aug')
+        .replace(/September/i, 'Sep')
+        .replace(/October/i, 'Okt')
+        .replace(/November/i, 'Nov')
+        .replace(/December/i, 'Des')
+        .replace(/January/i, 'Jan')
+        .replace(/February/i, 'Feb')
+        .replace(/March/i, 'Mar')
+        .replace(/April/i, 'Apr')
+        .replace(/June/i, 'Jun')
+        .replace(/July/i, 'Jul');
+
+      return (
+        <div className="flex flex-col items-center justify-center leading-tight mt-0.5">
+          <span className="text-[8px] font-mono font-extrabold text-slate-700 dark:text-slate-300 tracking-tight whitespace-nowrap">
+            {compactDate}
+          </span>
+          <span className="text-[9px] font-mono font-black text-[#005DA6] dark:text-[#FFD500] tracking-wider whitespace-nowrap mt-0.5">
+            ⏰ {timePart} WIB
+          </span>
+        </div>
+      );
+    }
+
+    return <span className="text-[8.5px] font-mono font-bold block mt-0.5">{str}</span>;
+  };
+
   const handlePrint = () => {
     const printContent = badgeRef.current?.innerHTML;
 
@@ -192,23 +227,17 @@ export default function BadgeModal({
               </div>
 
               <div className="pt-1.5 pb-1 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-3 gap-1 text-center font-sans">
-                <div className="bg-slate-50 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800">
+                <div className="bg-slate-50 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
                   <span className="text-[6.5px] uppercase font-bold text-slate-400 block tracking-tighter">Check-In 1 (Pos 1)</span>
-                  <span className="text-[8px] sm:text-[8.5px] font-mono font-bold text-slate-800 dark:text-slate-200 block truncate mt-0.5">
-                    {visitor.inTime || 'Belum In'}
-                  </span>
+                  {formatDateTimeDisplay(visitor.inTime, 'Belum In')}
                 </div>
-                <div className="bg-sky-50/50 dark:bg-sky-950/30 p-1 border border-sky-200/60 dark:border-sky-800">
+                <div className="bg-sky-50/50 dark:bg-sky-950/30 p-1 border border-sky-200/60 dark:border-sky-800 flex flex-col justify-between">
                   <span className="text-[6.5px] uppercase font-bold text-sky-600 dark:text-sky-400 block tracking-tighter">Check-In 2 (Pos 2)</span>
-                  <span className="text-[8px] sm:text-[8.5px] font-mono font-bold text-sky-700 dark:text-sky-300 block truncate mt-0.5">
-                    {visitor.secondGateTime || 'Belum In'}
-                  </span>
+                  {formatDateTimeDisplay(visitor.secondGateTime, 'Belum In')}
                 </div>
-                <div className="bg-amber-500/10 dark:bg-amber-950/30 p-1 border border-amber-500/20 dark:border-amber-800">
+                <div className="bg-amber-500/10 dark:bg-amber-950/30 p-1 border border-amber-500/20 dark:border-amber-800 flex flex-col justify-between">
                   <span className="text-[6.5px] uppercase font-bold text-amber-600 dark:text-amber-400 block tracking-tighter">Check-Out (Keluar)</span>
-                  <span className="text-[8px] sm:text-[8.5px] font-mono font-bold text-amber-700 dark:text-amber-300 block truncate mt-0.5">
-                    {visitor.outTime || 'Belum Out'}
-                  </span>
+                  {formatDateTimeDisplay(visitor.outTime, 'Belum Out')}
                 </div>
               </div>
             </div>
