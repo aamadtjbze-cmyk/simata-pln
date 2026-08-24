@@ -479,6 +479,14 @@ export default function App() {
     const original = visitors.find((v) => v.id === visitorId);
     if (!original) return;
 
+    // ponytail: guard – konfirmasi sebelum menimpa jam masuk yang sudah tercatat
+    if (original.inTime) {
+      const confirmed = window.confirm(
+        `Jam Check-In 1 sudah tercatat:\n"${original.inTime}"\n\nTimpa dengan jam sekarang (${formattedInTime})?`
+      );
+      if (!confirmed) return;
+    }
+
     const updatedVisitor: Visitor = {
       ...original,
       status: 'IN-PROGRESS',
