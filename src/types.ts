@@ -10,6 +10,7 @@ export interface Visitor {
   schedule: string; // date string
   inTime: string | null; // date string or null
   outTime: string | null; // date string or null
+  secondGateTime?: string | null; // date string for Pos 2
   visitorName: string;
   mainGatePass: string;
   secondGatePass: string;

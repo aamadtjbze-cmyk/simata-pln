@@ -494,6 +494,32 @@ export default function App() {
     saveAndSync(updated, updatedVisitor);
   };
 
+  // Konfirmasi Masuk Pos 2 / Second Gate
+  const handleSecondGateCheckIn = (visitorId: string, customPass?: string) => {
+    const today = new Date();
+    const pad = (num: number) => String(num).padStart(2, '0');
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const formattedNow = `${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()} - ${pad(today.getHours())}.${pad(today.getMinutes())}`;
+
+    const original = visitors.find((v) => v.id === visitorId);
+    if (!original) return;
+
+    const assignedPass = customPass || original.secondGatePass || `TJB-PASS-${Math.floor(10 + Math.random() * 89)}`;
+    const updatedVisitor: Visitor = {
+      ...original,
+      secondGatePass: assignedPass,
+      secondGateTime: formattedNow,
+      status: 'IN-PROGRESS',
+    };
+
+    const updated = visitors.map((v) => (v.id === visitorId ? updatedVisitor : v));
+    triggerToast(`Akses Pos 2 (${assignedPass}) untuk ${original.visitorName} berhasil dikonfirmasi!`, 'info');
+
+    const notif = createNotification(updatedVisitor, original.status);
+    saveAndSyncNotifications([notif, ...notifications]);
+    saveAndSync(updated, updatedVisitor);
+  };
+
   // Check-Out Single Visitor
   const handleCheckOut = (visitorId: string) => {
     const today = new Date();
@@ -1103,6 +1129,7 @@ export default function App() {
                 onApproveBooking={handleApproveBooking}
                 onRejectBooking={handleRejectBooking}
                 onCheckInAppointment={handleCheckInAppointment}
+                onSecondGateCheckIn={handleSecondGateCheckIn}
               />
             </div>
           )}
@@ -1142,6 +1169,7 @@ export default function App() {
                 onApproveBooking={handleApproveBooking}
                 onRejectBooking={handleRejectBooking}
                 onCheckInAppointment={handleCheckInAppointment}
+                onSecondGateCheckIn={handleSecondGateCheckIn}
               />
             </div>
           )}

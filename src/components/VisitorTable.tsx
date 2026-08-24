@@ -38,6 +38,7 @@ interface VisitorTableProps {
   onApproveBooking?: (visitorId: string) => void;
   onRejectBooking?: (visitorId: string, reason: string) => void;
   onCheckInAppointment?: (visitorId: string) => void;
+  onSecondGateCheckIn?: (visitorId: string, customPass?: string) => void;
 }
 
 type SortField = 'id' | 'schedule' | 'inTime' | 'outTime' | 'visitorName' | 'company' | 'purpose' | 'visited' | 'status';
@@ -53,6 +54,7 @@ export default function VisitorTable({
   onApproveBooking,
   onRejectBooking,
   onCheckInAppointment,
+  onSecondGateCheckIn,
 }: VisitorTableProps) {
   // Filtering states
   const [search, setSearch] = useState('');
@@ -979,11 +981,37 @@ export default function VisitorTable({
                         <UserCheck2 size={15} />
                       </div>
                       <div className="text-left">
-                        <span className="block font-black uppercase">Konfirmasi Kedatangan Tiba (Check-In)</span>
-                        <span className="text-[10px] text-sky-200 font-normal">Aktifkan kunjungan saat tamu hadir di pos</span>
+                        <span className="block font-black uppercase">Konfirmasi Kedatangan Tiba (Check-In Pos 1)</span>
+                        <span className="text-[10px] text-sky-200 font-normal">Aktifkan kunjungan & catat jam masuk Pos 1</span>
                       </div>
                     </div>
                     <ChevronRight size={16} className="text-[#FFD500] group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                )}
+
+                {/* Action 4: Second Gate Pass (Pos 2) */}
+                {(quickActionVisitor.status === 'IN-PROGRESS' || quickActionVisitor.status === 'SCHEDULED') && (
+                  <button
+                    onClick={() => {
+                      if (onSecondGateCheckIn) onSecondGateCheckIn(quickActionVisitor.id);
+                      setQuickActionVisitor(null);
+                    }}
+                    className="w-full p-3 bg-sky-600 hover:bg-sky-700 text-white rounded-none text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 bg-sky-500/20 text-white">
+                        <Layers size={15} />
+                      </div>
+                      <div className="text-left">
+                        <span className="block font-black uppercase">Konfirmasi Akses Pos 2 (Second Gate Pass)</span>
+                        <span className="text-[10px] text-sky-100 font-normal">
+                          {quickActionVisitor.secondGateTime
+                            ? `Masuk Pos 2: ${quickActionVisitor.secondGateTime}`
+                            : `Verifikasi Pass Pos 2 (${quickActionVisitor.secondGatePass || 'Auto Pass'})`}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-sky-200 group-hover:translate-x-0.5 transition-transform" />
                   </button>
                 )}
 
