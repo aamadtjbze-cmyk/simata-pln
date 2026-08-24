@@ -587,12 +587,25 @@ export default function VisitorTable({
                       {item.schedule}
                     </td>
 
-                    {/* IN Timestamp */}
+                    {/* IN Timestamp & Action Button */}
                     <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
-                      {item.inTime || <span className="text-slate-400 font-sans italic">Belum In</span>}
+                      {item.inTime ? (
+                        <span>{item.inTime}</span>
+                      ) : (item.status === 'SCHEDULED' || item.status === 'PENDING') ? (
+                        <button
+                          onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
+                          className="px-2 py-1 bg-[#005DA6] hover:bg-[#004070] active:bg-[#003056] text-white font-extrabold rounded-none text-[10px] border-b border-r border-[#FFD500] shadow-sm transition-all flex items-center justify-center gap-1 inline-block cursor-pointer"
+                          title="Konfirmasi Tamu Tiba di Pos 1 Utama"
+                        >
+                          <UserCheck2 size={11} className="text-[#FFD500]" />
+                          + Check-In 1
+                        </button>
+                      ) : (
+                        <span className="text-slate-400 font-sans italic">-</span>
+                      )}
                     </td>
 
-                    {/* SECOND GATE Timestamp & Pass */}
+                    {/* SECOND GATE Timestamp & Pass Button */}
                     <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
                       {item.secondGateTime ? (
                         <div className="flex flex-col gap-0.5">
@@ -617,38 +630,29 @@ export default function VisitorTable({
                       )}
                     </td>
 
-                    {/* OUT Timestamp / Action Status Button */}
+                    {/* OUT Timestamp / Check-Out Action Button */}
                     <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
-                      {item.outTime || (
-                        item.status === 'IN-PROGRESS' ? (
-                          <button
-                            onClick={() => onCheckOut(item.id)}
-                            className="px-2 py-1 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-extrabold rounded-none text-[10px] border-b border-r border-amber-300 shadow-sm transition-all flex items-center justify-center gap-1 inline-block cursor-pointer"
-                          >
-                            <Check size={11} />
-                            Check-Out
-                          </button>
-                        ) : item.status === 'SCHEDULED' ? (
-                          <button
-                            onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
-                            className="px-2 py-1 bg-[#005DA6] hover:bg-[#004070] text-white font-bold rounded-none text-[10px] border-b border-r border-[#FFD500] shadow-sm transition-all flex items-center justify-center gap-1 inline-block cursor-pointer"
-                            title="Konfirmasi Tamu Tiba di Pos"
-                          >
-                            <UserCheck2 size={11} className="text-[#FFD500]" />
-                            Check-In Tiba
-                          </button>
-                        ) : item.status === 'PENDING' ? (
-                          <button
-                            onClick={() => onApproveBooking && onApproveBooking(item.id)}
-                            className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-none text-[10px] border-b border-r border-emerald-300 shadow-sm transition-all flex items-center justify-center gap-1 inline-block cursor-pointer"
-                            title="Setujui Janji Temu Sekretariat"
-                          >
-                            <CheckSquare size={11} />
-                            Setujui Janji
-                          </button>
-                        ) : (
-                          <span className="text-slate-400 font-sans italic">-</span>
-                        )
+                      {item.outTime ? (
+                        <span>{item.outTime}</span>
+                      ) : item.status === 'IN-PROGRESS' ? (
+                        <button
+                          onClick={() => onCheckOut(item.id)}
+                          className="px-2 py-1 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-extrabold rounded-none text-[10px] border-b border-r border-amber-300 shadow-sm transition-all flex items-center justify-center gap-1 inline-block cursor-pointer"
+                        >
+                          <Check size={11} />
+                          Check-Out
+                        </button>
+                      ) : item.status === 'PENDING' ? (
+                        <button
+                          onClick={() => onApproveBooking && onApproveBooking(item.id)}
+                          className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-none text-[10px] border-b border-r border-emerald-300 shadow-sm transition-all flex items-center justify-center gap-1 inline-block cursor-pointer"
+                          title="Setujui Janji Temu Sekretariat"
+                        >
+                          <CheckSquare size={11} />
+                          Setujui Janji
+                        </button>
+                      ) : (
+                        <span className="text-slate-400 font-sans italic">-</span>
                       )}
                     </td>
 
