@@ -62,6 +62,7 @@ export default function VisitorTable({
   const [filterPurpose, setFilterPurpose] = useState('ALL');
   const [scheduleFilter, setScheduleFilter] = useState('');
   const [inFilter, setInFilter] = useState('');
+  const [secondGateFilter, setSecondGateFilter] = useState('');
   const [outFilter, setOutFilter] = useState('');
 
   // Pagination states
@@ -93,28 +94,26 @@ export default function VisitorTable({
     }
   };
 
-  // Selection helpers
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      const pageItems = currentPagedItems.map((item) => item.id);
-      setSelectedIds(Array.from(new Set([...selectedIds, ...pageItems])));
+  // Select all rows logic
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(currentPagedItems.map((item) => item.id));
     } else {
-      const pageItems = currentPagedItems.map((item) => item.id);
-      setSelectedIds(selectedIds.filter((id) => !pageItems.includes(id)));
+      setSelectedIds([]);
     }
   };
 
+  // Select individual row logic
   const handleSelectRow = (id: string, checked: boolean) => {
     if (checked) {
       setSelectedIds([...selectedIds, id]);
     } else {
-      setSelectedIds(selectedIds.filter((rowId) => rowId !== id));
+      setSelectedIds(selectedIds.filter((item) => item !== id));
     }
   };
 
-  // Confirm by group batch check-out
-  const handleConfirmByGroup = () => {
-    if (selectedIds.length === 0) return;
+  // Batch check-out handler
+  const handleBatchCheckOut = () => {
     const inProgressSelected = visitors
       .filter((v) => selectedIds.includes(v.id) && v.status === 'IN-PROGRESS')
       .map((v) => v.id);
@@ -137,6 +136,7 @@ export default function VisitorTable({
     setFilterPurpose('ALL');
     setScheduleFilter('');
     setInFilter('');
+    setSecondGateFilter('');
     setOutFilter('');
     setCurrentPage(1);
   };
@@ -167,6 +167,11 @@ export default function VisitorTable({
       !inFilter ||
       (item.inTime && item.inTime.toLowerCase().includes(inFilter.toLowerCase()));
 
+    // Filter SECOND GATE Date
+    const matchesSecondGateFilter =
+      !secondGateFilter ||
+      (item.secondGateTime && item.secondGateTime.toLowerCase().includes(secondGateFilter.toLowerCase()));
+
     // Filter OUT Date
     const matchesOutFilter =
       !outFilter ||
@@ -178,6 +183,7 @@ export default function VisitorTable({
       matchesPurpose &&
       matchesScheduleFilter &&
       matchesInFilter &&
+      matchesSecondGateFilter &&
       matchesOutFilter
     );
   });
@@ -330,7 +336,7 @@ export default function VisitorTable({
 
           {/* Confirm by Group */}
           <button
-            onClick={handleConfirmByGroup}
+            onClick={handleBatchCheckOut}
             disabled={selectedIds.length === 0}
             className={`py-2.5 px-4 rounded-none text-xs font-bold transition-all flex items-center gap-1.5 border-b-2 border-r-2 ${
               selectedIds.length > 0
@@ -401,6 +407,16 @@ export default function VisitorTable({
                 <div className="flex items-center gap-1">
                   IN
                   {sortField === 'inTime' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                </div>
+              </th>
+
+              <th
+                onClick={() => handleSort('secondGateTime' as any)}
+                className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all whitespace-nowrap"
+              >
+                <div className="flex items-center gap-1">
+                  SECOND GATE
+                  {sortField === ('secondGateTime' as any) && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
                 </div>
               </th>
 
@@ -500,6 +516,19 @@ export default function VisitorTable({
                 </div>
               </td>
 
+              {/* SECOND GATE date search input */}
+              <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={secondGateFilter}
+                    onChange={(e) => setSecondGateFilter(e.target.value)}
+                    placeholder="dd/mm/yyyy"
+                    className="w-full text-[10px] px-2 py-1 bg-white dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005DA6] placeholder-slate-400"
+                  />
+                </div>
+              </td>
+
               {/* OUT date search input */}
               <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
                 <div className="relative">
@@ -561,6 +590,31 @@ export default function VisitorTable({
                     {/* IN Timestamp */}
                     <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
                       {item.inTime || <span className="text-slate-400 font-sans italic">Belum In</span>}
+                    </td>
+
+                    {/* SECOND GATE Timestamp & Pass */}
+                    <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
+                      {item.secondGateTime ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span>{item.secondGateTime}</span>
+                          {item.secondGatePass && (
+                            <span className="text-[9px] text-sky-600 dark:text-sky-400 font-bold bg-sky-50 dark:bg-sky-950/30 px-1 py-0.2 border border-sky-200 dark:border-sky-800 w-fit font-mono">
+                              {item.secondGatePass}
+                            </span>
+                          )}
+                        </div>
+                      ) : (item.status === 'IN-PROGRESS' || item.status === 'SCHEDULED') ? (
+                        <button
+                          onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(item.id)}
+                          className="px-2 py-1 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-bold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex items-center justify-center gap-1 inline-block cursor-pointer"
+                          title="Konfirmasi Akses Pos 2 (Stakeholder Dalam)"
+                        >
+                          <Layers size={11} />
+                          + Pos 2
+                        </button>
+                      ) : (
+                        <span className="text-slate-400 font-sans italic">-</span>
+                      )}
                     </td>
 
                     {/* OUT Timestamp / Action Status Button */}
