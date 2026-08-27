@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -291,31 +291,42 @@ export const startPeriodicPrewarm = (intervalMs = 4 * 60 * 1000): (() => void) =
 
 /**
  * Kirim email persetujuan janji temu
+ *
+ * Prioritas:
+ *   1. Brevo (jika API key tersedia) — 300 email/hari, template HTML penuh
+ *   2. Google Apps Script (fallback jika Brevo tidak dikonfigurasi)
+ *   3. EmailJS (paralel jika dikonfigurasi, sebagai cadangan tambahan)
+ *
+ * Brevo dan Google Script TIDAK dijalankan bersamaan untuk menghindari email ganda.
  */
 export const sendApprovalEmail = async (visitor: Visitor, passUrl: string): Promise<boolean> => {
   const cfg = getEmailConfig();
-  const tasks: Promise<boolean>[] = [];
 
+  // Jika Brevo dikonfigurasi → gunakan Brevo sebagai saluran utama
   if (cfg.brevoApiKey) {
-    tasks.push(sendViaBrevo(visitor, passUrl, cfg.brevoApiKey, cfg.brevoSender));
+    const brevoOk = await sendViaBrevo(visitor, passUrl, cfg.brevoApiKey, cfg.brevoSender);
+    // EmailJS paralel jika tersedia (tidak ganda karena beda gateway)
+    if (cfg.serviceId && cfg.templateId && cfg.publicKey) {
+      sendViaEmailJs(visitor, passUrl, cfg).catch(() => {});
+    }
+    // Jika Brevo gagal, fallback ke Google Script
+    if (!brevoOk) {
+      return sendViaGoogleScript(visitor, passUrl, cfg.googleScriptUrl || DEFAULT_GOOGLE_SCRIPT_URL);
+    }
+    return true;
   }
 
-  if (cfg.googleScriptUrl && cfg.googleScriptUrl.startsWith('https://script.google.com/')) {
-    tasks.push(sendViaGoogleScript(visitor, passUrl, cfg.googleScriptUrl));
-  }
+  // Tidak ada Brevo → gunakan Google Script
+  const scriptUrl = (cfg.googleScriptUrl && cfg.googleScriptUrl.startsWith('https://script.google.com/'))
+    ? cfg.googleScriptUrl
+    : DEFAULT_GOOGLE_SCRIPT_URL;
 
+  const gsOk = await sendViaGoogleScript(visitor, passUrl, scriptUrl);
+
+  // EmailJS paralel jika tersedia
   if (cfg.serviceId && cfg.templateId && cfg.publicKey) {
-    tasks.push(sendViaEmailJs(visitor, passUrl, cfg));
+    sendViaEmailJs(visitor, passUrl, cfg).catch(() => {});
   }
 
-  if (tasks.length === 0) {
-    return sendViaGoogleScript(visitor, passUrl, DEFAULT_GOOGLE_SCRIPT_URL);
-  }
-
-  try {
-    const results = await Promise.allSettled(tasks);
-    return results.some((r) => r.status === 'fulfilled' && r.value === true);
-  } catch (err) {
-    return sendViaGoogleScript(visitor, passUrl, DEFAULT_GOOGLE_SCRIPT_URL);
-  }
+  return gsOk;
 };
