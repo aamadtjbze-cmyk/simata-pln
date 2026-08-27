@@ -1249,7 +1249,15 @@ export default function App() {
                     Kelola permohonan janji temu tamu dan persetujuan pengiriman barcode QR pass ke email
                   </p>
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => setIsEmailConfigModalOpen(true)}
+                    className="px-2.5 py-1 bg-[#005DA6] hover:bg-[#004070] text-white border-b border-r border-[#FFD500] rounded-none text-[9.5px] font-black uppercase tracking-wide flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    title="Buka Pengaturan Koneksi Email / Gmail"
+                  >
+                    <Mail size={12} className="text-[#FFD500]" />
+                    <span>Konfigurasi Email</span>
+                  </button>
                   <span className="px-2.5 py-1 bg-amber-500 text-slate-950 border-b border-r border-slate-900 rounded-none text-[9px] font-black uppercase tracking-wide font-mono">
                     {visitors.filter((v) => v.status === 'PENDING' || v.status === 'SCHEDULED' || v.status === 'REJECTED').length} Permohonan Janji
                   </span>
