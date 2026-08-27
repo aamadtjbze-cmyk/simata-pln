@@ -132,7 +132,8 @@ export const fetchVisitorsFromSupabase = async (): Promise<Visitor[] | null> => 
     const { data, error } = await supabase
       .from('visitors')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(1000);
 
     if (error) {
       console.warn('Supabase fetch error:', error.message);
