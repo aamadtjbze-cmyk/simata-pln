@@ -33,7 +33,34 @@ const COMMON_PURPOSES = [
   'Magang / Riset / Penelitian',
 ];
 
+const RANDOM_NAME_PLACEHOLDERS = [
+  'Contoh: BUDI SANTOSO',
+  'Contoh: HENDRA WIJAYA',
+  'Contoh: BAMBANG SURYANTO',
+  'Contoh: AGUS SETIAWAN',
+  'Contoh: DIKY TRI JUNIARTO',
+  'Contoh: EKO PRASETYO',
+  'Contoh: ANINDITA PUTRI',
+  'Contoh: RIZKY PERMANA',
+  'Contoh: WAHYU HIDAYAT',
+  'Contoh: TRI NUGROHO',
+];
+
+const RANDOM_COMPANY_PLACEHOLDERS = [
+  'Contoh: PT INDONESIA POWER',
+  'Contoh: PT ADHI KARYA (PERSERO)',
+  'Contoh: PT SUCOFINDO',
+  'Contoh: PT TELKOM INDONESIA',
+  'Contoh: CV MITRA TEKNIK UTAMA',
+  'Contoh: PT KREASI ELEKTRIKA',
+  'Contoh: PT WIJAYA KARYA',
+  'Contoh: KEMENTERIAN ESDM',
+  'Contoh: PT REKAYASA INDUSTRI',
+];
+
 export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerToast }: GuestBookingPortalProps) {
+  const [namePlaceholder] = useState(() => RANDOM_NAME_PLACEHOLDERS[Math.floor(Math.random() * RANDOM_NAME_PLACEHOLDERS.length)]);
+  const [companyPlaceholder] = useState(() => RANDOM_COMPANY_PLACEHOLDERS[Math.floor(Math.random() * RANDOM_COMPANY_PLACEHOLDERS.length)]);
   const [visitorName, setVisitorName] = useState('');
   const [company, setCompany] = useState('');
   const [phone, setPhone] = useState('');
@@ -326,7 +353,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                     setVisitorName(e.target.value);
                     if (errors.visitorName) setErrors({ ...errors, visitorName: '' });
                   }}
-                  placeholder="Contoh: AHMAD PRAMUTADI"
+                  placeholder={namePlaceholder}
                   className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.visitorName ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
                 />
                 {errors.visitorName && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.visitorName}</span>}
@@ -343,7 +370,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                     setCompany(e.target.value);
                     if (errors.company) setErrors({ ...errors, company: '' });
                   }}
-                  placeholder="Contoh: PT PLN UIK Tanjung Jati B"
+                  placeholder={companyPlaceholder}
                   className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.company ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
                 />
                 {errors.company && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.company}</span>}
