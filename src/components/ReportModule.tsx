@@ -761,22 +761,21 @@ export default function ReportModule({ visitors }: ReportModuleProps) {
                 <div className="space-y-16">
                   <div>
                     <p className="text-slate-400 text-[10px] uppercase font-bold">Dilaporkan Oleh</p>
-                    <p className="font-bold text-[#005DA6] uppercase text-[11px] mt-0.5">RECEPTIONIST PENYELIA POS UTAMA</p>
+                    <p className="font-bold text-[#005DA6] uppercase text-[11px] mt-0.5">RECEPTIONIST PLN</p>
                   </div>
                   <div>
-                    <p className="font-bold underline text-slate-900 uppercase">HERMAN WIJAYA</p>
-                    <p className="text-[10px] text-slate-400 font-semibold uppercase">NIP: 951230491 Z</p>
+                    <p className="font-bold underline text-slate-900 uppercase font-display">MAYDONA DHEVY</p>
                   </div>
                 </div>
 
                 <div className="space-y-16">
                   <div>
-                    <p className="text-slate-400 text-[10px] uppercase font-bold">Mengetahui & Menyetujui</p>
-                    <p className="font-bold text-[#005DA6] uppercase text-[11px] mt-0.5">MANAJER SUPORTING & KEAMANAN UIT JBT</p>
+                    <p className="text-slate-400 text-[10px] uppercase font-bold">Disetujui Oleh</p>
+                    <p className="font-bold text-[#005DA6] uppercase text-[11px] mt-0.5">ASMAN KEAMANAN</p>
                   </div>
                   <div>
-                    <p className="font-bold underline text-slate-900 uppercase font-display">IKRAM HASAN, M.B.A.</p>
-                    <p className="text-[10px] text-slate-400 font-semibold uppercase">NIP: 890432103 Y</p>
+                    <p className="font-bold underline text-slate-900 uppercase font-display">AHMAD PRAMUTADI</p>
+                    <p className="text-[10px] text-slate-400 font-semibold uppercase">NIP: 8611852Z</p>
                   </div>
                 </div>
               </div>
