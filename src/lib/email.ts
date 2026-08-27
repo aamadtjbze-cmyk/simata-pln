@@ -2,32 +2,44 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * EmailJS integration — kirim email notifikasi langsung dari browser
- * menggunakan akun Gmail/Outlook PLN sebagai pengirim.
- *
- * Konfigurasi disimpan di localStorage agar bisa diset via UI tanpa rebuild.
- * Keys: simata_emailjs_service, simata_emailjs_template, simata_emailjs_key
+ * SIMATA PLN Email Gateway:
+ * 1. Google Apps Script Webhook (Direct Gmail, 500-2000 email/hari gratis tanpa limitasi)
+ * 2. EmailJS SDK (Gmail, Outlook PLN, Custom SMTP)
  */
 
 import emailjs from '@emailjs/browser';
 import { Visitor } from '../types';
 
 export interface EmailConfig {
+  provider: 'google_script' | 'emailjs';
+  googleScriptUrl: string;
   serviceId: string;
   templateId: string;
   publicKey: string;
 }
 
 export const getEmailConfig = (): EmailConfig => {
-  if (typeof window === 'undefined') return { serviceId: '', templateId: '', publicKey: '' };
+  if (typeof window === 'undefined') {
+    return { provider: 'google_script', googleScriptUrl: '', serviceId: '', templateId: '', publicKey: '' };
+  }
+  const googleScriptUrl = localStorage.getItem('simata_google_script_url') || '';
+  const serviceId = localStorage.getItem('simata_emailjs_service') || '';
+  const templateId = localStorage.getItem('simata_emailjs_template') || '';
+  const publicKey = localStorage.getItem('simata_emailjs_key') || '';
+  const provider = (localStorage.getItem('simata_email_provider') as any) || (googleScriptUrl ? 'google_script' : 'emailjs');
+
   return {
-    serviceId: localStorage.getItem('simata_emailjs_service') || '',
-    templateId: localStorage.getItem('simata_emailjs_template') || '',
-    publicKey: localStorage.getItem('simata_emailjs_key') || '',
+    provider,
+    googleScriptUrl,
+    serviceId,
+    templateId,
+    publicKey,
   };
 };
 
 export const saveEmailConfig = (cfg: EmailConfig): void => {
+  localStorage.setItem('simata_email_provider', cfg.provider);
+  localStorage.setItem('simata_google_script_url', cfg.googleScriptUrl.trim());
   localStorage.setItem('simata_emailjs_service', cfg.serviceId.trim());
   localStorage.setItem('simata_emailjs_template', cfg.templateId.trim());
   localStorage.setItem('simata_emailjs_key', cfg.publicKey.trim());
@@ -35,42 +47,87 @@ export const saveEmailConfig = (cfg: EmailConfig): void => {
 
 export const isEmailConfigured = (): boolean => {
   const cfg = getEmailConfig();
-  return Boolean(cfg.serviceId && cfg.templateId && cfg.publicKey);
+  if (cfg.provider === 'google_script' && cfg.googleScriptUrl.startsWith('https://script.google.com/')) {
+    return true;
+  }
+  if (cfg.provider === 'emailjs' && cfg.serviceId && cfg.templateId && cfg.publicKey) {
+    return true;
+  }
+  return Boolean(cfg.googleScriptUrl || (cfg.serviceId && cfg.templateId && cfg.publicKey));
+};
+
+/**
+ * Kirim via Google Apps Script (Direct Gmail)
+ */
+const sendViaGoogleScript = async (visitor: Visitor, passUrl: string, scriptUrl: string): Promise<boolean> => {
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(passUrl)}`;
+  const payload = {
+    to_email: visitor.email || '',
+    to_name: visitor.visitorName,
+    visitor_id: visitor.id,
+    company: visitor.company,
+    visited: visitor.visited,
+    schedule: visitor.schedule,
+    purpose: visitor.purpose,
+    pass_url: passUrl,
+    qr_image_url: qrImageUrl,
+    from_name: 'SIMATA PLN UIK TJB',
+  };
+
+  try {
+    await fetch(scriptUrl, {
+      method: 'POST',
+      mode: 'no-cors', // Google Apps Script Web App redirects work seamlessly with no-cors
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    return true;
+  } catch (err) {
+    console.error('[Google Apps Script] Gagal kirim email:', err);
+    return false;
+  }
 };
 
 /**
  * Kirim email persetujuan janji temu beserta QR Pass link ke tamu.
- * Template EmailJS harus memiliki variabel:
- *   {{to_email}}, {{to_name}}, {{visitor_id}}, {{company}},
- *   {{visited}}, {{schedule}}, {{pass_url}}, {{qr_image_url}}
  */
 export const sendApprovalEmail = async (visitor: Visitor, passUrl: string): Promise<boolean> => {
-  if (!isEmailConfigured()) return false;
-
   const cfg = getEmailConfig();
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(passUrl)}`;
 
-  try {
-    await emailjs.send(
-      cfg.serviceId,
-      cfg.templateId,
-      {
-        to_email: visitor.email || '',
-        to_name: visitor.visitorName,
-        visitor_id: visitor.id,
-        company: visitor.company,
-        visited: visitor.visited,
-        schedule: visitor.schedule,
-        purpose: visitor.purpose,
-        pass_url: passUrl,
-        qr_image_url: qrImageUrl,
-        from_name: 'SIMATA PLN UIK TJB',
-      },
-      cfg.publicKey
-    );
-    return true;
-  } catch (err: any) {
-    console.error('[EmailJS] Gagal kirim email:', err?.text || err);
-    return false;
+  // 1. Coba Google Apps Script jika tersedia (Direct Gmail)
+  if (cfg.googleScriptUrl && cfg.googleScriptUrl.startsWith('https://script.google.com/')) {
+    return sendViaGoogleScript(visitor, passUrl, cfg.googleScriptUrl);
   }
+
+  // 2. Fallback ke EmailJS jika dikonfigurasi
+  if (cfg.serviceId && cfg.templateId && cfg.publicKey) {
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(passUrl)}`;
+    try {
+      await emailjs.send(
+        cfg.serviceId,
+        cfg.templateId,
+        {
+          to_email: visitor.email || '',
+          to_name: visitor.visitorName,
+          visitor_id: visitor.id,
+          company: visitor.company,
+          visited: visitor.visited,
+          schedule: visitor.schedule,
+          purpose: visitor.purpose,
+          pass_url: passUrl,
+          qr_image_url: qrImageUrl,
+          from_name: 'SIMATA PLN UIK TJB',
+        },
+        cfg.publicKey
+      );
+      return true;
+    } catch (err: any) {
+      console.error('[EmailJS] Gagal kirim email:', err?.text || err);
+      return false;
+    }
+  }
+
+  return false;
 };
