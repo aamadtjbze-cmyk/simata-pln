@@ -46,8 +46,8 @@ export function encodePassToken(passId: string): string {
     }
 
     const raw = `${saltHex}:${encStr}`;
-    // URL-safe Base64
-    const base64 = typeof window !== 'undefined' ? btoa(raw) : Buffer.from(raw, 'binary').toString('base64');
+    // Pure browser URL-safe Base64
+    const base64 = btoa(raw);
     return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   } catch (e) {
     return passId;
@@ -71,7 +71,7 @@ export function decodePassToken(token: string): string | null {
     while (base64.length % 4) {
       base64 += '=';
     }
-    const decodedRaw = typeof window !== 'undefined' ? atob(base64) : Buffer.from(base64, 'base64').toString('binary');
+    const decodedRaw = atob(base64);
 
     // Legacy V1/V2 salt prefix check
     if (decodedRaw.startsWith(LEGACY_SALT_PREFIX)) {
