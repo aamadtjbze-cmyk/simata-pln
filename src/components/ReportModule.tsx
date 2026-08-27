@@ -477,8 +477,9 @@ export default function ReportModule({ visitors }: ReportModuleProps) {
                     r="4"
                     className="fill-[#FFD500] stroke-[#005DA6]"
                     strokeWidth="2"
-                    title={`Tanggal ${idx + 1}: ${pt.count} Tamu`}
-                  />
+                  >
+                    <title>{`Tanggal ${idx + 1}: ${pt.count} Tamu`}</title>
+                  </circle>
                 );
               })}
             </svg>

@@ -27,6 +27,7 @@ import {
   ShieldCheck,
   Database,
   Mail,
+  QrCode,
   X
 } from 'lucide-react';
 import PLNLogo from './components/PLNLogo';
@@ -295,17 +296,19 @@ export default function App() {
               .select('*')
               .or(`id.ilike.%${lookupTerm}%,email.ilike.%${lookupTerm}%,visitor_name.ilike.%${lookupTerm}%`)
               .limit(1)
-              .then(({ data, error }) => {
-                if (data && data.length > 0 && !error) {
-                  const fetchedVisitor = rowToVisitor(data[0]);
-                  setVisitorForBadge(fetchedVisitor);
-                  // Bersihkan address bar browser dengan token acak terenkripsi
-                  try {
-                    window.history.replaceState({}, '', `/?pass=${encodePassToken(fetchedVisitor.id)}`);
-                  } catch (e) {}
-                }
-              })
-              .catch((err) => console.warn('[Pass Token Sync] Gagal memuat data dari cloud:', err));
+              .then(
+                ({ data, error }) => {
+                  if (data && data.length > 0 && !error) {
+                    const fetchedVisitor = rowToVisitor(data[0]);
+                    setVisitorForBadge(fetchedVisitor);
+                    // Bersihkan address bar browser dengan token acak terenkripsi
+                    try {
+                      window.history.replaceState({}, '', `/?pass=${encodePassToken(fetchedVisitor.id)}`);
+                    } catch (e) {}
+                  }
+                },
+                (err) => console.warn('[Pass Token Sync] Gagal memuat data dari cloud:', err)
+              );
           }
         }
       }

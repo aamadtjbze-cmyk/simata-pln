@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -52,7 +52,7 @@ export default function EmailPassSentModal({ visitor, onClose, onOpenPass }: Ema
         <Loader2 size={18} className="text-blue-600 dark:text-blue-400 shrink-0 animate-spin" />
         <div>
           <p className="font-bold text-blue-900 dark:text-blue-200 text-xs">Mengirim Barcode Pass ke <span className="font-mono">{targetEmail}</span>…</p>
-          <p className="text-[10px] text-blue-700 dark:text-blue-300">Menembak via Multi-Channel Gateway SIMATA ({cfg.dispatchMode === 'parallel' ? 'Mode Simultan' : 'Mode Fallback'})</p>
+          <p className="text-[10px] text-blue-700 dark:text-blue-300">Menembak via Multi-Channel Gateway SIMATA (Mode Prioritas Brevo / Fallback)</p>
         </div>
       </div>
     );

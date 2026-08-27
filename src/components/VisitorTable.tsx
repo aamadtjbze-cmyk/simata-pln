@@ -97,6 +97,18 @@ export default function VisitorTable({
     }
   };
 
+  // Reset all table search and column filters
+  const handleResetFilters = () => {
+    setSearch('');
+    setFilterStatus('ALL');
+    setFilterPurpose('ALL');
+    setScheduleFilter('');
+    setInFilter('');
+    setSecondGateFilter('');
+    setOutFilter('');
+    setCurrentPage(1);
+  };
+
   // Select all rows logic
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -408,7 +420,7 @@ export default function VisitorTable({
                 <input
                   type="checkbox"
                   checked={isAllPageSelected}
-                  onChange={handleSelectAll}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
                   className="rounded-none accent-[#005DA6] w-4 h-4 cursor-pointer"
                 />
               </th>
