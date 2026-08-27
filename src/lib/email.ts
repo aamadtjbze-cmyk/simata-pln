@@ -18,15 +18,17 @@ export interface EmailConfig {
   publicKey: string;
 }
 
+export const DEFAULT_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwEcxTci7nMH5JuJ8WKurBo0JMAf4ymR5J5jHWIjA9yj-xSTXymBYvuKZAb6LHQ_oLSdQ/exec';
+
 export const getEmailConfig = (): EmailConfig => {
   if (typeof window === 'undefined') {
-    return { provider: 'google_script', googleScriptUrl: '', serviceId: '', templateId: '', publicKey: '' };
+    return { provider: 'google_script', googleScriptUrl: DEFAULT_GOOGLE_SCRIPT_URL, serviceId: '', templateId: '', publicKey: '' };
   }
-  const googleScriptUrl = localStorage.getItem('simata_google_script_url') || '';
+  const googleScriptUrl = localStorage.getItem('simata_google_script_url') || DEFAULT_GOOGLE_SCRIPT_URL;
   const serviceId = localStorage.getItem('simata_emailjs_service') || '';
   const templateId = localStorage.getItem('simata_emailjs_template') || '';
   const publicKey = localStorage.getItem('simata_emailjs_key') || '';
-  const provider = (localStorage.getItem('simata_email_provider') as any) || (googleScriptUrl ? 'google_script' : 'emailjs');
+  const provider = (localStorage.getItem('simata_email_provider') as any) || 'google_script';
 
   return {
     provider,
@@ -77,9 +79,9 @@ const sendViaGoogleScript = async (visitor: Visitor, passUrl: string, scriptUrl:
   try {
     await fetch(scriptUrl, {
       method: 'POST',
-      mode: 'no-cors', // Google Apps Script Web App redirects work seamlessly with no-cors
+      mode: 'no-cors',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'text/plain;charset=utf-8',
       },
       body: JSON.stringify(payload),
     });
