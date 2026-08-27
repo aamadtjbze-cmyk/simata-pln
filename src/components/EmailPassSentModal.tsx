@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, CheckCircle, ExternalLink, QrCode, Send, ShieldCheck, Copy, Check, X, AlertTriangle, Loader2 } from 'lucide-react';
 import { Visitor } from '../types';
-import { encodePassToken } from '../utils/security';
+import { encodePassToken, getProductionPassUrl } from '../utils/security';
 import { sendApprovalEmail, isEmailConfigured } from '../lib/email';
 
 interface EmailPassSentModalProps {
@@ -23,10 +23,7 @@ export default function EmailPassSentModal({ visitor, onClose, onOpenPass }: Ema
 
   if (!visitor) return null;
 
-  const secureToken = encodePassToken(visitor.id);
-  const passUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/?token=${secureToken}`
-    : `https://simata-pln.vercel.app/?token=${secureToken}`;
+  const passUrl = getProductionPassUrl(visitor.id);
   const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(passUrl)}`;
   const targetEmail = visitor.email || '';
 

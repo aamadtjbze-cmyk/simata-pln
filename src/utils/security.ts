@@ -36,6 +36,17 @@ export function decodePassToken(token: string): string | null {
   }
 }
 
+/**
+ * URL Link Barcode Pass resmi SIMATA PLN yang siap dibuka di HP / Browser tamu
+ */
+export function getProductionPassUrl(passId: string): string {
+  const secureToken = encodePassToken(passId);
+  if (typeof window !== 'undefined' && window.location.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')) {
+    return `${window.location.origin}/?token=${secureToken}`;
+  }
+  return `https://simata-pln.vercel.app/?token=${secureToken}`;
+}
+
 import { Visitor } from '../types';
 
 export function checkPassExpiration(visitor: Visitor): { isExpired: boolean; reason: string } {

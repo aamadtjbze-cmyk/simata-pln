@@ -215,12 +215,13 @@ export default function App() {
       setIsEmailConfigModalOpen(true);
     }
 
-    // Auto open badge modal if encrypted QR code token is opened (?token=... or ?passId=...)
-    const rawToken = urlParams.get('token') || urlParams.get('passId') || urlParams.get('badge');
+    // Auto open badge modal if encrypted QR code token is opened (?token=... or ?passId=... or ?id=...)
+    const rawToken = urlParams.get('token') || urlParams.get('passId') || urlParams.get('badge') || urlParams.get('id');
     if (rawToken) {
       setIsScannedPass(true);
       const targetId = decodePassToken(rawToken);
       if (targetId) {
+        // 1. Cek dulu di cache lokal untuk render secepat kilat
         try {
           const savedVisitorsStr = localStorage.getItem('simata_visitors');
           const listToSearch: Visitor[] = savedVisitorsStr ? JSON.parse(savedVisitorsStr) : INITIAL_VISITORS;
@@ -230,6 +231,25 @@ export default function App() {
           }
         } catch (e) {
           // ignore
+        }
+
+        // 2. Selalu sinkronkan dengan database cloud Supabase agar kartu pass selalu valid & status terbaru
+        if (isSupabaseConfigured()) {
+          const supabase = getSupabaseClient();
+          if (supabase) {
+            supabase
+              .from('visitors')
+              .select('*')
+              .ilike('id', targetId)
+              .maybeSingle()
+              .then(({ data, error }) => {
+                if (data && !error) {
+                  const fetchedVisitor = rowToVisitor(data);
+                  setVisitorForBadge(fetchedVisitor);
+                }
+              })
+              .catch((err) => console.warn('[Pass Token Sync] Gagal memuat data dari cloud:', err));
+          }
         }
       }
     }
