@@ -605,8 +605,8 @@ export default function VisitorTable({
                           <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{item.inTime}</span>
                         )
                       ) : (
-                        // Belum ada jam — tombol Check-In hanya untuk status yang masuk akal
-                        (item.status === 'SCHEDULED' || item.status === 'PENDING') ? (
+                        // Belum ada jam:
+                        item.status === 'SCHEDULED' ? (
                           <button
                             onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
                             className="px-2.5 py-1 bg-[#005DA6] hover:bg-[#004070] active:bg-[#003056] text-white font-extrabold rounded-none text-[10px] border-b border-r border-[#FFD500] shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
@@ -615,6 +615,14 @@ export default function VisitorTable({
                             <UserCheck2 size={11} className="text-[#FFD500]" />
                             + Check-In 1
                           </button>
+                        ) : item.status === 'PENDING' ? (
+                          <div
+                            className="flex items-center justify-center gap-1 px-2 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800 rounded-none text-[9.5px] font-bold select-none cursor-not-allowed shadow-2xs"
+                            title="Check-In Terkunci: Menunggu persetujuan Janji Temu oleh Admin terlebih dahulu."
+                          >
+                            <Lock size={10} className="shrink-0 text-amber-600 dark:text-amber-400" />
+                            <span>Perlu Approval</span>
+                          </div>
                         ) : (
                           <span className="text-slate-400 font-sans italic">-</span>
                         )
@@ -1058,8 +1066,8 @@ export default function VisitorTable({
                   </div>
                 )}
 
-                {/* Action 3: Confirm Arrival (if SCHEDULED or PENDING) */}
-                {(quickActionVisitor.status === 'SCHEDULED' || quickActionVisitor.status === 'PENDING') && (
+                {/* Action 3: Confirm Arrival (Only if SCHEDULED) */}
+                {quickActionVisitor.status === 'SCHEDULED' && (
                   <button
                     onClick={() => {
                       if (onCheckInAppointment) onCheckInAppointment(quickActionVisitor.id);
@@ -1078,6 +1086,16 @@ export default function VisitorTable({
                     </div>
                     <ChevronRight size={16} className="text-[#FFD500] group-hover:translate-x-0.5 transition-transform" />
                   </button>
+                )}
+
+                {/* Notice for PENDING in Quick Action */}
+                {quickActionVisitor.status === 'PENDING' && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-none flex items-start gap-2.5">
+                    <Lock size={15} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium leading-relaxed">
+                      Check-In Pos 1 saat ini <strong>terkunci</strong>. Silakan klik tombol hijau <strong>Setujui Janji Temu</strong> di atas untuk mengaktifkan barcode pass dan membuka akses check-in.
+                    </p>
+                  </div>
                 )}
 
                 {/* Action 4: Second Gate Pass (Pos 2) */}
