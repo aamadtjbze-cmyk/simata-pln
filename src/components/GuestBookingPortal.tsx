@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Calendar, User, Building, Phone, Mail, UserCheck, Clock, FileText, Send, CheckCircle, ShieldCheck, Info, Share2, Copy, Check, ExternalLink } from 'lucide-react';
+import { Calendar, User, Building, Phone, Mail, UserCheck, Clock, FileText, Send, CheckCircle, ShieldCheck, Info, Share2, Copy, Check, ExternalLink, Lock } from 'lucide-react';
 import PLNLogo from './PLNLogo';
 import { Visitor, VisitorStatus } from '../types';
 
@@ -216,9 +216,29 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
               </div>
             </div>
 
-            <div>
-              <span className="text-[9px] uppercase font-bold text-slate-400">Email Notifikasi:</span>
-              <p className="font-mono font-bold text-slate-700 dark:text-slate-300">{submittedVisitor.email}</p>
+            <div className="grid grid-cols-2 gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+              <div>
+                <span className="text-[9px] uppercase font-bold text-slate-400">Email Notifikasi:</span>
+                <p className="font-mono font-bold text-slate-700 dark:text-slate-300">{submittedVisitor.email}</p>
+              </div>
+              <div>
+                <span className="text-[9px] uppercase font-bold text-slate-400">Status Permohonan:</span>
+                <p className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  <span className="w-2 h-2 bg-amber-500 rounded-none animate-pulse"></span>
+                  MENUNGGU APPROVAL
+                </p>
+              </div>
+            </div>
+
+            {/* Notice Barcode Belum Berlaku */}
+            <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 p-3 rounded-none mt-2 space-y-1">
+              <span className="text-[11px] font-black text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Lock size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                Penting: Barcode QR Pass Belum Berlaku
+              </span>
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                Sesuai prosedur keamanan PLN, barcode QR Pass Anda saat ini masih berstatus <strong>TERKUNCI</strong>. Admin Sekretariat atau Security PLN akan memverifikasi data janji temu Anda. Setelah disetujui, barcode QR Pass aktif akan diterbitkan dan otomatis dikirimkan ke email <strong>{submittedVisitor.email}</strong>.
+              </p>
             </div>
           </div>
 

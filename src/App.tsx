@@ -1357,6 +1357,7 @@ export default function App() {
           onCheckInAppointment={handleCheckInAppointment}
           onSecondGateCheckIn={handleSecondGateCheckIn}
           onCheckOut={handleCheckOut}
+          onApproveBooking={userRole === 'ADMIN' ? handleApproveBooking : undefined}
           onBookAppointment={() => {
             setVisitorForBadge(null);
             setIsScannedPass(false);

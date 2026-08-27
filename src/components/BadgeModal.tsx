@@ -4,7 +4,7 @@
  */
 
 import React, { useRef, useState } from 'react';
-import { X, Printer, Shield, Eye, Flame, CheckCircle, Smartphone, Copy, ExternalLink, QrCode, Check, AlertTriangle, XCircle, Calendar } from 'lucide-react';
+import { X, Printer, Shield, Eye, Flame, CheckCircle, Smartphone, Copy, ExternalLink, QrCode, Check, AlertTriangle, XCircle, Calendar, Lock, Clock, CheckSquare } from 'lucide-react';
 import { Visitor } from '../types';
 import PLNLogo from './PLNLogo';
 import { encodePassToken, checkPassExpiration } from '../utils/security';
@@ -16,6 +16,7 @@ interface BadgeModalProps {
   onCheckInAppointment?: (visitorId: string) => void;
   onSecondGateCheckIn?: (visitorId: string, customPass?: string) => void;
   onCheckOut?: (visitorId: string) => void;
+  onApproveBooking?: (visitorId: string) => void;
 }
 
 export default function BadgeModal({
@@ -25,6 +26,7 @@ export default function BadgeModal({
   onCheckInAppointment,
   onSecondGateCheckIn,
   onCheckOut,
+  onApproveBooking,
 }: BadgeModalProps) {
   const [copied, setCopied] = useState(false);
   if (!visitor) return null;
@@ -176,6 +178,11 @@ export default function BadgeModal({
                 <XCircle size={14} className="text-white" />
                 <span>PENGAJUAN DITOLAK / REJECTED</span>
               </div>
+            ) : visitor.status === 'PENDING' ? (
+              <div className="bg-amber-500 text-slate-950 text-center py-1 px-2.5 rounded-none font-black text-xs tracking-widest uppercase mb-2 border-b border-amber-600 flex items-center justify-center gap-1.5 animate-pulse">
+                <Clock size={14} className="text-slate-950" />
+                <span>MENUNGGU PERSETUJUAN ADMIN</span>
+              </div>
             ) : passExpiration.isExpired ? (
               <div className="bg-rose-600 text-white text-center py-1 px-2.5 rounded-none font-black text-xs tracking-widest uppercase mb-2 border-b border-rose-900 flex items-center justify-center gap-1.5 animate-pulse">
                 <AlertTriangle size={13} className="text-[#FFD500]" />
@@ -242,7 +249,7 @@ export default function BadgeModal({
               </div>
             </div>
 
-            {/* Rejection / Expiration Warning banner */}
+            {/* Rejection / Pending / Expiration Warning banner */}
             {visitor.status === 'REJECTED' ? (
               <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 p-2 text-center my-1.5 rounded-none">
                 <span className="text-[8.5px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-wider block">
@@ -250,6 +257,15 @@ export default function BadgeModal({
                 </span>
                 <span className="text-[7.5px] text-rose-500 font-semibold block mt-0.5">
                   Barcode QR Pass tidak diterbitkan untuk permohonan yang ditolak.
+                </span>
+              </div>
+            ) : visitor.status === 'PENDING' ? (
+              <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 p-2 text-center my-1.5 rounded-none">
+                <span className="text-[8.5px] font-black text-amber-800 dark:text-amber-300 uppercase tracking-wider block flex items-center justify-center gap-1">
+                  <Lock size={11} /> BARCODE BELUM BERLAKU
+                </span>
+                <span className="text-[7.5px] text-amber-700 dark:text-amber-400 font-semibold block mt-0.5">
+                  Menunggu persetujuan Admin/Sekretariat PLN agar barcode aktif dan dapat digunakan untuk check-in.
                 </span>
               </div>
             ) : passExpiration.isExpired ? (
@@ -263,7 +279,7 @@ export default function BadgeModal({
               </div>
             ) : null}
 
-            {/* Real Scannable Digital QR Code vs Rejection Card */}
+            {/* Real Scannable Digital QR Code vs Rejection Card vs Locked Pending Card */}
             {visitor.status === 'REJECTED' ? (
               <div className="flex flex-col items-center justify-center bg-rose-50 dark:bg-rose-950/40 p-3 rounded-none border-2 border-rose-500 mt-2 text-center space-y-1.5">
                 <div className="p-2 bg-rose-100 dark:bg-rose-900/50 rounded-full text-rose-600 dark:text-rose-300">
@@ -282,6 +298,25 @@ export default function BadgeModal({
                       {visitor.notes}
                     </div>
                   )}
+                </div>
+              </div>
+            ) : visitor.status === 'PENDING' ? (
+              <div className="flex flex-col items-center justify-center bg-amber-50/60 dark:bg-amber-950/40 p-3.5 rounded-none border-2 border-dashed border-amber-400 dark:border-amber-600 mt-2 text-center space-y-2 relative overflow-hidden">
+                <div className="p-2.5 bg-amber-100 dark:bg-amber-900/60 rounded-full text-amber-700 dark:text-amber-300 shadow-inner">
+                  <Lock size={32} />
+                </div>
+                <div>
+                  <span className="font-black text-xs uppercase tracking-wider text-amber-900 dark:text-amber-200 block">
+                    BARCODE TERKUNCI (PENDING APPROVAL)
+                  </span>
+                  <p className="text-[9.5px] text-amber-800 dark:text-amber-300 font-semibold mt-1 max-w-[240px] leading-tight">
+                    Barcode QR Pass resmi baru akan diterbitkan dan dikirim ke email setelah permohonan disetujui Admin.
+                  </p>
+                </div>
+                <div className="no-print w-full pt-1">
+                  <span className="text-[8px] text-amber-700 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/40 px-2 py-0.5 font-bold uppercase tracking-wider border border-amber-200 dark:border-amber-800 inline-block">
+                    Status: Menunggu Persetujuan
+                  </span>
                 </div>
               </div>
             ) : (
@@ -330,7 +365,16 @@ export default function BadgeModal({
             )}
 
             {/* Interactive 3-Stage Gate Check-In Buttons for Digital Pass */}
-            {visitor.status !== 'REJECTED' && (
+            {visitor.status === 'PENDING' ? (
+              <div className="no-print w-full mt-2.5 p-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-none text-center space-y-1">
+                <span className="text-[9px] uppercase font-black tracking-wider text-amber-700 dark:text-amber-400 flex items-center justify-center gap-1">
+                  <Lock size={11} /> Presensi Gate Belum Aktif
+                </span>
+                <p className="text-[8px] text-amber-600 dark:text-amber-400">
+                  Tombol Check-In Pos 1 & Pos 2 akan aktif otomatis setelah janji temu disetujui Admin.
+                </p>
+              </div>
+            ) : visitor.status !== 'REJECTED' ? (
               <div className="no-print w-full mt-2.5 p-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-none text-center space-y-1.5">
                 <span className="text-[9px] uppercase font-black tracking-wider text-[#005DA6] dark:text-[#FFD500] block">
                   Presensi Gate Masuk / Keluar Tamu
@@ -389,7 +433,7 @@ export default function BadgeModal({
                   </button>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Guard Warning notice */}
             <div className="mt-1.5 text-[7.5px] sm:text-[8px] text-slate-400 text-center uppercase tracking-wide leading-normal">
@@ -401,7 +445,20 @@ export default function BadgeModal({
 
         {/* Action Buttons Footer */}
         <div className="p-2.5 sm:p-4 bg-slate-100 dark:bg-slate-800/40 border-t-2 border-slate-100 dark:border-slate-850 flex flex-col gap-2 shrink-0">
-          {onBookAppointment && (
+          {visitor.status === 'PENDING' && onApproveBooking && (
+            <button
+              onClick={() => {
+                onApproveBooking(visitor.id);
+              }}
+              className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider rounded-none border-b-2 border-r-2 border-emerald-900 cursor-pointer shadow-sm"
+              title="Setujui Janji Temu & Terbitkan Barcode Pass ke Email Tamu"
+            >
+              <CheckSquare size={15} />
+              Setujui Janji Temu & Terbitkan Pass
+            </button>
+          )}
+
+          {onBookAppointment && visitor.status !== 'PENDING' && (
             <button
               onClick={() => {
                 onClose();
@@ -423,6 +480,15 @@ export default function BadgeModal({
               >
                 <XCircle size={15} />
                 Pengajuan Ditolak
+              </button>
+            ) : visitor.status === 'PENDING' ? (
+              <button
+                disabled
+                className="flex-1 py-2.5 px-3 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 rounded-none font-bold flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider border border-amber-300 dark:border-amber-800 cursor-not-allowed opacity-75"
+                title="Barcode belum dapat dicetak karena menunggu persetujuan admin"
+              >
+                <Lock size={15} />
+                Menunggu Persetujuan
               </button>
             ) : (
               <button
