@@ -1,18 +1,26 @@
-/**
+﻿/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * SIMATA PLN Email Gateway:
- * 1. Google Apps Script Webhook (Direct Gmail, 500-2000 email/hari gratis tanpa limitasi)
- * 2. EmailJS SDK (Gmail, Outlook PLN, Custom SMTP)
+ * SIMATA PLN Multi-Channel Email & Notification Gateway:
+ * 1. Google Apps Script Webhook (Direct Gmail, 500-2000 email/hari gratis)
+ * 2. Resend API (Transactional Email Edge Engine < 0.5s deliverability, 3000 email/bln)
+ * 3. Brevo REST API (Sendinblue, 300 email/hari gratis)
+ * 4. EmailJS SDK (Gmail, Outlook PLN, Custom SMTP)
+ * 5. WhatsApp Direct Pass Link (1-Click Open in WA)
  */
 
 import emailjs from '@emailjs/browser';
 import { Visitor } from '../types';
 
 export interface EmailConfig {
-  provider: 'google_script' | 'emailjs';
+  provider: 'google_script' | 'resend' | 'brevo' | 'emailjs' | 'hybrid';
+  dispatchMode: 'parallel' | 'fallback';
   googleScriptUrl: string;
+  resendApiKey: string;
+  resendSender: string;
+  brevoApiKey: string;
+  brevoSender: string;
   serviceId: string;
   templateId: string;
   publicKey: string;
@@ -22,17 +30,39 @@ export const DEFAULT_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKf
 
 export const getEmailConfig = (): EmailConfig => {
   if (typeof window === 'undefined') {
-    return { provider: 'google_script', googleScriptUrl: DEFAULT_GOOGLE_SCRIPT_URL, serviceId: '', templateId: '', publicKey: '' };
+    return {
+      provider: 'hybrid',
+      dispatchMode: 'parallel',
+      googleScriptUrl: DEFAULT_GOOGLE_SCRIPT_URL,
+      resendApiKey: '',
+      resendSender: 'SIMATA PLN <onboarding@resend.dev>',
+      brevoApiKey: '',
+      brevoSender: '',
+      serviceId: '',
+      templateId: '',
+      publicKey: '',
+    };
   }
+
   const googleScriptUrl = localStorage.getItem('simata_google_script_url') || DEFAULT_GOOGLE_SCRIPT_URL;
+  const resendApiKey = localStorage.getItem('simata_resend_api_key') || '';
+  const resendSender = localStorage.getItem('simata_resend_sender') || 'SIMATA PLN <onboarding@resend.dev>';
+  const brevoApiKey = localStorage.getItem('simata_brevo_api_key') || '';
+  const brevoSender = localStorage.getItem('simata_brevo_sender') || '';
   const serviceId = localStorage.getItem('simata_emailjs_service') || '';
   const templateId = localStorage.getItem('simata_emailjs_template') || '';
   const publicKey = localStorage.getItem('simata_emailjs_key') || '';
-  const provider = (localStorage.getItem('simata_email_provider') as any) || 'google_script';
+  const provider = (localStorage.getItem('simata_email_provider') as any) || 'hybrid';
+  const dispatchMode = (localStorage.getItem('simata_dispatch_mode') as any) || 'parallel';
 
   return {
     provider,
+    dispatchMode,
     googleScriptUrl,
+    resendApiKey,
+    resendSender,
+    brevoApiKey,
+    brevoSender,
     serviceId,
     templateId,
     publicKey,
@@ -41,7 +71,12 @@ export const getEmailConfig = (): EmailConfig => {
 
 export const saveEmailConfig = (cfg: EmailConfig): void => {
   localStorage.setItem('simata_email_provider', cfg.provider);
+  localStorage.setItem('simata_dispatch_mode', cfg.dispatchMode);
   localStorage.setItem('simata_google_script_url', cfg.googleScriptUrl.trim());
+  localStorage.setItem('simata_resend_api_key', cfg.resendApiKey.trim());
+  localStorage.setItem('simata_resend_sender', cfg.resendSender.trim());
+  localStorage.setItem('simata_brevo_api_key', cfg.brevoApiKey.trim());
+  localStorage.setItem('simata_brevo_sender', cfg.brevoSender.trim());
   localStorage.setItem('simata_emailjs_service', cfg.serviceId.trim());
   localStorage.setItem('simata_emailjs_template', cfg.templateId.trim());
   localStorage.setItem('simata_emailjs_key', cfg.publicKey.trim());
@@ -49,19 +84,73 @@ export const saveEmailConfig = (cfg: EmailConfig): void => {
 
 export const isEmailConfigured = (): boolean => {
   const cfg = getEmailConfig();
-  if (cfg.provider === 'google_script' && cfg.googleScriptUrl.startsWith('https://script.google.com/')) {
-    return true;
-  }
-  if (cfg.provider === 'emailjs' && cfg.serviceId && cfg.templateId && cfg.publicKey) {
-    return true;
-  }
-  return Boolean(cfg.googleScriptUrl || (cfg.serviceId && cfg.templateId && cfg.publicKey));
+  if (cfg.googleScriptUrl && cfg.googleScriptUrl.startsWith('https://script.google.com/')) return true;
+  if (cfg.resendApiKey && cfg.resendApiKey.startsWith('re_')) return true;
+  if (cfg.brevoApiKey) return true;
+  if (cfg.serviceId && cfg.templateId && cfg.publicKey) return true;
+  return false;
 };
 
 /**
- * Kirim via Google Apps Script (Direct Gmail)
+ * Format HTML Email Template Resmi PLN
  */
-const sendViaGoogleScript = async (visitor: Visitor, passUrl: string, scriptUrl: string): Promise<boolean> => {
+export const buildPassEmailHtml = (visitor: Visitor, passUrl: string, qrImageUrl: string): string => {
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Persetujuan Janji Temu SIMATA PLN</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b;">
+    <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 2px solid #005DA6; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+      <div style="background-color: #005DA6; border-bottom: 3px solid #FFD500; padding: 20px; text-align: center;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px;">SIMATA PLN UIK TANJUNG JATI B</h1>
+        <p style="color: #FFD500; margin: 5px 0 0 0; font-size: 11px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;">Surat Izin Masuk & Kartu Digital Tamu</p>
+      </div>
+      <div style="padding: 24px;">
+        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px 16px; margin-bottom: 20px;">
+          <p style="color: #166534; font-weight: bold; margin: 0; font-size: 14px;">✅ PERMOHONAN KUNJUNGAN TELAH DISETUJUI</p>
+        </div>
+        <p style="font-size: 14px; line-height: 1.5;">Halo <strong>${visitor.visitorName}</strong>,</p>
+        <p style="font-size: 13px; line-height: 1.5; color: #475569;">Permohonan janji temu / kunjungan Anda ke PT PLN (Persero) UIK Tanjung Jati B telah <strong>DISETUJUI</strong> oleh Tim Sekretariat.</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px;">
+          <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b; width: 40%;">No. Registrasi:</td><td style="padding: 8px 0; font-weight: bold; font-family: monospace; color: #005DA6;">${visitor.id}</td></tr>
+          <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Instansi / Perusahaan:</td><td style="padding: 8px 0; font-weight: bold;">${visitor.company || '-'}</td></tr>
+          <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Bertemu Bagian:</td><td style="padding: 8px 0; font-weight: bold; color: #005DA6;">${visitor.visited}</td></tr>
+          <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Rencana Kunjungan:</td><td style="padding: 8px 0; font-weight: bold;">${visitor.schedule}</td></tr>
+          <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; color: #64748b;">Keperluan:</td><td style="padding: 8px 0;">${visitor.purpose}</td></tr>
+        </table>
+
+        <div style="text-align: center; margin: 24px 0; padding: 20px; background-color: #f8fafc; border: 2px dashed #005DA6;">
+          <p style="margin: 0 0 12px 0; font-size: 12px; font-weight: bold; text-transform: uppercase; color: #005DA6;">Barcode QR Pass Digital Anda</p>
+          <img src="${qrImageUrl}" alt="Barcode QR Pass" style="width: 200px; height: 200px; border: 3px solid #005DA6; display: inline-block;" />
+          <div style="margin-top: 16px;">
+            <a href="${passUrl}" style="background-color: #005DA6; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; font-size: 13px; text-transform: uppercase; border-bottom: 3px solid #FFD500; display: inline-block;">
+              LIHAT & SIMPAN BARCODE QR PASS
+            </a>
+          </div>
+        </div>
+
+        <p style="font-size: 11px; color: #64748b; line-height: 1.4;">
+          * Harap tunjukkan tautan Barcode QR Pass ini kepada petugas Pos Keamanan saat tiba di lokasi PT PLN UIK Tanjung Jati B.
+        </p>
+      </div>
+      <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 12px 20px; text-align: center; font-size: 10px; color: #94a3b8;">
+        © 2026 PT PLN (Persero) UIK Tanjung Jati B. Sistem Informasi Manajemen Akses & Tamu (SIMATA).
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+};
+
+/**
+ * 1. Kirim via Google Apps Script (Direct Gmail)
+ */
+export const sendViaGoogleScript = async (visitor: Visitor, passUrl: string, scriptUrl: string): Promise<boolean> => {
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(passUrl)}`;
   const payload = {
     to_email: visitor.email || '',
@@ -94,6 +183,131 @@ const sendViaGoogleScript = async (visitor: Visitor, passUrl: string, scriptUrl:
 };
 
 /**
+ * 2. Kirim via Resend API (High-Speed Edge Delivery < 0.5s)
+ */
+export const sendViaResend = async (visitor: Visitor, passUrl: string, apiKey: string, senderEmail?: string): Promise<boolean> => {
+  if (!visitor.email || !apiKey) return false;
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(passUrl)}`;
+  const htmlContent = buildPassEmailHtml(visitor, passUrl, qrImageUrl);
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: senderEmail || 'SIMATA PLN <onboarding@resend.dev>',
+        to: [visitor.email],
+        subject: `[SIMATA PLN] Persetujuan Janji Temu & QR Pass - ${visitor.visitorName}`,
+        html: htmlContent,
+      }),
+    });
+    const data = await res.json();
+    return Boolean(data.id);
+  } catch (err) {
+    console.error('[Resend API] Gagal kirim email:', err);
+    return false;
+  }
+};
+
+/**
+ * 3. Kirim via Brevo (Sendinblue REST API)
+ */
+export const sendViaBrevo = async (visitor: Visitor, passUrl: string, apiKey: string, senderEmail?: string): Promise<boolean> => {
+  if (!visitor.email || !apiKey) return false;
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(passUrl)}`;
+  const htmlContent = buildPassEmailHtml(visitor, passUrl, qrImageUrl);
+
+  try {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: 'SIMATA PLN UIK TJB', email: senderEmail || 'admin@simata-pln.com' },
+        to: [{ email: visitor.email, name: visitor.visitorName }],
+        subject: `[SIMATA PLN] Persetujuan Janji Temu & QR Pass - ${visitor.visitorName}`,
+        htmlContent: htmlContent,
+      }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error('[Brevo API] Gagal kirim email:', err);
+    return false;
+  }
+};
+
+/**
+ * 4. Kirim via EmailJS
+ */
+export const sendViaEmailJs = async (visitor: Visitor, passUrl: string, cfg: EmailConfig): Promise<boolean> => {
+  if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) return false;
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(passUrl)}`;
+
+  try {
+    await emailjs.send(
+      cfg.serviceId,
+      cfg.templateId,
+      {
+        to_email: visitor.email || '',
+        to_name: visitor.visitorName,
+        visitor_id: visitor.id,
+        company: visitor.company,
+        visited: visitor.visited,
+        schedule: visitor.schedule,
+        purpose: visitor.purpose,
+        pass_url: passUrl,
+        qr_image_url: qrImageUrl,
+        from_name: 'SIMATA PLN UIK TJB',
+      },
+      cfg.publicKey
+    );
+    return true;
+  } catch (err: any) {
+    console.error('[EmailJS] Gagal kirim email:', err?.text || err);
+    return false;
+  }
+};
+
+/**
+ * Generate Direct WhatsApp Pass Link
+ */
+export const generateWhatsAppPassUrl = (visitor: Visitor, passUrl: string): string => {
+  let phone = (visitor.phone || '').replace(/\D/g, '');
+  if (phone.startsWith('0')) {
+    phone = '62' + phone.substring(1);
+  } else if (phone.startsWith('8')) {
+    phone = '62' + phone;
+  }
+
+  const message = 
+`⚡ *SIMATA PLN UIK TANJUNG JATI B*
+_Sistem Informasi Manajemen Akses & Tamu_
+
+Halo Bapak/Ibu *${visitor.visitorName}* (${visitor.company || '-'}),
+
+Permohonan janji temu / kunjungan Anda telah *DISETUJUI* oleh Tim Sekretariat PLN.
+
+📋 *Detail Kunjungan:*
+• *No. Registrasi:* ${visitor.id}
+• *Tujuan Bertemu:* ${visitor.visited}
+• *Jadwal Rencana:* ${visitor.schedule}
+• *Keperluan:* ${visitor.purpose}
+
+🎫 *Kartu Barcode QR Pass Digital Anda:*
+${passUrl}
+
+_Harap tunjukkan link Barcode QR Pass di atas kepada petugas Pos Keamanan saat tiba di lokasi PLN UIK Tanjung Jati B._
+Terima kasih.`;
+
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+};
+
+/**
  * Pre-warm Google Apps Script container in the background to prevent cold-start latency
  */
 export const prewarmGoogleScript = (): void => {
@@ -112,8 +326,7 @@ export const prewarmGoogleScript = (): void => {
 };
 
 /**
- * Start periodic prewarm timer (every 4 minutes) so Google Apps Script never goes to cold sleep.
- * Returns a cleanup function.
+ * Start periodic prewarm timer (every 4 minutes)
  */
 export const startPeriodicPrewarm = (intervalMs = 4 * 60 * 1000): (() => void) => {
   prewarmGoogleScript();
@@ -124,43 +337,56 @@ export const startPeriodicPrewarm = (intervalMs = 4 * 60 * 1000): (() => void) =
 };
 
 /**
- * Kirim email persetujuan janji temu beserta QR Pass link ke tamu.
+ * Kirim email persetujuan janji temu dengan Multi-Channel Engine
+ * Mode 'parallel' (default): Eksekusi ke semua provider aktif bersamaan agar tidak ada delay!
+ * Mode 'fallback': Eksekusi berurutan hingga salah satu berhasil.
  */
 export const sendApprovalEmail = async (visitor: Visitor, passUrl: string): Promise<boolean> => {
   const cfg = getEmailConfig();
+  const activeTasks: Promise<boolean>[] = [];
 
-  // 1. Coba Google Apps Script jika tersedia (Direct Gmail)
+  // Google Apps Script
   if (cfg.googleScriptUrl && cfg.googleScriptUrl.startsWith('https://script.google.com/')) {
-    return sendViaGoogleScript(visitor, passUrl, cfg.googleScriptUrl);
+    activeTasks.push(sendViaGoogleScript(visitor, passUrl, cfg.googleScriptUrl));
   }
 
-  // 2. Fallback ke EmailJS jika dikonfigurasi
+  // Resend API
+  if (cfg.resendApiKey && cfg.resendApiKey.startsWith('re_')) {
+    activeTasks.push(sendViaResend(visitor, passUrl, cfg.resendApiKey, cfg.resendSender));
+  }
+
+  // Brevo API
+  if (cfg.brevoApiKey) {
+    activeTasks.push(sendViaBrevo(visitor, passUrl, cfg.brevoApiKey, cfg.brevoSender));
+  }
+
+  // EmailJS
   if (cfg.serviceId && cfg.templateId && cfg.publicKey) {
-    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(passUrl)}`;
-    try {
-      await emailjs.send(
-        cfg.serviceId,
-        cfg.templateId,
-        {
-          to_email: visitor.email || '',
-          to_name: visitor.visitorName,
-          visitor_id: visitor.id,
-          company: visitor.company,
-          visited: visitor.visited,
-          schedule: visitor.schedule,
-          purpose: visitor.purpose,
-          pass_url: passUrl,
-          qr_image_url: qrImageUrl,
-          from_name: 'SIMATA PLN UIK TJB',
-        },
-        cfg.publicKey
-      );
-      return true;
-    } catch (err: any) {
-      console.error('[EmailJS] Gagal kirim email:', err?.text || err);
-      return false;
-    }
+    activeTasks.push(sendViaEmailJs(visitor, passUrl, cfg));
   }
 
-  return false;
+  if (activeTasks.length === 0) {
+    // Default: gunakan Google Apps Script default jika belum ada config lain
+    return sendViaGoogleScript(visitor, passUrl, DEFAULT_GOOGLE_SCRIPT_URL);
+  }
+
+  if (cfg.dispatchMode === 'fallback') {
+    // Jalankan berurutan (fallback)
+    for (const task of activeTasks) {
+      try {
+        const ok = await task;
+        if (ok) return true;
+      } catch (e) {}
+    }
+    return false;
+  }
+
+  // Default: Paralel Dispatch (Multi-Engine)
+  try {
+    const results = await Promise.allSettled(activeTasks);
+    return results.some((r) => r.status === 'fulfilled' && r.value === true);
+  } catch (err) {
+    console.error('Multi-channel email error:', err);
+    return false;
+  }
 };

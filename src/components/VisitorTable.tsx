@@ -23,9 +23,12 @@ import {
   AlertTriangle,
   Users2,
   X,
-  ChevronRight
+  ChevronRight,
+  MessageSquare
 } from 'lucide-react';
 import { Visitor, VisitorStatus } from '../types';
+import { generateWhatsAppPassUrl } from '../lib/email';
+import { getProductionPassUrl } from '../utils/security';
 
 interface VisitorTableProps {
   visitors: Visitor[];
@@ -786,6 +789,19 @@ export default function VisitorTable({
                           <Printer size={15} />
                         </button>
 
+                        {/* Quick WhatsApp Pass Send (if phone available) */}
+                        {item.phone && (
+                          <a
+                            href={generateWhatsAppPassUrl(item, getProductionPassUrl(item.id))}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={`Kirim Barcode Pass ke WhatsApp (${item.phone})`}
+                            className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-none transition-all cursor-pointer inline-flex items-center"
+                          >
+                            <MessageSquare size={14} />
+                          </a>
+                        )}
+
                         {/* Edit details */}
                         <button
                           onClick={() => onEdit(item)}
@@ -1017,6 +1033,27 @@ export default function VisitorTable({
                     </div>
                     <ChevronRight size={16} className="text-emerald-200 group-hover:translate-x-0.5 transition-transform" />
                   </button>
+                )}
+
+                {/* WhatsApp Instant Pass Dispatch Button (if phone available) */}
+                {quickActionVisitor.phone && (
+                  <a
+                    href={generateWhatsAppPassUrl(quickActionVisitor, getProductionPassUrl(quickActionVisitor.id))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-none text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 bg-emerald-500/20 text-white">
+                        <MessageSquare size={15} />
+                      </div>
+                      <div className="text-left">
+                        <span className="block font-black uppercase">Kirim Barcode Pass via WhatsApp ({quickActionVisitor.phone})</span>
+                        <span className="text-[10px] text-emerald-100 font-normal">Buka chat WhatsApp dan kirim pesan resmi link pass ke tamu</span>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-emerald-200 group-hover:translate-x-0.5 transition-transform" />
+                  </a>
                 )}
 
                 {/* Action 3: Reject / Decline Appointment */}
