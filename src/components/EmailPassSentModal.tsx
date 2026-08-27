@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Mail, CheckCircle, ExternalLink, QrCode, Send, Smartphone, ShieldCheck, Copy, Check, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, CheckCircle, ExternalLink, QrCode, Send, ShieldCheck, Copy, Check, X, AlertTriangle, Loader2 } from 'lucide-react';
 import { Visitor } from '../types';
 import { encodePassToken } from '../utils/security';
+import { sendApprovalEmail, isEmailConfigured } from '../lib/email';
 
 interface EmailPassSentModalProps {
   visitor: Visitor | null;
@@ -14,19 +15,88 @@ interface EmailPassSentModalProps {
   onOpenPass: (visitor: Visitor) => void;
 }
 
+type SendStatus = 'idle' | 'sending' | 'sent' | 'failed' | 'unconfigured';
+
 export default function EmailPassSentModal({ visitor, onClose, onOpenPass }: EmailPassSentModalProps) {
   const [copied, setCopied] = useState(false);
+  const [sendStatus, setSendStatus] = useState<SendStatus>('idle');
+
   if (!visitor) return null;
 
   const secureToken = encodePassToken(visitor.id);
-  const passUrl = typeof window !== 'undefined' ? `${window.location.origin}/?token=${secureToken}` : `http://localhost:3000/?token=${secureToken}`;
+  const passUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/?token=${secureToken}`
+    : `https://simata-pln.vercel.app/?token=${secureToken}`;
   const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(passUrl)}`;
-  const targetEmail = visitor.email || `${visitor.visitorName.toLowerCase().replace(/\s+/g, '')}@gmail.com`;
+  const targetEmail = visitor.email || '';
+
+  // Kirim email otomatis saat modal terbuka
+  useEffect(() => {
+    if (!visitor || !targetEmail) {
+      setSendStatus('unconfigured');
+      return;
+    }
+    if (!isEmailConfigured()) {
+      setSendStatus('unconfigured');
+      return;
+    }
+
+    setSendStatus('sending');
+    sendApprovalEmail(visitor, passUrl).then((ok) => {
+      setSendStatus(ok ? 'sent' : 'failed');
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visitor?.id]);
+
+  const statusBanner = () => {
+    if (sendStatus === 'sending') return (
+      <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 p-3 rounded-none flex items-center gap-2.5">
+        <Loader2 size={18} className="text-blue-600 dark:text-blue-400 shrink-0 animate-spin" />
+        <p className="font-bold text-blue-900 dark:text-blue-200 text-xs">Mengirim email ke <span className="font-mono">{targetEmail}</span>…</p>
+      </div>
+    );
+    if (sendStatus === 'sent') return (
+      <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 p-3 rounded-none flex items-start gap-2.5">
+        <ShieldCheck size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="font-bold text-emerald-900 dark:text-emerald-200 text-xs">Email Berhasil Terkirim!</p>
+          <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+            QR Pass dikirim ke <strong>{targetEmail}</strong>. Tamu dapat menggunakannya untuk check-in.
+          </p>
+        </div>
+      </div>
+    );
+    if (sendStatus === 'failed') return (
+      <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 p-3 rounded-none flex items-start gap-2.5">
+        <AlertTriangle size={18} className="text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="font-bold text-red-900 dark:text-red-200 text-xs">Pengiriman Email Gagal</p>
+          <p className="text-[11px] text-red-700 dark:text-red-400 mt-0.5">
+            Cek konfigurasi EmailJS di Settings. Gunakan tombol Salin Link di bawah untuk kirim manual.
+          </p>
+        </div>
+      </div>
+    );
+    // unconfigured
+    return (
+      <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 p-3 rounded-none flex items-start gap-2.5">
+        <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="font-bold text-amber-900 dark:text-amber-200 text-xs">Email Belum Dikonfigurasi</p>
+          <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+            {!targetEmail
+              ? 'Tamu tidak memiliki alamat email. Kirim link QR Pass secara manual.'
+              : 'Konfigurasi EmailJS belum diisi. Buka Settings → Konfigurasi Email untuk mengaktifkan.'}
+          </p>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in">
       <div className="premium-glass max-w-lg w-full shadow-2xl overflow-hidden my-8 border-2 border-[#005DA6] rounded-none">
-        
+
         {/* Header */}
         <div className="bg-[#005DA6] border-b-2 border-[#FFD500] px-5 py-4 text-white flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -38,7 +108,7 @@ export default function EmailPassSentModal({ visitor, onClose, onOpenPass }: Ema
                 Janji Temu Disetujui!
               </span>
               <h3 className="text-base font-black tracking-tight uppercase">
-                Notifikasi Link & QR Code Terkirim
+                Notifikasi QR Pass ke Tamu
               </h3>
             </div>
           </div>
@@ -52,36 +122,30 @@ export default function EmailPassSentModal({ visitor, onClose, onOpenPass }: Ema
 
         {/* Modal Body */}
         <div className="p-5 space-y-4 font-sans text-slate-800 dark:text-slate-200 text-xs">
-          
-          {/* Status Alert Banner */}
-          <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 p-3 rounded-none flex items-start gap-2.5">
-            <ShieldCheck size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-emerald-900 dark:text-emerald-200 text-xs">
-                Email & WhatsApp Otomatis Berhasil Terkirim ke Tamu!
-              </p>
-              <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
-                Sistem telah mengirimkan barcode QR Pass dan link verifikasi terenkripsi ke alamat email <strong>{targetEmail}</strong>.
-              </p>
-            </div>
-          </div>
+
+          {statusBanner()}
 
           {/* Email Preview Card */}
           <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3.5 space-y-3 rounded-none">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
               <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300 text-[11px]">
                 <Mail size={14} className="text-[#005DA6] dark:text-[#FFD500]" />
-                <span>Simulasi Email Notifikasi (SMTP PLN Gateway)</span>
+                <span>Email Notifikasi Tamu (EmailJS → Gmail/Outlook PLN)</span>
               </div>
-              <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-[9px] font-mono font-bold uppercase">
-                DELIVERED
+              <span className={`px-2 py-0.5 text-[9px] font-mono font-bold uppercase ${
+                sendStatus === 'sent' ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300' :
+                sendStatus === 'sending' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' :
+                sendStatus === 'failed' ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300' :
+                'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300'
+              }`}>
+                {sendStatus === 'sent' ? 'DELIVERED' : sendStatus === 'sending' ? 'SENDING...' : sendStatus === 'failed' ? 'FAILED' : 'NOT SENT'}
               </span>
             </div>
 
             <div className="space-y-1 text-[11px]">
               <div className="grid grid-cols-4 gap-1">
                 <span className="text-slate-400 font-semibold">Kepada:</span>
-                <span className="col-span-3 font-bold font-mono text-slate-800 dark:text-slate-200">{targetEmail}</span>
+                <span className="col-span-3 font-bold font-mono text-slate-800 dark:text-slate-200">{targetEmail || '(tidak ada email)'}</span>
               </div>
               <div className="grid grid-cols-4 gap-1">
                 <span className="text-slate-400 font-semibold">Subjek:</span>
@@ -91,12 +155,12 @@ export default function EmailPassSentModal({ visitor, onClose, onOpenPass }: Ema
               </div>
             </div>
 
-            {/* Simulated Email Body Container */}
+            {/* Email Body Preview */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 text-center space-y-2 mt-2">
               <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
                 Lampiran QR Barcode Pass Digital
               </span>
-              
+
               <div className="flex justify-center my-1">
                 <div className="p-1 bg-white border-2 border-[#005DA6]">
                   <img src={qrApiUrl} alt="QR Barcode" className="w-20 h-20 object-contain" />

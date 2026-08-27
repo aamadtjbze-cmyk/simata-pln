@@ -26,6 +26,7 @@ import {
   LogOut,
   ShieldCheck,
   Database,
+  Mail,
   X
 } from 'lucide-react';
 import PLNLogo from './components/PLNLogo';
@@ -40,6 +41,7 @@ import ReportModule from './components/ReportModule';
 import NotificationCenter from './components/NotificationCenter';
 import ThemeStudioModal from './components/ThemeStudioModal';
 import UserManagement from './components/UserManagement';
+import EmailConfigModal from './components/EmailConfigModal';
 import { createNotification } from './lib/notificationHelper';
 import { Visitor, VisitorStatus, SystemNotification } from './types';
 import { INITIAL_VISITORS } from './data/mockData';
@@ -54,6 +56,11 @@ import {
   rowToVisitor,
   ensureSecondGateTimeColumn,
 } from './lib/supabase';
+import {
+  isEmailConfigured,
+  getEmailConfig,
+  saveEmailConfig,
+} from './lib/email';
 
 export default function App() {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
@@ -75,6 +82,7 @@ export default function App() {
   const [adminRoleName, setAdminRoleName] = useState<string>('Sekretariat PLN');
   const [adminUsername, setAdminUsername] = useState<string>('admin');
   const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState(false);
+  const [isEmailConfigModalOpen, setIsEmailConfigModalOpen] = useState(false);
   
   // Theme state
   const [darkMode, setDarkMode] = useState(false);
@@ -960,6 +968,21 @@ export default function App() {
               ></span>
             </button>
 
+            {/* Email Config Button */}
+            <button
+              onClick={() => setIsEmailConfigModalOpen(true)}
+              className={`flex items-center gap-1.5 py-2 px-3 rounded-none text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all shadow-xs border ${
+                isEmailConfigured()
+                  ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400'
+              }`}
+              title={isEmailConfigured() ? 'Email Aktif — Klik untuk ubah konfigurasi EmailJS' : 'Konfigurasi Email (EmailJS) — Belum diatur'}
+            >
+              <Mail size={13} className={isEmailConfigured() ? 'text-emerald-500' : 'text-slate-400'} />
+              <span className="hidden sm:inline">{isEmailConfigured() ? 'Email Aktif' : 'Email'}</span>
+              <span className={`w-2 h-2 rounded-full ${isEmailConfigured() ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-slate-400'}`}></span>
+            </button>
+
             {/* Light/Dark Toggle */}
             <button
               onClick={toggleTheme}
@@ -1425,6 +1448,21 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* EmailJS Config Modal */}
+      {isEmailConfigModalOpen && (() => {
+        const cfg = getEmailConfig();
+        return (
+          <EmailConfigModal
+            initialConfig={cfg}
+            onSave={(newCfg) => {
+              saveEmailConfig(newCfg);
+              setIsEmailConfigModalOpen(false);
+              triggerToast('Konfigurasi Email disimpan. Email akan aktif saat Janji Temu disetujui.', 'success');
+            }}
+            onClose={() => setIsEmailConfigModalOpen(false)}
+          />
+        );
+      })()}
 
     </div>
   );

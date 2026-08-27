@@ -590,44 +590,61 @@ export default function VisitorTable({
                     {/* IN Timestamp & Action Button */}
                     <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
                       {item.inTime ? (
-                        <button
-                          onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
-                          className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-emerald-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer font-mono"
-                          title="Klik untuk memperbarui / konfirmasi ulang jam Check-In Pos 1"
-                        >
-                          <UserCheck2 size={11} className="text-[#FFD500]" />
-                          <span>{item.inTime}</span>
-                        </button>
+                        // Sudah ada jam masuk — tombol aktif hanya untuk IN-PROGRESS (koreksi jam)
+                        item.status === 'IN-PROGRESS' ? (
+                          <button
+                            onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
+                            className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-emerald-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer font-mono"
+                            title="Klik untuk memperbarui / konfirmasi ulang jam Check-In Pos 1"
+                          >
+                            <UserCheck2 size={11} className="text-[#FFD500]" />
+                            <span>{item.inTime}</span>
+                          </button>
+                        ) : (
+                          // DONE / REJECTED / EXPIRED — hanya tampilkan teks, tidak bisa diklik
+                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{item.inTime}</span>
+                        )
                       ) : (
-                        <button
-                          onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
-                          className="px-2.5 py-1 bg-[#005DA6] hover:bg-[#004070] active:bg-[#003056] text-white font-extrabold rounded-none text-[10px] border-b border-r border-[#FFD500] shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
-                          title="Konfirmasi Tamu Tiba di Pos 1 Utama"
-                        >
-                          <UserCheck2 size={11} className="text-[#FFD500]" />
-                          + Check-In 1
-                        </button>
+                        // Belum ada jam — tombol Check-In hanya untuk status yang masuk akal
+                        (item.status === 'SCHEDULED' || item.status === 'PENDING') ? (
+                          <button
+                            onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
+                            className="px-2.5 py-1 bg-[#005DA6] hover:bg-[#004070] active:bg-[#003056] text-white font-extrabold rounded-none text-[10px] border-b border-r border-[#FFD500] shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
+                            title="Konfirmasi Tamu Tiba di Pos 1 Utama"
+                          >
+                            <UserCheck2 size={11} className="text-[#FFD500]" />
+                            + Check-In 1
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 font-sans italic">-</span>
+                        )
                       )}
                     </td>
 
                     {/* SECOND GATE Timestamp & Pass Button */}
                     <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
                       {item.secondGateTime ? (
-                        <button
-                          onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(item.id)}
-                          className="px-2 py-1 bg-sky-700 hover:bg-sky-800 active:bg-sky-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex flex-col items-start gap-0.5 cursor-pointer font-mono"
-                          title="Klik untuk memperbarui / konfirmasi ulang jam Pos 2"
-                        >
-                          <div className="flex items-center gap-1">
-                            <Layers size={11} className="text-sky-200" />
-                            <span>{item.secondGateTime}</span>
-                          </div>
-                          {item.secondGatePass && (
-                            <span className="text-[8.5px] font-bold bg-sky-900/60 text-sky-200 px-1 py-0.2 rounded-none">
-                              {item.secondGatePass}
-                            </span>
-                          )}
-                        </button>
+                        // Sudah ada jam Pos 2 — tombol aktif hanya untuk IN-PROGRESS
+                        item.status === 'IN-PROGRESS' ? (
+                          <button
+                            onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(item.id)}
+                            className="px-2 py-1 bg-sky-700 hover:bg-sky-800 active:bg-sky-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex flex-col items-start gap-0.5 cursor-pointer font-mono"
+                            title="Klik untuk memperbarui / konfirmasi ulang jam Pos 2"
+                          >
+                            <div className="flex items-center gap-1">
+                              <Layers size={11} className="text-sky-200" />
+                              <span>{item.secondGateTime}</span>
+                            </div>
+                            {item.secondGatePass && (
+                              <span className="text-[8.5px] font-bold bg-sky-900/60 text-sky-200 px-1 py-0.2 rounded-none">
+                                {item.secondGatePass}
+                              </span>
+                            )}
+                          </button>
+                        ) : (
+                          // DONE/REJECTED — read-only
+                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{item.secondGateTime}</span>
+                        )
                       ) : (item.status === 'IN-PROGRESS' || item.status === 'SCHEDULED') ? (
                         <button
                           onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(item.id)}
@@ -645,14 +662,11 @@ export default function VisitorTable({
                     {/* OUT Timestamp / Check-Out Action Button */}
                     <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
                       {item.outTime ? (
-                        <button
-                          onClick={() => onCheckOut(item.id)}
-                          className="px-2.5 py-1 bg-amber-700 hover:bg-amber-800 active:bg-amber-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-amber-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer font-mono"
-                          title="Klik untuk memperbarui / konfirmasi ulang jam Check-Out"
-                        >
-                          <Check size={11} />
-                          <span>{item.outTime}</span>
-                        </button>
+                        // DONE — hanya tampilkan teks jam, tidak bisa diklik (sudah selesai)
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                          <Check size={10} className="text-emerald-500" />
+                          {item.outTime}
+                        </span>
                       ) : item.status === 'IN-PROGRESS' ? (
                         <button
                           onClick={() => onCheckOut(item.id)}
