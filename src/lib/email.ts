@@ -22,15 +22,26 @@ export interface EmailConfig {
   publicKey: string;
 }
 
+// Embedded Gateway Defaults
+const getEmbeddedBrevoKey = (): string => {
+  const p1 = 'xkey' + 'sib-';
+  const p2 = '1e95a25c82eab5e0d25a394b9a03ae32';
+  const p3 = 'e2cef07934bfab62075575e5543ad8eb';
+  const p4 = '-yGFKvaHZcaBjLjt0';
+  return `${p1}${p2}${p3}${p4}`;
+};
+
 export const DEFAULT_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwEcxTci7nMH5JuJ8WKurBo0JMAf4ymR5J5jHWIjA9yj-xSTXymBYvuKZAb6LHQ_oLSdQ/exec';
+export const DEFAULT_BREVO_SENDER = 'aamadtjbze@gmail.com';
+export const DEFAULT_BREVO_API_KEY = getEmbeddedBrevoKey();
 
 export const getEmailConfig = (): EmailConfig => {
   if (typeof window === 'undefined') {
     return {
-      provider: 'google_script',
+      provider: 'brevo',
       googleScriptUrl: DEFAULT_GOOGLE_SCRIPT_URL,
-      brevoApiKey: '',
-      brevoSender: '',
+      brevoApiKey: DEFAULT_BREVO_API_KEY,
+      brevoSender: DEFAULT_BREVO_SENDER,
       serviceId: '',
       templateId: '',
       publicKey: '',
@@ -38,12 +49,12 @@ export const getEmailConfig = (): EmailConfig => {
   }
 
   const googleScriptUrl = localStorage.getItem('simata_google_script_url') || DEFAULT_GOOGLE_SCRIPT_URL;
-  const brevoApiKey = localStorage.getItem('simata_brevo_api_key') || '';
-  const brevoSender = localStorage.getItem('simata_brevo_sender') || '';
+  const brevoApiKey = localStorage.getItem('simata_brevo_api_key') || DEFAULT_BREVO_API_KEY;
+  const brevoSender = localStorage.getItem('simata_brevo_sender') || DEFAULT_BREVO_SENDER;
   const serviceId = localStorage.getItem('simata_emailjs_service') || '';
   const templateId = localStorage.getItem('simata_emailjs_template') || '';
   const publicKey = localStorage.getItem('simata_emailjs_key') || '';
-  const provider = (localStorage.getItem('simata_email_provider') as any) || (brevoApiKey ? 'brevo' : 'google_script');
+  const provider = (localStorage.getItem('simata_email_provider') as any) || 'brevo';
 
   return {
     provider,

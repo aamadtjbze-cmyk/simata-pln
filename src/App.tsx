@@ -1082,15 +1082,17 @@ export default function App() {
               ></span>
             </button>
 
-            {/* Email Config Button (Prominent) */}
-            <button
-              onClick={() => setIsEmailConfigModalOpen(true)}
-              className="flex items-center gap-1.5 py-2 px-3 bg-white hover:bg-blue-50 dark:bg-slate-850 dark:hover:bg-slate-800 border-2 border-[#005DA6] dark:border-[#FFD500] text-[#005DA6] dark:text-[#FFD500] font-black text-xs uppercase tracking-wider cursor-pointer shadow-sm rounded-none transition-all"
-              title="Buka Pengaturan Koneksi Email (Direct Gmail / EmailJS)"
-            >
-              <Mail size={14} className="text-[#005DA6] dark:text-[#FFD500]" />
-              <span>{isEmailConfigured() ? 'Email Aktif ✅' : 'Koneksi Email ✉️'}</span>
-            </button>
+            {/* Email Config Button (Admin Only) */}
+            {userRole === 'ADMIN' && (
+              <button
+                onClick={() => setIsEmailConfigModalOpen(true)}
+                className="flex items-center gap-1.5 py-2 px-3 bg-white hover:bg-blue-50 dark:bg-slate-850 dark:hover:bg-slate-800 border-2 border-[#005DA6] dark:border-[#FFD500] text-[#005DA6] dark:text-[#FFD500] font-black text-xs uppercase tracking-wider cursor-pointer shadow-sm rounded-none transition-all"
+                title="Buka Pengaturan Koneksi Email (Brevo / Direct Gmail / EmailJS)"
+              >
+                <Mail size={14} className="text-[#005DA6] dark:text-[#FFD500]" />
+                <span>{isEmailConfigured() ? 'Email Aktif ✅' : 'Koneksi Email ✉️'}</span>
+              </button>
+            )}
 
             {/* QR Standee Pos Masuk Button */}
             <button

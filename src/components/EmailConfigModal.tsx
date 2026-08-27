@@ -1,11 +1,11 @@
-﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import React, { useState } from 'react';
 import { Mail, X, Save, CheckCircle, AlertTriangle, Loader2, Send, ShieldCheck, Zap, ExternalLink } from 'lucide-react';
-import { EmailConfig, sendApprovalEmail, DEFAULT_GOOGLE_SCRIPT_URL } from '../lib/email';
+import { EmailConfig, sendApprovalEmail, DEFAULT_GOOGLE_SCRIPT_URL, DEFAULT_BREVO_API_KEY, DEFAULT_BREVO_SENDER } from '../lib/email';
 
 interface EmailConfigModalProps {
   initialConfig: EmailConfig;
@@ -14,11 +14,11 @@ interface EmailConfigModalProps {
 }
 
 export default function EmailConfigModal({ initialConfig, onSave, onClose }: EmailConfigModalProps) {
-  const [provider, setProvider] = useState<'google_script' | 'brevo' | 'emailjs' | 'hybrid'>(initialConfig.provider || 'google_script');
+  const [provider, setProvider] = useState<'google_script' | 'brevo' | 'emailjs' | 'hybrid'>(initialConfig.provider || 'brevo');
   const [googleScriptUrl, setGoogleScriptUrl] = useState(initialConfig.googleScriptUrl || DEFAULT_GOOGLE_SCRIPT_URL);
   
-  const [brevoApiKey, setBrevoApiKey] = useState(initialConfig.brevoApiKey || '');
-  const [brevoSender, setBrevoSender] = useState(initialConfig.brevoSender || 'aamadtjbze@gmail.com');
+  const [brevoApiKey, setBrevoApiKey] = useState(initialConfig.brevoApiKey || DEFAULT_BREVO_API_KEY);
+  const [brevoSender, setBrevoSender] = useState(initialConfig.brevoSender || DEFAULT_BREVO_SENDER);
   
   const [serviceId, setServiceId] = useState(initialConfig.serviceId || '');
   const [templateId, setTemplateId] = useState(initialConfig.templateId || '');
