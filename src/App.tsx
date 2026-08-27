@@ -1012,19 +1012,6 @@ export default function App() {
           {/* Right Controls Area */}
           <div className="flex items-center gap-4">
             
-            {/* Quick Demo Helper (Hanya muncul saat belum login / mode tamu) */}
-            {userRole === 'GUEST' && (
-              <div className="hidden md:flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-none border border-slate-200 dark:border-slate-700">
-                <button
-                  onClick={handleAddSampleVisitor}
-                  className="px-3 py-1.5 hover:bg-white dark:hover:bg-slate-700 hover:text-sky-600 rounded-none text-[10px] font-black transition-all flex items-center gap-1 uppercase cursor-pointer"
-                  title="Uji coba registrasi tamu otomatis"
-                >
-                  Contoh Tamu
-                </button>
-              </div>
-            )}
-
             {/* Custom Theme Palette Gallery CTA */}
             <button
               onClick={() => setIsThemeStudioOpen(true)}
