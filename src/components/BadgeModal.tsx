@@ -7,7 +7,7 @@ import React, { useRef, useState } from 'react';
 import { X, Printer, Shield, Eye, Flame, CheckCircle, Smartphone, Copy, ExternalLink, QrCode, Check, AlertTriangle, XCircle, Calendar, Lock, Clock, CheckSquare } from 'lucide-react';
 import { Visitor } from '../types';
 import PLNLogo from './PLNLogo';
-import { encodePassToken, checkPassExpiration } from '../utils/security';
+import { encodePassToken, checkPassExpiration, getProductionPassUrl } from '../utils/security';
 
 interface BadgeModalProps {
   visitor: Visitor | null;
@@ -33,8 +33,7 @@ export default function BadgeModal({
 
   const passExpiration = checkPassExpiration(visitor);
   const badgeRef = useRef<HTMLDivElement>(null);
-  const secureToken = encodePassToken(visitor.id);
-  const passUrl = typeof window !== 'undefined' ? `${window.location.origin}/?token=${secureToken}` : `http://localhost:3000/?token=${secureToken}`;
+  const passUrl = getProductionPassUrl(visitor.id);
   const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(passUrl)}`;
 
   const formatDateTimeDisplay = (str: string | null | undefined, fallback: string) => {

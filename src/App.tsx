@@ -46,7 +46,7 @@ import GuestQrStandeeModal from './components/GuestQrStandeeModal';
 import { createNotification } from './lib/notificationHelper';
 import { Visitor, VisitorStatus, SystemNotification } from './types';
 import { INITIAL_VISITORS } from './data/mockData';
-import { decodePassToken } from './utils/security';
+import { decodePassToken, encodePassToken } from './utils/security';
 import {
   isSupabaseConfigured,
   getSupabaseClient,
@@ -255,13 +255,13 @@ export default function App() {
       setIsEmailConfigModalOpen(true);
     }
 
-    // Auto open badge modal if encrypted QR code token is opened (?token=... or ?passId=... or ?id=...)
-    const rawToken = urlParams.get('token') || urlParams.get('passId') || urlParams.get('badge') || urlParams.get('id');
+    // Auto open badge modal if encrypted QR code token is opened (?pass=... or ?token=... or legacy ?passId=...)
+    const rawToken = urlParams.get('pass') || urlParams.get('token') || urlParams.get('passId') || urlParams.get('badge') || urlParams.get('id');
     const passIdParam = urlParams.get('passId') || urlParams.get('id');
     if (rawToken || passIdParam) {
       setIsScannedPass(true);
       const decoded = rawToken ? decodePassToken(rawToken) : null;
-      const lookupTerm = passIdParam || decoded || rawToken || '';
+      const lookupTerm = decoded || passIdParam || rawToken || '';
 
       if (lookupTerm) {
         // 1. Cek dulu di cache lokal untuk render secepat kilat
@@ -275,6 +275,10 @@ export default function App() {
           );
           if (match) {
             setVisitorForBadge(match);
+            // Bersihkan address bar browser dengan token acak terenkripsi
+            try {
+              window.history.replaceState({}, '', `/?pass=${encodePassToken(match.id)}`);
+            } catch (e) {}
           }
         } catch (e) {
           // ignore
@@ -293,6 +297,10 @@ export default function App() {
                 if (data && data.length > 0 && !error) {
                   const fetchedVisitor = rowToVisitor(data[0]);
                   setVisitorForBadge(fetchedVisitor);
+                  // Bersihkan address bar browser dengan token acak terenkripsi
+                  try {
+                    window.history.replaceState({}, '', `/?pass=${encodePassToken(fetchedVisitor.id)}`);
+                  } catch (e) {}
                 }
               })
               .catch((err) => console.warn('[Pass Token Sync] Gagal memuat data dari cloud:', err));
