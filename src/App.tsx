@@ -205,6 +205,12 @@ export default function App() {
       setCurrentTab('pengajuan-tamu');
     }
 
+    // Auto open email config modal if ?email=1 or ?modal=email or ?tab=email
+    const emailParam = urlParams.get('email') || urlParams.get('modal') || urlParams.get('setup');
+    if (emailParam === '1' || emailParam === 'email' || tabParam === 'email') {
+      setIsEmailConfigModalOpen(true);
+    }
+
     // Auto open badge modal if encrypted QR code token is opened (?token=... or ?passId=...)
     const rawToken = urlParams.get('token') || urlParams.get('passId') || urlParams.get('badge');
     if (rawToken) {
@@ -1494,6 +1500,18 @@ export default function App() {
           />
         );
       })()}
+
+      {/* Persistent Floating Action Button: Hubungkan Email */}
+      <div className="fixed bottom-4 right-4 z-40 no-print animate-bounce">
+        <button
+          onClick={() => setIsEmailConfigModalOpen(true)}
+          className="px-4 py-2.5 bg-[#005DA6] hover:bg-[#004070] text-white border-2 border-[#FFD500] shadow-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all hover:scale-105 rounded-none"
+          title="Buka Pengaturan Koneksi Gmail Google Apps Script"
+        >
+          <Mail size={16} className="text-[#FFD500]" />
+          <span>Hubungkan Gmail ✉️</span>
+        </button>
+      </div>
 
     </div>
   );
