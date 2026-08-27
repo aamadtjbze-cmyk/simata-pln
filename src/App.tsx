@@ -92,9 +92,13 @@ export default function App() {
   // UI Toast alert state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'danger' } | null>(null);
 
-  // Derive the last/maximum Form ID to prevent duplicate key assignment
+  // Derive the last/maximum Form ID to prevent duplicate key assignment (numeric extraction)
   const lastFormId = visitors.length > 0 
-    ? [...visitors].sort((a, b) => b.id.localeCompare(a.id))[0].id 
+    ? [...visitors].sort((a, b) => {
+        const numA = parseInt(a.id.replace(/\D/g, '') || '0', 10);
+        const numB = parseInt(b.id.replace(/\D/g, '') || '0', 10);
+        return numB - numA;
+      })[0].id 
     : 'TJB-VST-005008';
 
   // Initialize data on component mount

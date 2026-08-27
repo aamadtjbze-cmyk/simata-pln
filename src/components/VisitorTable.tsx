@@ -188,18 +188,45 @@ export default function VisitorTable({
     );
   });
 
-  // Sorting Process
+  // Intelligent Sorting Process
   const sortedItems = [...filteredItems].sort((a, b) => {
-    let valA = a[sortField] || '';
-    let valB = b[sortField] || '';
-
-    // Handle string comparisons
-    if (typeof valA === 'string' && typeof valB === 'string') {
-      return sortDirection === 'asc'
-        ? valA.localeCompare(valB)
-        : valB.localeCompare(valA);
+    // If sorted by specific custom column (name, company, schedule, inTime, etc.)
+    if (sortField !== 'id') {
+      let valA = a[sortField] || '';
+      let valB = b[sortField] || '';
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return sortDirection === 'asc'
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      }
+      return 0;
     }
-    return 0;
+
+    // Default Sorting (Urutan Cerdas SIMATA):
+    // 1. Prioritaskan status PENDING di baris teratas (agar approval admin tidak terlewat)
+    // 2. Kemudian status SCHEDULED (tamu terjadwal)
+    // 3. Kemudian status IN-PROGRESS (sedang di gedung)
+    // 4. Kemudian status DONE / REJECTED / EXPIRED
+    const statusWeight: Record<string, number> = {
+      'PENDING': 1,
+      'SCHEDULED': 2,
+      'IN-PROGRESS': 3,
+      'DONE': 4,
+      'REJECTED': 5,
+      'EXPIRED': 6,
+    };
+
+    const weightA = statusWeight[a.status] || 99;
+    const weightB = statusWeight[b.status] || 99;
+
+    if (weightA !== weightB) {
+      return weightA - weightB; // PENDING & SCHEDULED selalu diprioritaskan di atas
+    }
+
+    // Dalam kelompok status yang sama, urutkan berdasarkan Nomor Form ID numerik terbaru di atas
+    const numA = parseInt(a.id.replace(/\D/g, '') || '0', 10);
+    const numB = parseInt(b.id.replace(/\D/g, '') || '0', 10);
+    return sortDirection === 'asc' ? numA - numB : numB - numA;
   });
 
   // Pagination bounds
