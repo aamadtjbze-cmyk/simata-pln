@@ -112,6 +112,18 @@ export const prewarmGoogleScript = (): void => {
 };
 
 /**
+ * Start periodic prewarm timer (every 4 minutes) so Google Apps Script never goes to cold sleep.
+ * Returns a cleanup function.
+ */
+export const startPeriodicPrewarm = (intervalMs = 4 * 60 * 1000): (() => void) => {
+  prewarmGoogleScript();
+  const timer = setInterval(() => {
+    prewarmGoogleScript();
+  }, intervalMs);
+  return () => clearInterval(timer);
+};
+
+/**
  * Kirim email persetujuan janji temu beserta QR Pass link ke tamu.
  */
 export const sendApprovalEmail = async (visitor: Visitor, passUrl: string): Promise<boolean> => {

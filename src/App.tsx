@@ -61,7 +61,44 @@ import {
   getEmailConfig,
   saveEmailConfig,
   prewarmGoogleScript,
+  startPeriodicPrewarm,
 } from './lib/email';
+
+// Web Audio API chime (zero network, zero external assets)
+const playNotificationChime = () => {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.1); // A5
+    
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.5);
+  } catch (e) {}
+};
+
+// Browser Desktop Push Notification (0 Vercel compute)
+const sendDesktopNotification = (title: string, body: string) => {
+  try {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, {
+        body,
+        icon: '/favicon.ico',
+      });
+    }
+  } catch (e) {}
+};
 
 export default function App() {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
@@ -318,6 +355,16 @@ export default function App() {
               if (type === 'INSERT') {
                 const newV = rowToVisitor(payload.new);
                 next = [newV, ...next.filter((v) => v.id !== newV.id)];
+
+                // Jika pengajuan baru (PENDING), bunyikan notifikasi audio & push notification
+                if (newV.status === 'PENDING') {
+                  playNotificationChime();
+                  sendDesktopNotification(
+                    `🔔 Pengajuan Janji Temu Masuk: ${newV.visitorName}`,
+                    `Instansi: ${newV.company || '-'} | Bertemu: ${newV.visited} (${newV.schedule})`
+                  );
+                  triggerToast(`Pengajuan Janji Temu Masuk: ${newV.visitorName} (${newV.company})`, 'info');
+                }
               } else if (type === 'UPDATE') {
                 const updatedV = rowToVisitor(payload.new);
                 next = next.map((v) => (v.id === updatedV.id ? updatedV : v));
@@ -356,6 +403,17 @@ export default function App() {
       }
     };
   }, []);
+
+  // Auto-prewarm Google Apps Script berkala dan inisialisasi notifikasi saat Admin aktif
+  useEffect(() => {
+    if (userRole === 'ADMIN') {
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+      }
+      const stopPrewarm = startPeriodicPrewarm(4 * 60 * 1000);
+      return () => stopPrewarm();
+    }
+  }, [userRole]);
 
   const handleSelectTab = (tab: 'buku-tamu' | 'janji-temu' | 'pengajuan-tamu' | 'notifikasi' | 'laporan' | 'kelola-user') => {
     setCurrentTab(tab);
@@ -1172,10 +1230,18 @@ export default function App() {
           >
             <Calendar size={13} />
             Janji Temu Tamu {userRole !== 'ADMIN' && '🔒'}
-            {userRole === 'ADMIN' && visitors.filter((v) => v.status === 'PENDING' || v.status === 'SCHEDULED').length > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 flex items-center justify-center bg-amber-500 text-slate-950 rounded-none text-[8.5px] font-black border border-white dark:border-[#111c30] leading-none">
-                {visitors.filter((v) => v.status === 'PENDING' || v.status === 'SCHEDULED').length}
-              </span>
+            {userRole === 'ADMIN' && (
+              <>
+                {visitors.filter((v) => v.status === 'PENDING').length > 0 ? (
+                  <span className="ml-1.5 px-1.5 py-0.5 flex items-center justify-center bg-rose-600 text-white rounded-none text-[8.5px] font-black border border-white dark:border-[#111c30] leading-none animate-pulse shadow-sm">
+                    {visitors.filter((v) => v.status === 'PENDING').length} BARU
+                  </span>
+                ) : visitors.filter((v) => v.status === 'SCHEDULED').length > 0 ? (
+                  <span className="ml-1.5 px-1.5 py-0.5 flex items-center justify-center bg-amber-500 text-slate-950 rounded-none text-[8.5px] font-black border border-white dark:border-[#111c30] leading-none">
+                    {visitors.filter((v) => v.status === 'SCHEDULED').length}
+                  </span>
+                ) : null}
+              </>
             )}
           </button>
 
