@@ -60,6 +60,7 @@ import {
   isEmailConfigured,
   getEmailConfig,
   saveEmailConfig,
+  prewarmGoogleScript,
 } from './lib/email';
 
 export default function App() {
@@ -358,6 +359,9 @@ export default function App() {
 
   const handleSelectTab = (tab: 'buku-tamu' | 'janji-temu' | 'pengajuan-tamu' | 'notifikasi' | 'laporan' | 'kelola-user') => {
     setCurrentTab(tab);
+    if (tab === 'janji-temu') {
+      prewarmGoogleScript();
+    }
     if (tab === 'buku-tamu' || tab === 'janji-temu') {
       if (isSupabaseConfigured()) {
         fetchVisitorsFromSupabase().then((data) => {

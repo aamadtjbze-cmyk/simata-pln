@@ -80,6 +80,7 @@ const sendViaGoogleScript = async (visitor: Visitor, passUrl: string, scriptUrl:
     await fetch(scriptUrl, {
       method: 'POST',
       mode: 'no-cors',
+      keepalive: true,
       headers: {
         'Content-Type': 'text/plain;charset=utf-8',
       },
@@ -89,6 +90,24 @@ const sendViaGoogleScript = async (visitor: Visitor, passUrl: string, scriptUrl:
   } catch (err) {
     console.error('[Google Apps Script] Gagal kirim email:', err);
     return false;
+  }
+};
+
+/**
+ * Pre-warm Google Apps Script container in the background to prevent cold-start latency
+ */
+export const prewarmGoogleScript = (): void => {
+  const cfg = getEmailConfig();
+  if (cfg.googleScriptUrl && cfg.googleScriptUrl.startsWith('https://script.google.com/')) {
+    try {
+      fetch(cfg.googleScriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        keepalive: true,
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ ping: true }),
+      }).catch(() => {});
+    } catch (e) {}
   }
 };
 
