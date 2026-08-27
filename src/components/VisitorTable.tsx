@@ -24,7 +24,12 @@ import {
   Users2,
   X,
   ChevronRight,
-  MessageSquare
+  MessageSquare,
+  LayoutList,
+  LayoutGrid,
+  Building,
+  Clock,
+  Shield
 } from 'lucide-react';
 import { Visitor, VisitorStatus } from '../types';
 import { generateWhatsAppPassUrl } from '../lib/email';
@@ -83,6 +88,30 @@ export default function VisitorTable({
 
   // Multi-select row state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Responsive View Mode (Table for Desktop/Laptop, Cards for Mobile/Tablet)
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768 ? 'cards' : 'table';
+    }
+    return 'table';
+  });
+
+  const [isSmallScreen, setIsSmallScreen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 1024;
+    }
+    return false;
+  });
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      const small = window.innerWidth < 1024;
+      setIsSmallScreen(small);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Unique companies / purposes for dropdown filters
   const uniquePurposes = Array.from(new Set(visitors.map((v) => v.purpose))).filter(Boolean);
@@ -379,6 +408,36 @@ export default function VisitorTable({
             <RefreshCw size={16} />
           </button>
 
+          {/* View Mode Toggle: Table (Laptop) vs Cards (Mobile / HP) */}
+          <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-[#005DA6] text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+              }`}
+              title="Tampilan Tabel Lengkap (Laptop / Layar Lebar)"
+            >
+              <LayoutList size={14} />
+              <span className="text-[10.5px] uppercase font-black">Tabel</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('cards')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                viewMode === 'cards'
+                  ? 'bg-[#005DA6] text-[#FFD500] shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+              }`}
+              title="Tampilan Kartu Responsif (Optimal di HP & Layar Sentuh)"
+            >
+              <LayoutGrid size={14} />
+              <span className="text-[10.5px] uppercase font-black">Kartu (HP)</span>
+            </button>
+          </div>
+
           {/* Confirm by Group */}
           <button
             onClick={handleBatchCheckOut}
@@ -409,457 +468,632 @@ export default function VisitorTable({
         </div>
       </div>
 
-      {/* Table Canvas */}
-      <div className="overflow-auto flex-1 min-h-0 w-full">
-        <table className="min-w-[1250px] w-full text-left border-collapse">
-          <thead>
-            {/* Main Header Labels */}
-            <tr className="bg-slate-100 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800/50 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider select-none">
-              
-              <th className="p-4 w-12 text-center">
-                <input
-                  type="checkbox"
-                  checked={isAllPageSelected}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                  className="rounded-none accent-[#005DA6] w-4 h-4 cursor-pointer"
-                />
-              </th>
-
-              <th
-                onClick={() => handleSort('id')}
-                className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all font-mono w-40"
-              >
-                <div className="flex items-center gap-1">
-                  Form ID
-                  {sortField === 'id' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </div>
-              </th>
-
-              <th
-                onClick={() => handleSort('schedule')}
-                className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all"
-              >
-                <div className="flex items-center gap-1">
-                  Schedule
-                  {sortField === 'schedule' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </div>
-              </th>
-
-              <th
-                onClick={() => handleSort('inTime')}
-                className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all"
-              >
-                <div className="flex items-center gap-1">
-                  IN
-                  {sortField === 'inTime' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </div>
-              </th>
-
-              <th
-                onClick={() => handleSort('secondGateTime' as any)}
-                className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all whitespace-nowrap"
-              >
-                <div className="flex items-center gap-1">
-                  SECOND GATE
-                  {sortField === ('secondGateTime' as any) && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </div>
-              </th>
-
-              <th
-                onClick={() => handleSort('outTime')}
-                className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all"
-              >
-                <div className="flex items-center gap-1">
-                  OUT
-                  {sortField === 'outTime' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </div>
-              </th>
-
-              <th
-                onClick={() => handleSort('visitorName')}
-                className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all"
-              >
-                <div className="flex items-center gap-1">
-                  Visitor
-                  {sortField === 'visitorName' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </div>
-              </th>
-
-              <th className="p-4">Gate Pass</th>
-
-              <th
-                onClick={() => handleSort('company')}
-                className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all"
-              >
-                <div className="flex items-center gap-1">
-                  Company
-                  {sortField === 'company' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </div>
-              </th>
-
-              <th
-                onClick={() => handleSort('purpose')}
-                className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-xs"
-              >
-                <div className="flex items-center gap-1 text-slate-550">
-                  Purpose
-                  {sortField === 'purpose' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </div>
-              </th>
-
-              <th
-                onClick={() => handleSort('visited')}
-                className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all"
-              >
-                <div className="flex items-center gap-1">
-                  Visited
-                  {sortField === 'visited' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </div>
-              </th>
-
-              <th
-                onClick={() => handleSort('status')}
-                className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-center"
-              >
-                <div className="flex items-center justify-center gap-1">
-                  Status
-                  {sortField === 'status' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </div>
-              </th>
-
-              <th className="p-4 text-center">Aksi</th>
-            </tr>
-
-            {/* Column Date Filter Inputs (Directly modeled after image) */}
-            <tr className="bg-slate-50 dark:bg-slate-950/20 border-b border-slate-200 dark:border-slate-800/80 font-mono text-[10px]">
-              <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-              <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-              
-              {/* Schedule date search input */}
-              <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={scheduleFilter}
-                    onChange={(e) => setScheduleFilter(e.target.value)}
-                    placeholder="dd/mm/yyyy"
-                    className="w-full text-[10px] px-2 py-1 bg-white dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005DA6] placeholder-slate-400"
-                  />
-                </div>
-              </td>
-
-              {/* IN date search input */}
-              <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={inFilter}
-                    onChange={(e) => setInFilter(e.target.value)}
-                    placeholder="dd/mm/yyyy"
-                    className="w-full text-[10px] px-2 py-1 bg-white dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005DA6] placeholder-slate-400"
-                  />
-                </div>
-              </td>
-
-              {/* SECOND GATE date search input */}
-              <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={secondGateFilter}
-                    onChange={(e) => setSecondGateFilter(e.target.value)}
-                    placeholder="dd/mm/yyyy"
-                    className="w-full text-[10px] px-2 py-1 bg-white dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005DA6] placeholder-slate-400"
-                  />
-                </div>
-              </td>
-
-              {/* OUT date search input */}
-              <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={outFilter}
-                    onChange={(e) => setOutFilter(e.target.value)}
-                    placeholder="dd/mm/yyyy"
-                    className="w-full text-[10px] px-2 py-1 bg-white dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005DA6] placeholder-slate-400"
-                  />
-                </div>
-              </td>
-
-              <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-              <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-              <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-              <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-              <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-              <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-              <td className="p-2"></td>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-            {currentPagedItems.length > 0 ? (
-              currentPagedItems.map((item, index) => {
-                const isSelected = selectedIds.includes(item.id);
-                return (
-                  <tr
-                    key={item.id}
-                    className={`hover:bg-[#f6faff]/80 dark:hover:bg-slate-800/30 transition-all duration-150 text-xs font-semibold ${
-                      isSelected
-                        ? 'bg-amber-50/40 dark:bg-amber-950/10'
-                        : index % 2 === 0
-                        ? 'bg-white dark:bg-slate-900'
-                        : 'bg-slate-50/50 dark:bg-slate-950/20'
-                    }`}
-                  >
-                    {/* Checkbox select */}
-                    <td className="p-4 text-center">
+      {/* Table Canvas or Mobile Cards View */}
+      {viewMode === 'cards' ? (
+        /* Mobile & Tablet Card View */
+        <div className="p-3 sm:p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 bg-slate-50 dark:bg-[#0c1322] overflow-y-auto flex-1 min-h-[360px]">
+          {currentPagedItems.length > 0 ? (
+            currentPagedItems.map((item) => {
+              const isSelected = selectedIds.includes(item.id);
+              return (
+                <div
+                  key={item.id}
+                  className={`bg-white dark:bg-[#152033] border-2 ${
+                    isSelected
+                      ? 'border-amber-400 dark:border-amber-500 bg-amber-50/20'
+                      : 'border-slate-200 dark:border-slate-800 hover:border-[#005DA6] dark:hover:border-[#005DA6]'
+                  } p-4 shadow-xs transition-all flex flex-col justify-between gap-3 relative rounded-none`}
+                >
+                  {/* Card Header: Checkbox, Form ID, Status, Gate Pass */}
+                  <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                    <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={(e) => handleSelectRow(item.id, e.target.checked)}
                         className="rounded-none accent-[#005DA6] w-4 h-4 cursor-pointer"
                       />
-                    </td>
-
-                    {/* Form ID Link */}
-                    <td className="p-4 font-bold text-[#005DA6] dark:text-[#FFD500] hover:underline cursor-pointer font-mono" onClick={() => onViewBadge(item)}>
-                      {item.id}
-                    </td>
-
-                    {/* Schedule */}
-                    <td className="p-4 text-slate-500 dark:text-slate-400 font-mono whitespace-nowrap">
-                      {item.schedule}
-                    </td>
-
-                    {/* IN Timestamp & Action Button */}
-                    <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
-                      {item.inTime ? (
-                        // Sudah ada jam masuk — tombol aktif hanya untuk IN-PROGRESS (koreksi jam)
-                        item.status === 'IN-PROGRESS' ? (
-                          <button
-                            onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
-                            className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-emerald-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer font-mono"
-                            title="Klik untuk memperbarui / konfirmasi ulang jam Check-In Pos 1"
-                          >
-                            <UserCheck2 size={11} className="text-[#FFD500]" />
-                            <span>{item.inTime}</span>
-                          </button>
-                        ) : (
-                          // DONE / REJECTED / EXPIRED — hanya tampilkan teks, tidak bisa diklik
-                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{item.inTime}</span>
-                        )
-                      ) : (
-                        // Belum ada jam:
-                        item.status === 'SCHEDULED' ? (
-                          <button
-                            onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
-                            className="px-2.5 py-1 bg-[#005DA6] hover:bg-[#004070] active:bg-[#003056] text-white font-extrabold rounded-none text-[10px] border-b border-r border-[#FFD500] shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
-                            title="Konfirmasi Tamu Tiba di Pos 1 Utama"
-                          >
-                            <UserCheck2 size={11} className="text-[#FFD500]" />
-                            + Check-In 1
-                          </button>
-                        ) : item.status === 'PENDING' ? (
-                          <div
-                            className="flex items-center justify-center gap-1 px-2 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800 rounded-none text-[9.5px] font-bold select-none cursor-not-allowed shadow-2xs"
-                            title="Check-In Terkunci: Menunggu persetujuan Janji Temu oleh Admin terlebih dahulu."
-                          >
-                            <Lock size={10} className="shrink-0 text-amber-600 dark:text-amber-400" />
-                            <span>Perlu Approval</span>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 font-sans italic">-</span>
-                        )
-                      )}
-                    </td>
-
-                    {/* SECOND GATE Timestamp & Pass Button */}
-                    <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
-                      {item.secondGateTime ? (
-                        // Sudah ada jam Pos 2 — tombol aktif hanya untuk IN-PROGRESS
-                        item.status === 'IN-PROGRESS' ? (
-                          <button
-                            onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(item.id)}
-                            className="px-2 py-1 bg-sky-700 hover:bg-sky-800 active:bg-sky-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex flex-col items-start gap-0.5 cursor-pointer font-mono"
-                            title="Klik untuk memperbarui / konfirmasi ulang jam Pos 2"
-                          >
-                            <div className="flex items-center gap-1">
-                              <Layers size={11} className="text-sky-200" />
-                              <span>{item.secondGateTime}</span>
-                            </div>
-                            {item.secondGatePass && (
-                              <span className="text-[8.5px] font-bold bg-sky-900/60 text-sky-200 px-1 py-0.2 rounded-none">
-                                {item.secondGatePass}
-                              </span>
-                            )}
-                          </button>
-                        ) : (
-                          // DONE/REJECTED — read-only
-                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{item.secondGateTime}</span>
-                        )
-                      ) : (item.status === 'IN-PROGRESS' || item.status === 'SCHEDULED') ? (
+                      <div>
                         <button
-                          onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(item.id)}
-                          className="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-bold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
-                          title="Konfirmasi Akses Pos 2 (Stakeholder Dalam)"
+                          onClick={() => onViewBadge(item)}
+                          className="font-mono text-xs font-black text-[#005DA6] dark:text-[#FFD500] hover:underline flex items-center gap-1 cursor-pointer"
                         >
-                          <Layers size={11} />
-                          + Pos 2
+                          {item.id} <ExternalLink size={11} />
                         </button>
-                      ) : (
-                        <span className="text-slate-400 font-sans italic">-</span>
-                      )}
-                    </td>
-
-                    {/* OUT Timestamp / Check-Out Action Button */}
-                    <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
-                      {item.outTime ? (
-                        // DONE — hanya tampilkan teks jam, tidak bisa diklik (sudah selesai)
-                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                          <Check size={10} className="text-emerald-500" />
-                          {item.outTime}
+                        <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
+                          {item.schedule || '-'}
                         </span>
-                      ) : item.status === 'IN-PROGRESS' ? (
-                        <button
-                          onClick={() => onCheckOut(item.id)}
-                          className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-extrabold rounded-none text-[10px] border-b border-r border-amber-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
-                        >
-                          <Check size={11} />
-                          Check-Out
-                        </button>
-                      ) : item.status === 'PENDING' ? (
-                        <button
-                          onClick={() => onApproveBooking && onApproveBooking(item.id)}
-                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-none text-[10px] border-b border-r border-emerald-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
-                          title="Setujui Janji Temu Sekretariat"
-                        >
-                          <CheckSquare size={11} />
-                          Setujui Janji
-                        </button>
-                      ) : (
-                        <span className="text-slate-400 font-sans italic">-</span>
-                      )}
-                    </td>
-
-                    {/* Visitor Name with Quick Action Menu Trigger */}
-                    <td className="p-4 text-slate-800 dark:text-slate-100 font-extrabold uppercase">
-                      <button
-                        onClick={() => setQuickActionVisitor(item)}
-                        className="group flex items-center gap-1.5 text-[#005DA6] dark:text-[#FFD500] hover:underline font-black cursor-pointer text-left uppercase"
-                        title="Klik untuk Menu Aksi, Edit & Alokasi Jadwal"
-                      >
-                        <span>{item.visitorName}</span>
-                        <ExternalLink size={12} className="opacity-60 group-hover:opacity-100 shrink-0" />
-                      </button>
-                    </td>
-
-                    {/* Gate Passes */}
-                    <td className="p-4">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-mono text-[10px] text-amber-600 dark:text-amber-500 font-bold bg-amber-50 dark:bg-amber-950/20 px-1 rounded-none border border-amber-200/50 dark:border-amber-900/30 block w-fit truncate max-w-[120px]">
-                          {item.mainGatePass || '-'}
-                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      {getStatusBadge(item.status)}
+                      <div className="flex gap-1">
+                        {item.mainGatePass && (
+                          <span className="font-mono text-[9px] text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 border border-amber-300 dark:border-amber-800">
+                            {item.mainGatePass}
+                          </span>
+                        )}
                         {item.secondGatePass && (
-                          <span className="font-mono text-[10px] text-sky-600 dark:text-sky-400 font-bold bg-sky-50 dark:bg-sky-950/20 px-1 rounded-none border border-sky-200/50 dark:border-sky-900/30 block w-fit truncate max-w-[120px] mt-0.5">
+                          <span className="font-mono text-[9px] text-sky-700 dark:text-sky-400 font-bold bg-sky-50 dark:bg-sky-950/40 px-1.5 py-0.5 border border-sky-300 dark:border-sky-800">
                             {item.secondGatePass}
                           </span>
                         )}
                       </div>
-                    </td>
+                    </div>
+                  </div>
 
-                    {/* Company */}
-                    <td className="p-4 text-slate-600 dark:text-slate-300 font-extrabold uppercase truncate max-w-[150px]" title={item.company}>
-                      {item.company}
-                    </td>
+                  {/* Card Body: Visitor Name, Company, Purpose, Visited */}
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <button
+                        onClick={() => setQuickActionVisitor(item)}
+                        className="font-black text-sm text-slate-900 dark:text-slate-100 uppercase tracking-tight text-left hover:text-[#005DA6] dark:hover:text-[#FFD500] flex items-center gap-1"
+                      >
+                        {item.visitorName}
+                        <ExternalLink size={12} className="opacity-50" />
+                      </button>
+                      <p className="font-bold text-slate-600 dark:text-slate-300 uppercase text-[11px] flex items-center gap-1 mt-0.5">
+                        <Building size={12} className="text-[#005DA6] shrink-0" />
+                        {item.company}
+                      </p>
+                    </div>
 
-                    {/* Purpose */}
-                    <td className="p-4 text-slate-500 dark:text-slate-400 capitalize truncate max-w-[120px]" title={item.purpose}>
-                      {item.purpose}
-                    </td>
-
-                    {/* Visited employee/department */}
-                    <td className="p-4 text-slate-800 dark:text-slate-200 font-bold uppercase truncate max-w-[130px]" title={item.visited}>
-                      {item.visited}
-                    </td>
-
-                    {/* Status badge */}
-                    <td className="p-4 text-center">
-                      {getStatusBadge(item.status)}
-                    </td>
-
-                    {/* Row action shortcuts */}
-                    <td className="p-4 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        
-                        {/* View Badge */}
-                        <button
-                          onClick={() => onViewBadge(item)}
-                          title="Cetak Pass Masuk Tamu"
-                          className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[#005DA6] dark:text-[#FFD500] rounded-none hover:border border-[#005DA6] dark:border-[#FFD500] transition-all cursor-pointer"
-                        >
-                          <Printer size={15} />
-                        </button>
-
-                        {/* Quick WhatsApp Pass Send (if phone available) */}
-                        {item.phone && (
-                          <a
-                            href={generateWhatsAppPassUrl(item, getProductionPassUrl(item.id))}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title={`Kirim Barcode Pass ke WhatsApp (${item.phone})`}
-                            className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-none transition-all cursor-pointer inline-flex items-center"
-                          >
-                            <MessageSquare size={14} />
-                          </a>
-                        )}
-
-                        {/* Edit details */}
-                        <button
-                          onClick={() => onEdit(item)}
-                          title="Ubah Rincian"
-                          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-none transition-all cursor-pointer"
-                        >
-                          <SlidersHorizontal size={14} />
-                        </button>
-
-                        {/* Delete record */}
-                        <button
-                          onClick={() => onDelete(item.id)}
-                          title="Hapus Data"
-                          className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-500 dark:text-[#FF3B30] rounded-none transition-all cursor-pointer"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                    <div className="bg-slate-50 dark:bg-slate-900/60 p-2.5 border border-slate-100 dark:border-slate-800 space-y-1.5 rounded-none">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 shrink-0">Bertemu:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200 text-right uppercase text-[11px] text-[#005DA6] dark:text-[#FFD500]">
+                          {item.visited}
+                        </span>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={12} className="p-12 text-center bg-white dark:bg-slate-900">
-                  <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
-                    <AlertTriangle className="text-amber-500" size={36} />
-                    <p className="font-extrabold text-sm text-slate-800 dark:text-slate-200 mt-2">
-                      Data Tamu Tidak Ditemukan
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
-                      Tidak ada permohonan atau log kunjungan tamu yang sesuai dengan filter saat ini.
-                    </p>
-                    <button
-                      onClick={handleResetFilters}
-                      className="mt-3 px-4 py-2 bg-[#005DA6] hover:bg-[#004070] text-white font-bold text-xs rounded-none border-b-2 border-r-2 border-[#FFD500] shadow-xs cursor-pointer transition-colors"
-                    >
-                      Reset Filter Pencarian
-                    </button>
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 shrink-0">Keperluan:</span>
+                        <span className="text-slate-700 dark:text-slate-300 text-right text-[11px] font-medium">
+                          {item.purpose}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Timestamps Grid */}
+                    <div className="grid grid-cols-3 gap-1 text-[10px] font-mono bg-slate-100 dark:bg-slate-950/40 p-2 border border-slate-200/60 dark:border-slate-800 text-center">
+                      <div>
+                        <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold">IN</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                          {item.inTime ? item.inTime.split(' - ')[1] || item.inTime : '-'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold">POS 2</span>
+                        <span className="font-bold text-sky-600 dark:text-sky-400">
+                          {item.secondGateTime ? item.secondGateTime.split(' - ')[1] || item.secondGateTime : '-'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold">OUT</span>
+                        <span className="font-bold text-rose-600 dark:text-rose-400">
+                          {item.outTime ? item.outTime.split(' - ')[1] || item.outTime : '-'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Actions Footer */}
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onViewBadge(item)}
+                        title="Cetak Pass Masuk Tamu"
+                        className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-950/40 hover:bg-[#005DA6] hover:text-white text-[#005DA6] dark:text-[#FFD500] border border-[#005DA6] text-[10px] font-bold uppercase transition-all cursor-pointer"
+                      >
+                        <Printer size={12} /> Cetak
+                      </button>
+                      {item.phone && (
+                        <a
+                          href={generateWhatsAppPassUrl(item, getProductionPassUrl(item.id))}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Kirim Pass via WhatsApp"
+                          className="flex items-center gap-1 px-2 py-1 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-600 hover:text-white text-emerald-600 dark:text-emerald-400 border border-emerald-500 text-[10px] font-bold uppercase transition-all cursor-pointer"
+                        >
+                          <MessageSquare size={12} /> WA
+                        </a>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      {item.status === 'SCHEDULED' && onCheckInAppointment && (
+                        <button
+                          onClick={() => onCheckInAppointment(item.id)}
+                          className="px-2 py-1 bg-[#005DA6] hover:bg-[#004070] text-white text-[10px] font-bold uppercase cursor-pointer"
+                        >
+                          Check-In 1
+                        </button>
+                      )}
+                      {item.status === 'IN-PROGRESS' && (
+                        <button
+                          onClick={() => onCheckOut(item.id)}
+                          className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold uppercase cursor-pointer"
+                        >
+                          Check-Out
+                        </button>
+                      )}
+                      <button
+                        onClick={() => onEdit(item)}
+                        title="Ubah Rincian"
+                        className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
+                      >
+                        <SlidersHorizontal size={13} />
+                      </button>
+                      <button
+                        onClick={() => onDelete(item.id)}
+                        title="Hapus Data"
+                        className="p-1 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-500 border border-rose-200 dark:border-rose-900 transition-all cursor-pointer"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              );
+            })
+          ) : (
+            <div className="col-span-full p-8 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+              <AlertTriangle className="text-amber-500 mx-auto" size={32} />
+              <p className="font-extrabold text-xs text-slate-800 dark:text-slate-200 mt-2">
+                Data Tamu Tidak Ditemukan
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Laptop / Desktop Full Width Table Canvas */
+        <div className="overflow-auto flex-1 min-h-0 w-full">
+          <table className="min-w-[1350px] w-full text-left border-collapse">
+            <thead>
+              {/* Main Header Labels */}
+              <tr className="bg-slate-100 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800/50 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider select-none">
+                
+                <th className="p-4 w-12 text-center">
+                  <input
+                    type="checkbox"
+                    checked={isAllPageSelected}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="rounded-none accent-[#005DA6] w-4 h-4 cursor-pointer"
+                  />
+                </th>
+
+                <th
+                  onClick={() => handleSort('id')}
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all font-mono w-36"
+                >
+                  <div className="flex items-center gap-1">
+                    Form ID
+                    {sortField === 'id' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  </div>
+                </th>
+
+                <th
+                  onClick={() => handleSort('schedule')}
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[130px]"
+                >
+                  <div className="flex items-center gap-1">
+                    Schedule
+                    {sortField === 'schedule' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  </div>
+                </th>
+
+                <th
+                  onClick={() => handleSort('inTime')}
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[125px]"
+                >
+                  <div className="flex items-center gap-1">
+                    IN
+                    {sortField === 'inTime' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  </div>
+                </th>
+
+                <th
+                  onClick={() => handleSort('secondGateTime' as any)}
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all whitespace-nowrap min-w-[125px]"
+                >
+                  <div className="flex items-center gap-1">
+                    SECOND GATE
+                    {sortField === ('secondGateTime' as any) && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  </div>
+                </th>
+
+                <th
+                  onClick={() => handleSort('outTime')}
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[125px]"
+                >
+                  <div className="flex items-center gap-1">
+                    OUT
+                    {sortField === 'outTime' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  </div>
+                </th>
+
+                <th
+                  onClick={() => handleSort('visitorName')}
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[140px]"
+                >
+                  <div className="flex items-center gap-1">
+                    Visitor
+                    {sortField === 'visitorName' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  </div>
+                </th>
+
+                <th className="p-4 min-w-[110px]">Gate Pass</th>
+
+                <th
+                  onClick={() => handleSort('company')}
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[150px]"
+                >
+                  <div className="flex items-center gap-1">
+                    Company
+                    {sortField === 'company' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  </div>
+                </th>
+
+                <th
+                  onClick={() => handleSort('purpose')}
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-xs min-w-[130px]"
+                >
+                  <div className="flex items-center gap-1 text-slate-550">
+                    Purpose
+                    {sortField === 'purpose' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  </div>
+                </th>
+
+                <th
+                  onClick={() => handleSort('visited')}
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[170px]"
+                >
+                  <div className="flex items-center gap-1">
+                    Visited
+                    {sortField === 'visited' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  </div>
+                </th>
+
+                <th
+                  onClick={() => handleSort('status')}
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-center min-w-[130px]"
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Status
+                    {sortField === 'status' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  </div>
+                </th>
+
+                <th className="p-4 text-center min-w-[150px] sticky right-0 bg-slate-100 dark:bg-slate-950 z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.06)]">
+                  Aksi
+                </th>
+              </tr>
+
+              {/* Column Date Filter Inputs */}
+              <tr className="bg-slate-50 dark:bg-slate-950/20 border-b border-slate-200 dark:border-slate-800/80 font-mono text-[10px]">
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
+                
+                {/* Schedule date search input */}
+                <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={scheduleFilter}
+                      onChange={(e) => setScheduleFilter(e.target.value)}
+                      placeholder="dd/mm/yyyy"
+                      className="w-full text-[10px] px-2 py-1 bg-white dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005DA6] placeholder-slate-400"
+                    />
                   </div>
                 </td>
+
+                {/* IN date search input */}
+                <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={inFilter}
+                      onChange={(e) => setInFilter(e.target.value)}
+                      placeholder="dd/mm/yyyy"
+                      className="w-full text-[10px] px-2 py-1 bg-white dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005DA6] placeholder-slate-400"
+                    />
+                  </div>
+                </td>
+
+                {/* SECOND GATE date search input */}
+                <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={secondGateFilter}
+                      onChange={(e) => setSecondGateFilter(e.target.value)}
+                      placeholder="dd/mm/yyyy"
+                      className="w-full text-[10px] px-2 py-1 bg-white dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005DA6] placeholder-slate-400"
+                    />
+                  </div>
+                </td>
+
+                {/* OUT date search input */}
+                <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={outFilter}
+                      onChange={(e) => setOutFilter(e.target.value)}
+                      placeholder="dd/mm/yyyy"
+                      className="w-full text-[10px] px-2 py-1 bg-white dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005DA6] placeholder-slate-400"
+                    />
+                  </div>
+                </td>
+
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
+                <td className="p-2 sticky right-0 bg-slate-50 dark:bg-slate-950 z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.06)]"></td>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+              {currentPagedItems.length > 0 ? (
+                currentPagedItems.map((item, index) => {
+                  const isSelected = selectedIds.includes(item.id);
+                  return (
+                    <tr
+                      key={item.id}
+                      className={`hover:bg-[#f6faff]/80 dark:hover:bg-slate-800/30 transition-all duration-150 text-xs font-semibold ${
+                        isSelected
+                          ? 'bg-amber-50/40 dark:bg-amber-950/10'
+                          : index % 2 === 0
+                          ? 'bg-white dark:bg-slate-900'
+                          : 'bg-slate-50/50 dark:bg-slate-950/20'
+                      }`}
+                    >
+                      {/* Checkbox select */}
+                      <td className="p-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => handleSelectRow(item.id, e.target.checked)}
+                          className="rounded-none accent-[#005DA6] w-4 h-4 cursor-pointer"
+                        />
+                      </td>
+
+                      {/* Form ID Link */}
+                      <td className="p-4 font-bold text-[#005DA6] dark:text-[#FFD500] hover:underline cursor-pointer font-mono" onClick={() => onViewBadge(item)}>
+                        {item.id}
+                      </td>
+
+                      {/* Schedule */}
+                      <td className="p-4 text-slate-500 dark:text-slate-400 font-mono whitespace-nowrap">
+                        {item.schedule}
+                      </td>
+
+                      {/* IN Timestamp & Action Button */}
+                      <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
+                        {item.inTime ? (
+                          item.status === 'IN-PROGRESS' ? (
+                            <button
+                              onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
+                              className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-emerald-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer font-mono"
+                              title="Klik untuk memperbarui / konfirmasi ulang jam Check-In Pos 1"
+                            >
+                              <UserCheck2 size={11} className="text-[#FFD500]" />
+                              <span>{item.inTime}</span>
+                            </button>
+                          ) : (
+                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{item.inTime}</span>
+                          )
+                        ) : (
+                          item.status === 'SCHEDULED' ? (
+                            <button
+                              onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
+                              className="px-2.5 py-1 bg-[#005DA6] hover:bg-[#004070] active:bg-[#003056] text-white font-extrabold rounded-none text-[10px] border-b border-r border-[#FFD500] shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
+                              title="Konfirmasi Tamu Tiba di Pos 1 Utama"
+                            >
+                              <UserCheck2 size={11} className="text-[#FFD500]" />
+                              + Check-In 1
+                            </button>
+                          ) : item.status === 'PENDING' ? (
+                            <div
+                              className="flex items-center justify-center gap-1 px-2 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800 rounded-none text-[9.5px] font-bold select-none cursor-not-allowed shadow-2xs"
+                              title="Check-In Terkunci: Menunggu persetujuan Janji Temu oleh Admin terlebih dahulu."
+                            >
+                              <Lock size={10} className="shrink-0 text-amber-600 dark:text-amber-400" />
+                              <span>Perlu Approval</span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 font-sans italic">-</span>
+                          )
+                        )}
+                      </td>
+
+                      {/* SECOND GATE Timestamp & Pass Button */}
+                      <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
+                        {item.secondGateTime ? (
+                          item.status === 'IN-PROGRESS' ? (
+                            <button
+                              onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(item.id)}
+                              className="px-2 py-1 bg-sky-700 hover:bg-sky-800 active:bg-sky-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex flex-col items-start gap-0.5 cursor-pointer font-mono"
+                              title="Klik untuk memperbarui / konfirmasi ulang jam Pos 2"
+                            >
+                              <div className="flex items-center gap-1">
+                                <Layers size={11} className="text-sky-200" />
+                                <span>{item.secondGateTime}</span>
+                              </div>
+                              {item.secondGatePass && (
+                                <span className="text-[8.5px] font-bold bg-sky-900/60 text-sky-200 px-1 py-0.2 rounded-none">
+                                  {item.secondGatePass}
+                                </span>
+                              )}
+                            </button>
+                          ) : (
+                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{item.secondGateTime}</span>
+                          )
+                        ) : (item.status === 'IN-PROGRESS' || item.status === 'SCHEDULED') ? (
+                          <button
+                            onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(item.id)}
+                            className="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-bold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
+                            title="Konfirmasi Akses Pos 2 (Stakeholder Dalam)"
+                          >
+                            <Layers size={11} />
+                            + Pos 2
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 font-sans italic">-</span>
+                        )}
+                      </td>
+
+                      {/* OUT Timestamp / Check-Out Action Button */}
+                      <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
+                        {item.outTime ? (
+                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                            <Check size={10} className="text-emerald-500" />
+                            {item.outTime}
+                          </span>
+                        ) : item.status === 'IN-PROGRESS' ? (
+                          <button
+                            onClick={() => onCheckOut(item.id)}
+                            className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-extrabold rounded-none text-[10px] border-b border-r border-amber-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
+                          >
+                            <Check size={11} />
+                            Check-Out
+                          </button>
+                        ) : item.status === 'PENDING' ? (
+                          <button
+                            onClick={() => onApproveBooking && onApproveBooking(item.id)}
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-none text-[10px] border-b border-r border-emerald-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
+                            title="Setujui Janji Temu Sekretariat"
+                          >
+                            <CheckSquare size={11} />
+                            Setujui Janji
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 font-sans italic">-</span>
+                        )}
+                      </td>
+
+                      {/* Visitor Name with Quick Action Menu Trigger */}
+                      <td className="p-4 text-slate-800 dark:text-slate-100 font-extrabold uppercase">
+                        <button
+                          onClick={() => setQuickActionVisitor(item)}
+                          className="group flex items-center gap-1.5 text-[#005DA6] dark:text-[#FFD500] hover:underline font-black cursor-pointer text-left uppercase"
+                          title="Klik untuk Menu Aksi, Edit & Alokasi Jadwal"
+                        >
+                          <span>{item.visitorName}</span>
+                          <ExternalLink size={12} className="opacity-60 group-hover:opacity-100 shrink-0" />
+                        </button>
+                      </td>
+
+                      {/* Gate Passes */}
+                      <td className="p-4 min-w-[110px]">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-mono text-[10px] text-amber-600 dark:text-amber-500 font-bold bg-amber-50 dark:bg-amber-950/20 px-1 rounded-none border border-amber-200/50 dark:border-amber-900/30 block w-fit whitespace-nowrap">
+                            {item.mainGatePass || '-'}
+                          </span>
+                          {item.secondGatePass && (
+                            <span className="font-mono text-[10px] text-sky-600 dark:text-sky-400 font-bold bg-sky-50 dark:bg-sky-950/20 px-1 rounded-none border border-sky-200/50 dark:border-sky-900/30 block w-fit whitespace-nowrap mt-0.5">
+                              {item.secondGatePass}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Company - Full text, no truncate clipping */}
+                      <td className="p-4 text-slate-600 dark:text-slate-300 font-extrabold uppercase min-w-[150px] whitespace-normal break-words" title={item.company}>
+                        {item.company}
+                      </td>
+
+                      {/* Purpose - Full text, no truncate clipping */}
+                      <td className="p-4 text-slate-500 dark:text-slate-400 capitalize min-w-[130px] whitespace-normal break-words" title={item.purpose}>
+                        {item.purpose}
+                      </td>
+
+                      {/* Visited employee/department - Full text, highlighted */}
+                      <td className="p-4 text-slate-800 dark:text-slate-200 font-bold uppercase min-w-[170px] whitespace-normal break-words" title={item.visited}>
+                        <span className="text-[#005DA6] dark:text-[#FFD500] font-black">{item.visited}</span>
+                      </td>
+
+                      {/* Status badge - Full visibility */}
+                      <td className="p-4 text-center min-w-[130px] whitespace-nowrap">
+                        {getStatusBadge(item.status)}
+                      </td>
+
+                      {/* Row action shortcuts - Sticky on the right */}
+                      <td className="p-4 text-center min-w-[150px] sticky right-0 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.06)] z-10">
+                        <div className="flex items-center justify-center gap-1">
+                          
+                          {/* View Badge */}
+                          <button
+                            onClick={() => onViewBadge(item)}
+                            title="Cetak Pass Masuk Tamu"
+                            className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[#005DA6] dark:text-[#FFD500] rounded-none hover:border border-[#005DA6] dark:border-[#FFD500] transition-all cursor-pointer"
+                          >
+                            <Printer size={15} />
+                          </button>
+
+                          {/* Quick WhatsApp Pass Send (if phone available) */}
+                          {item.phone && (
+                            <a
+                              href={generateWhatsAppPassUrl(item, getProductionPassUrl(item.id))}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Kirim Barcode Pass ke WhatsApp (${item.phone})`}
+                              className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-none transition-all cursor-pointer inline-flex items-center"
+                            >
+                              <MessageSquare size={14} />
+                            </a>
+                          )}
+
+                          {/* Edit details */}
+                          <button
+                            onClick={() => onEdit(item)}
+                            title="Ubah Rincian"
+                            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-none transition-all cursor-pointer"
+                          >
+                            <SlidersHorizontal size={14} />
+                          </button>
+
+                          {/* Delete record */}
+                          <button
+                            onClick={() => onDelete(item.id)}
+                            title="Hapus Data"
+                            className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-500 dark:text-[#FF3B30] rounded-none transition-all cursor-pointer"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={13} className="p-12 text-center bg-white dark:bg-slate-900">
+                    <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
+                      <AlertTriangle className="text-amber-500" size={36} />
+                      <p className="font-extrabold text-sm text-slate-800 dark:text-slate-200 mt-2">
+                        Data Tamu Tidak Ditemukan
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
+                        Tidak ada permohonan atau log kunjungan tamu yang sesuai dengan filter saat ini.
+                      </p>
+                      <button
+                        onClick={handleResetFilters}
+                        className="mt-2 px-4 py-2 bg-[#005DA6] text-[#FFD500] font-bold text-xs rounded-none uppercase hover:bg-[#004070] cursor-pointer"
+                      >
+                        Reset Pencarian & Filter
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Pagination & Show Entries Footer */}
       <div className="p-5 border-t border-slate-150 dark:border-slate-800 flex flex-col sm:flex-row gap-4 items-center justify-between bg-slate-50 dark:bg-slate-950 select-none">
