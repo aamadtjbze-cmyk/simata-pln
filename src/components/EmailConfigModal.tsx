@@ -144,17 +144,17 @@ export default function EmailConfigModal({ initialConfig, onSave, onClose }: Ema
 
               <div>
                 <label className="block text-xs font-semibold mb-1">
-                  Brevo API Key (atau SMTP Key) <span className="text-rose-500">*</span>
+                  Brevo API Key (Opsional / Override)
                 </label>
                 <input
                   type="password"
                   value={brevoApiKey}
                   onChange={(e) => setBrevoApiKey(e.target.value)}
-                  placeholder="xkeysib-xxxxxxxxxxxxxxxxxxxx..."
+                  placeholder="Dikelola otomatis via Serverless Vercel (Kosongkan jika default)"
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#005DA6]"
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
-                  Salin API Key atau Master Key dari halaman Brevo Anda.
+                  Kunci utama kini tersimpan aman di server Vercel. Isi kolom ini hanya jika Anda ingin menimpa dengan API Key pribadi.
                 </p>
               </div>
 

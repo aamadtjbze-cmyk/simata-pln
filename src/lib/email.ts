@@ -22,25 +22,16 @@ export interface EmailConfig {
   publicKey: string;
 }
 
-// Embedded Gateway Defaults
-const getEmbeddedBrevoKey = (): string => {
-  const p1 = 'xkey' + 'sib-';
-  const p2 = '1e95a25c82eab5e0d25a394b9a03ae32';
-  const p3 = 'e2cef07934bfab62075575e5543ad8eb';
-  const p4 = '-yGFKvaHZcaBjLjt0';
-  return `${p1}${p2}${p3}${p4}`;
-};
-
 export const DEFAULT_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwEcxTci7nMH5JuJ8WKurBo0JMAf4ymR5J5jHWIjA9yj-xSTXymBYvuKZAb6LHQ_oLSdQ/exec';
 export const DEFAULT_BREVO_SENDER = 'aamadtjbze@gmail.com';
-export const DEFAULT_BREVO_API_KEY = getEmbeddedBrevoKey();
+export const DEFAULT_BREVO_API_KEY = '';
 
 export const getEmailConfig = (): EmailConfig => {
   if (typeof window === 'undefined') {
     return {
       provider: 'brevo',
       googleScriptUrl: DEFAULT_GOOGLE_SCRIPT_URL,
-      brevoApiKey: DEFAULT_BREVO_API_KEY,
+      brevoApiKey: '',
       brevoSender: DEFAULT_BREVO_SENDER,
       serviceId: '',
       templateId: '',
@@ -49,7 +40,7 @@ export const getEmailConfig = (): EmailConfig => {
   }
 
   const googleScriptUrl = localStorage.getItem('simata_google_script_url') || DEFAULT_GOOGLE_SCRIPT_URL;
-  const brevoApiKey = localStorage.getItem('simata_brevo_api_key') || DEFAULT_BREVO_API_KEY;
+  const brevoApiKey = localStorage.getItem('simata_brevo_api_key') || '';
   const brevoSender = localStorage.getItem('simata_brevo_sender') || DEFAULT_BREVO_SENDER;
   const serviceId = localStorage.getItem('simata_emailjs_service') || '';
   const templateId = localStorage.getItem('simata_emailjs_template') || '';
@@ -78,11 +69,7 @@ export const saveEmailConfig = (cfg: EmailConfig): void => {
 };
 
 export const isEmailConfigured = (): boolean => {
-  const cfg = getEmailConfig();
-  if (cfg.brevoApiKey) return true;
-  if (cfg.googleScriptUrl && cfg.googleScriptUrl.startsWith('https://script.google.com/')) return true;
-  if (cfg.serviceId && cfg.templateId && cfg.publicKey) return true;
-  return false;
+  return true;
 };
 
 /**
@@ -177,32 +164,56 @@ export const sendViaGoogleScript = async (visitor: Visitor, passUrl: string, scr
 };
 
 /**
- * 2. Kirim via Brevo REST API (Sendinblue)
+ * 2. Kirim via Brevo REST API (Serverless Relay & Secure Client Fallback)
  */
-export const sendViaBrevo = async (visitor: Visitor, passUrl: string, apiKey: string, senderEmail?: string): Promise<boolean> => {
-  if (!visitor.email || !apiKey) return false;
+export const sendViaBrevo = async (visitor: Visitor, passUrl: string, apiKey?: string, senderEmail?: string): Promise<boolean> => {
+  if (!visitor.email) return false;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(passUrl)}`;
   const htmlContent = buildPassEmailHtml(visitor, passUrl, qrImageUrl);
 
+  // 1. Coba Serverless Relay (/api/send-email) terlebih dahulu agar API key tetap aman di server Vercel
   try {
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    const res = await fetch('/api/send-email', {
       method: 'POST',
-      headers: {
-        'api-key': apiKey,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sender: { name: 'SIMATA PLN UIK TJB', email: senderEmail || 'aamadtjbze@gmail.com' },
-        to: [{ email: visitor.email, name: visitor.visitorName }],
-        subject: `[SIMATA PLN] Persetujuan Janji Temu & QR Pass - ${visitor.visitorName}`,
-        htmlContent: htmlContent,
+        visitor,
+        passUrl,
+        htmlContent,
+        apiKey: apiKey || undefined,
+        senderEmail: senderEmail || undefined,
       }),
     });
-    return res.ok;
+    if (res.ok) {
+      return true;
+    }
   } catch (err) {
-    console.error('[Brevo API] Gagal kirim email:', err);
-    return false;
+    // Relay offline / local static
   }
+
+  // 2. Direct client fallback (jika admin memasukkan custom key di Admin Settings)
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: 'SIMATA PLN UIK TJB', email: senderEmail || 'aamadtjbze@gmail.com' },
+          to: [{ email: visitor.email, name: visitor.visitorName }],
+          subject: `[SIMATA PLN] Persetujuan Janji Temu & QR Pass - ${visitor.visitorName}`,
+          htmlContent: htmlContent,
+        }),
+      });
+      return res.ok;
+    } catch (err) {
+      console.error('[Brevo API Fallback Error]:', err);
+    }
+  }
+
+  return false;
 };
 
 /**
@@ -313,21 +324,16 @@ export const startPeriodicPrewarm = (intervalMs = 4 * 60 * 1000): (() => void) =
 export const sendApprovalEmail = async (visitor: Visitor, passUrl: string): Promise<boolean> => {
   const cfg = getEmailConfig();
 
-  // Jika Brevo dikonfigurasi → gunakan Brevo sebagai saluran utama
-  if (cfg.brevoApiKey) {
-    const brevoOk = await sendViaBrevo(visitor, passUrl, cfg.brevoApiKey, cfg.brevoSender);
-    // EmailJS paralel jika tersedia (tidak ganda karena beda gateway)
+  // 1. Coba Brevo Relay via Serverless Vercel (atau custom key jika disetel)
+  const brevoOk = await sendViaBrevo(visitor, passUrl, cfg.brevoApiKey || undefined, cfg.brevoSender);
+  if (brevoOk) {
     if (cfg.serviceId && cfg.templateId && cfg.publicKey) {
       sendViaEmailJs(visitor, passUrl, cfg).catch(() => {});
-    }
-    // Jika Brevo gagal, fallback ke Google Script
-    if (!brevoOk) {
-      return sendViaGoogleScript(visitor, passUrl, cfg.googleScriptUrl || DEFAULT_GOOGLE_SCRIPT_URL);
     }
     return true;
   }
 
-  // Tidak ada Brevo → gunakan Google Script
+  // 2. Fallback ke Google Apps Script jika Brevo offline / unconfigured
   const scriptUrl = (cfg.googleScriptUrl && cfg.googleScriptUrl.startsWith('https://script.google.com/'))
     ? cfg.googleScriptUrl
     : DEFAULT_GOOGLE_SCRIPT_URL;
