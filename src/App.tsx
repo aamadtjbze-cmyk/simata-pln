@@ -727,7 +727,7 @@ export default function App() {
       notes: 'Ditambahkan via generator cepat SIMATA'
     };
 
-    saveAndSync([sampleGuest, ...visitors]);
+    saveAndSync([sampleGuest, ...visitors], sampleGuest);
     triggerToast(`Ditambahkan tamu simulasi: ${randomName}`, 'success');
 
     // Automatically trigger check-in notification for sample visitor!
@@ -1264,7 +1264,7 @@ export default function App() {
               <GuestBookingPortal
                 onSaveVisitor={(newVisitor) => {
                   const updated = [newVisitor, ...visitors];
-                  saveAndSync(updated);
+                  saveAndSync(updated, newVisitor);
                   const notif = createNotification(newVisitor, 'PENDING');
                   saveAndSyncNotifications([notif, ...notifications]);
                 }}
