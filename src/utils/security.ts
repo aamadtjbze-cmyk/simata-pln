@@ -41,10 +41,10 @@ export function decodePassToken(token: string): string | null {
  */
 export function getProductionPassUrl(passId: string): string {
   const secureToken = encodePassToken(passId);
-  if (typeof window !== 'undefined' && window.location.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')) {
-    return `${window.location.origin}/?token=${secureToken}`;
-  }
-  return `https://simata-pln.vercel.app/?token=${secureToken}`;
+  const baseUrl = typeof window !== 'undefined' && window.location.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')
+    ? window.location.origin
+    : 'https://simata-pln.vercel.app';
+  return `${baseUrl}/?passId=${encodeURIComponent(passId)}&token=${secureToken}`;
 }
 
 import { Visitor } from '../types';

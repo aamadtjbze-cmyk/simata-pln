@@ -217,15 +217,22 @@ export default function App() {
 
     // Auto open badge modal if encrypted QR code token is opened (?token=... or ?passId=... or ?id=...)
     const rawToken = urlParams.get('token') || urlParams.get('passId') || urlParams.get('badge') || urlParams.get('id');
-    if (rawToken) {
+    const passIdParam = urlParams.get('passId') || urlParams.get('id');
+    if (rawToken || passIdParam) {
       setIsScannedPass(true);
-      const targetId = decodePassToken(rawToken);
-      if (targetId) {
+      const decoded = rawToken ? decodePassToken(rawToken) : null;
+      const lookupTerm = passIdParam || decoded || rawToken || '';
+
+      if (lookupTerm) {
         // 1. Cek dulu di cache lokal untuk render secepat kilat
         try {
           const savedVisitorsStr = localStorage.getItem('simata_visitors');
           const listToSearch: Visitor[] = savedVisitorsStr ? JSON.parse(savedVisitorsStr) : INITIAL_VISITORS;
-          const match = listToSearch.find((v) => v.id.toLowerCase() === targetId.toLowerCase());
+          const match = listToSearch.find((v) => 
+            v.id.toLowerCase() === lookupTerm.toLowerCase() ||
+            (v.email && v.email.toLowerCase().includes(lookupTerm.toLowerCase())) ||
+            (v.visitorName && v.visitorName.toLowerCase().includes(lookupTerm.toLowerCase()))
+          );
           if (match) {
             setVisitorForBadge(match);
           }
@@ -233,18 +240,18 @@ export default function App() {
           // ignore
         }
 
-        // 2. Selalu sinkronkan dengan database cloud Supabase agar kartu pass selalu valid & status terbaru
+        // 2. Selalu sinkronkan dengan database cloud Supabase
         if (isSupabaseConfigured()) {
           const supabase = getSupabaseClient();
           if (supabase) {
             supabase
               .from('visitors')
               .select('*')
-              .ilike('id', targetId)
-              .maybeSingle()
+              .or(`id.ilike.%${lookupTerm}%,email.ilike.%${lookupTerm}%,visitor_name.ilike.%${lookupTerm}%`)
+              .limit(1)
               .then(({ data, error }) => {
-                if (data && !error) {
-                  const fetchedVisitor = rowToVisitor(data);
+                if (data && data.length > 0 && !error) {
+                  const fetchedVisitor = rowToVisitor(data[0]);
                   setVisitorForBadge(fetchedVisitor);
                 }
               })
