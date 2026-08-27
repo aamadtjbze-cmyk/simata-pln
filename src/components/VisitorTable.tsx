@@ -143,13 +143,16 @@ export default function VisitorTable({
 
   // Filter & Search Logic
   const filteredItems = visitors.filter((item) => {
-    // General text search
+    // General text search (Nama, Form ID, Perusahaan, Tujuan, Pegawai, Email, No HP)
     const matchesSearch =
       item.visitorName.toLowerCase().includes(search.toLowerCase()) ||
       item.id.toLowerCase().includes(search.toLowerCase()) ||
       item.company.toLowerCase().includes(search.toLowerCase()) ||
       item.visited.toLowerCase().includes(search.toLowerCase()) ||
-      item.purpose.toLowerCase().includes(search.toLowerCase());
+      item.purpose.toLowerCase().includes(search.toLowerCase()) ||
+      (item.email && item.email.toLowerCase().includes(search.toLowerCase())) ||
+      (item.phone && item.phone.toLowerCase().includes(search.toLowerCase())) ||
+      (item.identifyNo && item.identifyNo.toLowerCase().includes(search.toLowerCase()));
 
     // Filter statuses
     const matchesStatus = filterStatus === 'ALL' || item.status === filterStatus;
