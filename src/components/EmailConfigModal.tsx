@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Mail, X, Save, CheckCircle, AlertTriangle, Loader2, Send, ShieldCheck } from 'lucide-react';
+import { Mail, X, Save, CheckCircle, AlertTriangle, Loader2, Send, ShieldCheck, Zap, ExternalLink } from 'lucide-react';
 import { EmailConfig, sendApprovalEmail, DEFAULT_GOOGLE_SCRIPT_URL } from '../lib/email';
 
 interface EmailConfigModalProps {
@@ -14,13 +14,17 @@ interface EmailConfigModalProps {
 }
 
 export default function EmailConfigModal({ initialConfig, onSave, onClose }: EmailConfigModalProps) {
-  const [provider, setProvider] = useState<'google_script' | 'emailjs'>(initialConfig.provider || 'google_script');
+  const [provider, setProvider] = useState<'google_script' | 'brevo' | 'emailjs' | 'hybrid'>(initialConfig.provider || 'google_script');
   const [googleScriptUrl, setGoogleScriptUrl] = useState(initialConfig.googleScriptUrl || DEFAULT_GOOGLE_SCRIPT_URL);
+  
+  const [brevoApiKey, setBrevoApiKey] = useState(initialConfig.brevoApiKey || '');
+  const [brevoSender, setBrevoSender] = useState(initialConfig.brevoSender || 'aamadtjbze@gmail.com');
   
   const [serviceId, setServiceId] = useState(initialConfig.serviceId || '');
   const [templateId, setTemplateId] = useState(initialConfig.templateId || '');
   const [publicKey, setPublicKey] = useState(initialConfig.publicKey || '');
   
+  const [activeTab, setActiveTab] = useState<'brevo' | 'google' | 'emailjs'>('brevo');
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
   const [testEmail, setTestEmail] = useState('');
 
@@ -46,6 +50,8 @@ export default function EmailConfigModal({ initialConfig, onSave, onClose }: Ema
     // Simpan sementara untuk pengujian
     localStorage.setItem('simata_email_provider', provider);
     localStorage.setItem('simata_google_script_url', googleScriptUrl.trim());
+    localStorage.setItem('simata_brevo_api_key', brevoApiKey.trim());
+    localStorage.setItem('simata_brevo_sender', brevoSender.trim());
     localStorage.setItem('simata_emailjs_service', serviceId.trim());
     localStorage.setItem('simata_emailjs_template', templateId.trim());
     localStorage.setItem('simata_emailjs_key', publicKey.trim());
@@ -56,8 +62,10 @@ export default function EmailConfigModal({ initialConfig, onSave, onClose }: Ema
 
   const handleSave = () => {
     onSave({
-      provider,
+      provider: brevoApiKey ? 'brevo' : provider,
       googleScriptUrl: googleScriptUrl.trim(),
+      brevoApiKey: brevoApiKey.trim(),
+      brevoSender: brevoSender.trim(),
       serviceId: serviceId.trim(),
       templateId: templateId.trim(),
       publicKey: publicKey.trim(),
@@ -83,37 +91,93 @@ export default function EmailConfigModal({ initialConfig, onSave, onClose }: Ema
         </div>
 
         {/* Provider Selection Tabs */}
-        <div className="grid grid-cols-2 border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-xs font-bold select-none shrink-0">
+        <div className="grid grid-cols-3 border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-xs font-bold select-none shrink-0">
           <button
             type="button"
-            onClick={() => setProvider('google_script')}
+            onClick={() => setActiveTab('brevo')}
             className={`p-3 text-center border-b-2 transition-all cursor-pointer ${
-              provider === 'google_script'
+              activeTab === 'brevo'
                 ? 'border-[#005DA6] text-[#005DA6] dark:text-[#FFD500] bg-white dark:bg-slate-850 font-black'
                 : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            Direct Gmail (Google Script) ✅
+            Brevo (Sendinblue) ⚡
           </button>
 
           <button
             type="button"
-            onClick={() => setProvider('emailjs')}
+            onClick={() => setActiveTab('google')}
             className={`p-3 text-center border-b-2 transition-all cursor-pointer ${
-              provider === 'emailjs'
+              activeTab === 'google'
                 ? 'border-[#005DA6] text-[#005DA6] dark:text-[#FFD500] bg-white dark:bg-slate-850 font-black'
                 : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            EmailJS SDK / SMTP
+            Direct Gmail (Google Script)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('emailjs')}
+            className={`p-3 text-center border-b-2 transition-all cursor-pointer ${
+              activeTab === 'emailjs'
+                ? 'border-[#005DA6] text-[#005DA6] dark:text-[#FFD500] bg-white dark:bg-slate-850 font-black'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            EmailJS / SMTP
           </button>
         </div>
 
         {/* Content Area */}
         <div className="p-5 space-y-4 text-xs text-slate-800 dark:text-slate-200 overflow-y-auto flex-1">
 
-          {/* TAB 1: GOOGLE APPS SCRIPT */}
-          {provider === 'google_script' && (
+          {/* TAB 1: BREVO */}
+          {activeTab === 'brevo' && (
+            <div className="space-y-3.5">
+              <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 p-3 rounded-none flex items-start gap-2.5">
+                <ShieldCheck size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <div className="text-[11px] text-slate-600 dark:text-slate-300 leading-normal">
+                  <strong>Brevo (Sendinblue)</strong> adalah transactional API resmi yang mengizinkan kirim hingga <strong>300 email/hari gratis</strong> ke semua alamat tamu tanpa wajib custom domain.
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold mb-1">
+                  Brevo API Key (atau SMTP Key) <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={brevoApiKey}
+                  onChange={(e) => setBrevoApiKey(e.target.value)}
+                  placeholder="xkeysib-xxxxxxxxxxxxxxxxxxxx..."
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#005DA6]"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Salin API Key atau Master Key dari halaman Brevo Anda.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold mb-1">
+                  Email Pengirim Terverifikasi di Brevo
+                </label>
+                <input
+                  type="email"
+                  value={brevoSender}
+                  onChange={(e) => setBrevoSender(e.target.value)}
+                  placeholder="aamadtjbze@gmail.com"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:ring-1 focus:ring-[#005DA6]"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Alamat email akun Brevo Anda (pastikan sudah terdaftar di menu <em>Senders, domains, IPs</em>).
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: GOOGLE APPS SCRIPT */}
+          {activeTab === 'google' && (
             <div className="space-y-3.5">
               <div className="bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900 p-3 rounded-none flex items-start gap-2.5">
                 <ShieldCheck size={16} className="text-[#005DA6] dark:text-[#FFD500] shrink-0 mt-0.5" />
@@ -148,8 +212,8 @@ export default function EmailConfigModal({ initialConfig, onSave, onClose }: Ema
             </div>
           )}
 
-          {/* TAB 2: EMAILJS */}
-          {provider === 'emailjs' && (
+          {/* TAB 3: EMAILJS */}
+          {activeTab === 'emailjs' && (
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold mb-1">Service ID EmailJS</label>
@@ -222,7 +286,7 @@ export default function EmailConfigModal({ initialConfig, onSave, onClose }: Ema
             {testStatus === 'fail' && (
               <div className="p-2 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 text-rose-700 dark:text-rose-300 text-[11px] font-bold flex items-center gap-1.5">
                 <AlertTriangle size={14} />
-                <span>Pengiriman gagal. Periksa kembali konfigurasi URL script Anda.</span>
+                <span>Pengiriman gagal. Periksa kembali API Key atau URL script Anda.</span>
               </div>
             )}
           </div>
