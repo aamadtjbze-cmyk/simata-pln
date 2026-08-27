@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, User, Briefcase, FileText, Lock, Users2, Calendar, Phone, ShieldCheck } from 'lucide-react';
 import { Visitor, VisitorStatus } from '../types';
 import { COMMON_PURPOSES, PLN_DIVISIONS } from '../data/mockData';
+import { generateDailyPassNumber } from '../utils/passGenerator';
 
 interface CheckInModalProps {
   visitorToEdit?: Visitor | null;
@@ -14,6 +15,7 @@ interface CheckInModalProps {
   onClose: () => void;
   visitorsCount: number;
   lastFormId: string;
+  visitors?: Visitor[];
 }
 
 export default function CheckInModal({
@@ -22,6 +24,7 @@ export default function CheckInModal({
   onClose,
   visitorsCount,
   lastFormId,
+  visitors = [],
 }: CheckInModalProps) {
   const [visitorName, setVisitorName] = useState('');
   const [company, setCompany] = useState('');
@@ -114,6 +117,12 @@ export default function CheckInModal({
     const mins = padDigit(todayDate.getMinutes());
     const formattedInTime = `${day} ${month} ${year} - ${hours}.${padDigit(todayDate.getMinutes())}`;
 
+    // Auto-generate sequential daily pass if not filled manually
+    let effectiveMainGatePass = mainGatePass.trim();
+    if (!effectiveMainGatePass) {
+      effectiveMainGatePass = generateDailyPassNumber(visitors || []);
+    }
+
     const visitorData: Visitor = {
       id: formId,
       schedule,
@@ -121,8 +130,8 @@ export default function CheckInModal({
       secondGateTime: visitorToEdit ? visitorToEdit.secondGateTime : null,
       outTime: visitorToEdit ? visitorToEdit.outTime : null,
       visitorName: visitorName.toUpperCase(),
-      mainGatePass,
-      secondGatePass,
+      mainGatePass: effectiveMainGatePass,
+      secondGatePass: secondGatePass.trim(),
       company: company.toUpperCase(),
       purpose,
       visited: visited.toUpperCase(),
@@ -375,29 +384,32 @@ export default function CheckInModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Main Gate Pass (Kartu Utama)
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                    <span>Main Gate Pass (Kartu Utama)</span>
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Auto Harian ✨</span>
                   </label>
                   <input
                     type="text"
                     value={mainGatePass}
                     onChange={(e) => setMainGatePass(e.target.value)}
-                    placeholder="Contoh: Vgp 021"
+                    placeholder={`Otomatis: ${generateDailyPassNumber(visitors || [])}`}
                     className="w-full px-4 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
                   />
+                  <span className="text-[9.5px] text-slate-400 block mt-1">Kosongkan untuk penomoran urut otomatis harian.</span>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    2nd Gate Pass (Kartu Tambahan)
+                    2nd Gate Pass (Kartu Pos 2)
                   </label>
                   <input
                     type="text"
                     value={secondGatePass}
                     onChange={(e) => setSecondGatePass(e.target.value)}
-                    placeholder="Contoh: 014 k"
+                    placeholder="Contoh: 014 k (Opsional)"
                     className="w-full px-4 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
                   />
+                  <span className="text-[9.5px] text-slate-400 block mt-1">Hanya diisi jika tamu masuk ke area Pos 2.</span>
                 </div>
               </div>
 

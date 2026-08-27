@@ -44,6 +44,7 @@ import ThemeStudioModal from './components/ThemeStudioModal';
 import UserManagement from './components/UserManagement';
 import EmailConfigModal from './components/EmailConfigModal';
 import GuestQrStandeeModal from './components/GuestQrStandeeModal';
+import { generateDailyPassNumber, generateSecondGatePassNumber } from './utils/passGenerator';
 import { createNotification } from './lib/notificationHelper';
 import { Visitor, VisitorStatus, SystemNotification } from './types';
 import { INITIAL_VISITORS } from './data/mockData';
@@ -569,36 +570,45 @@ export default function App() {
 
   // Add / Edit Visitor callback
   const handleSaveVisitor = (savedVisitor: Visitor) => {
-    const exists = visitors.some((v) => v.id === savedVisitor.id);
+    // If mainGatePass is empty and status is active (IN-PROGRESS or SCHEDULED), auto-generate sequential daily pass
+    let finalSavedVisitor = savedVisitor;
+    if (!finalSavedVisitor.mainGatePass && (finalSavedVisitor.status === 'IN-PROGRESS' || finalSavedVisitor.status === 'SCHEDULED')) {
+      finalSavedVisitor = {
+        ...finalSavedVisitor,
+        mainGatePass: generateDailyPassNumber(visitors),
+      };
+    }
+
+    const exists = visitors.some((v) => v.id === finalSavedVisitor.id);
     let updated: Visitor[];
     let newNotifs = [...notifications];
     
     if (exists) {
-      const original = visitors.find((v) => v.id === savedVisitor.id);
-      const statusChanged = original && original.status !== savedVisitor.status;
+      const original = visitors.find((v) => v.id === finalSavedVisitor.id);
+      const statusChanged = original && original.status !== finalSavedVisitor.status;
       
       // Update existing record
-      updated = visitors.map((v) => (v.id === savedVisitor.id ? savedVisitor : v));
-      triggerToast(`Data tamu ${savedVisitor.visitorName} berhasil diubah.`, 'info');
+      updated = visitors.map((v) => (v.id === finalSavedVisitor.id ? finalSavedVisitor : v));
+      triggerToast(`Data tamu ${finalSavedVisitor.visitorName} berhasil diubah.`, 'info');
       
       if (statusChanged) {
-        const notif = createNotification(savedVisitor, original.status);
+        const notif = createNotification(finalSavedVisitor, original?.status);
         newNotifs = [notif, ...newNotifs];
         saveAndSyncNotifications(newNotifs);
       }
     } else {
       // Insert new record at the top of the log
-      updated = [savedVisitor, ...visitors];
-      triggerToast(`Registrasi ${savedVisitor.visitorName} berhasil! Kartu masuk diterbitkan.`, 'success');
+      updated = [finalSavedVisitor, ...visitors];
+      triggerToast(`Registrasi ${finalSavedVisitor.visitorName} berhasil! Kartu masuk (${finalSavedVisitor.mainGatePass}) diterbitkan.`, 'success');
       // Auto open badge after registration
-      setVisitorForBadge(savedVisitor);
+      setVisitorForBadge(finalSavedVisitor);
 
-      const notif = createNotification(savedVisitor);
+      const notif = createNotification(finalSavedVisitor);
       newNotifs = [notif, ...newNotifs];
       saveAndSyncNotifications(newNotifs);
     }
     
-    saveAndSync(updated, savedVisitor);
+    saveAndSync(updated, finalSavedVisitor);
     setIsCheckInOpen(false);
     setVisitorToEdit(null);
   };
@@ -608,9 +618,11 @@ export default function App() {
     const original = visitors.find((v) => v.id === visitorId);
     if (!original) return;
 
+    const assignedMainPass = original.mainGatePass || generateDailyPassNumber(visitors);
     const updatedVisitor: Visitor = {
       ...original,
       status: 'SCHEDULED',
+      mainGatePass: assignedMainPass,
     };
 
     const updated = visitors.map((v) => (v.id === visitorId ? updatedVisitor : v));
@@ -667,14 +679,16 @@ export default function App() {
       if (!confirmed) return;
     }
 
+    const assignedMainPass = original.mainGatePass || generateDailyPassNumber(visitors);
     const updatedVisitor: Visitor = {
       ...original,
       status: 'IN-PROGRESS',
       inTime: formattedInTime,
+      mainGatePass: assignedMainPass,
     };
 
     const updated = visitors.map((v) => (v.id === visitorId ? updatedVisitor : v));
-    triggerToast(`Konfirmasi kedatangan ${original.visitorName} berhasil. Kartu masuk diaktifkan!`, 'success');
+    triggerToast(`Konfirmasi kedatangan ${original.visitorName} berhasil. Kartu masuk (${assignedMainPass}) diaktifkan!`, 'success');
     setVisitorForBadge(updatedVisitor);
 
     const notif = createNotification(updatedVisitor, original.status);
@@ -692,12 +706,12 @@ export default function App() {
     const original = visitors.find((v) => v.id === visitorId);
     if (!original) return;
 
-    const assignedPass = customPass || original.secondGatePass || `TJB-PASS-${Math.floor(10 + Math.random() * 89)}`;
+    const assignedPass = customPass || original.secondGatePass || generateSecondGatePassNumber(visitors);
     const noteMarker = `[Pos 2: ${formattedNow}]`;
     const updatedNotes = original.notes
       ? original.notes.includes('[Pos 2:')
-        ? original.notes.replace(/\[Pos 2: .*?\]/, noteMarker)
-        : `${original.notes} | ${noteMarker}`
+      ? original.notes.replace(/\[Pos 2: .*?\]/, noteMarker)
+      : `${original.notes} | ${noteMarker}`
       : noteMarker;
 
     const updatedVisitor: Visitor = {
@@ -1492,6 +1506,7 @@ export default function App() {
           }}
           visitorsCount={visitors.length}
           lastFormId={lastFormId}
+          visitors={visitors}
         />
       )}
 
