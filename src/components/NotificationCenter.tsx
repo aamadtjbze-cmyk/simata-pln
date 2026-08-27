@@ -185,7 +185,7 @@ export default function NotificationCenter({
                 </div>
                 <div>
                   <p className="text-xs font-bold">PLN WhatsApp API Gateway</p>
-                  <p className="text-[9px] text-slate-400 mt-0.5">Simulasi API Push Node-WA</p>
+                  <p className="text-[9px] text-slate-400 mt-0.5">Gateway Push Notifikasi WA</p>
                 </div>
               </div>
               <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider border border-emerald-300 dark:border-emerald-900">

@@ -817,13 +817,13 @@ export default function VisitorTable({
                       Data Tamu Tidak Ditemukan
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
-                      Saringan penapis terlalu ketat, coba bersihkan filter atau tambahkan contoh data simulasi yang telah disiapkan.
+                      Tidak ada permohonan atau log kunjungan tamu yang sesuai dengan filter saat ini.
                     </p>
                     <button
-                      onClick={onAddSampleData}
+                      onClick={handleResetFilters}
                       className="mt-3 px-4 py-2 bg-[#005DA6] hover:bg-[#004070] text-white font-bold text-xs rounded-none border-b-2 border-r-2 border-[#FFD500] shadow-xs cursor-pointer transition-colors"
                     >
-                      Muat Data Contoh SIMATA
+                      Reset Filter Pencarian
                     </button>
                   </div>
                 </td>

@@ -783,11 +783,11 @@ export default function App() {
       phone: '0812' + Math.floor(10000000 + Math.random() * 90000000),
       identifyNo: '3273' + Math.floor(100000000000 + Math.random() * 900000000000),
       gender: Math.random() > 0.5 ? 'Laki-laki' : 'Perempuan',
-      notes: 'Ditambahkan via generator cepat SIMATA'
+      notes: ''
     };
 
     saveAndSync([sampleGuest, ...visitors], sampleGuest);
-    triggerToast(`Ditambahkan tamu simulasi: ${randomName}`, 'success');
+    triggerToast(`Pendaftaran tamu ${randomName} berhasil ditambahkan.`, 'success');
 
     // Automatically trigger check-in notification for sample visitor!
     const notif = createNotification(sampleGuest);
@@ -952,23 +952,18 @@ export default function App() {
           {/* Right Controls Area */}
           <div className="flex items-center gap-4">
             
-            {/* Quick Demo Helper */}
-            <div className="hidden md:flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-none border border-slate-200 dark:border-slate-700">
-              <button
-                onClick={handleAddSampleVisitor}
-                className="px-3 py-1.5 hover:bg-white dark:hover:bg-slate-700 hover:text-sky-600 rounded-none text-[10px] font-black transition-all flex items-center gap-1 uppercase"
-                title="Tambahkan 1 Tamu Berita Acara Acak"
-              >
-                Simulasi Tamu
-              </button>
-              <button
-                onClick={handleResetDatabase}
-                className="p-1.5 hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-none"
-                title="Reset Database SIMATA"
-              >
-                <RotateCcw size={13} />
-              </button>
-            </div>
+            {/* Quick Demo Helper (Hanya muncul saat belum login / mode tamu) */}
+            {userRole === 'GUEST' && (
+              <div className="hidden md:flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-none border border-slate-200 dark:border-slate-700">
+                <button
+                  onClick={handleAddSampleVisitor}
+                  className="px-3 py-1.5 hover:bg-white dark:hover:bg-slate-700 hover:text-sky-600 rounded-none text-[10px] font-black transition-all flex items-center gap-1 uppercase cursor-pointer"
+                  title="Uji coba registrasi tamu otomatis"
+                >
+                  Contoh Tamu
+                </button>
+              </div>
+            )}
 
             {/* Custom Theme Palette Gallery CTA */}
             <button
