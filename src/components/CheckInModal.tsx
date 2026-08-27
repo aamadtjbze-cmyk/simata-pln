@@ -140,8 +140,8 @@ export default function CheckInModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto animate-fade-in">
-      <div className="premium-glass max-w-2xl w-full shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col border border-[#005DA6]/25 dark:border-[#FFD500]/25 rounded-none">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto animate-fade-in">
+      <div className="premium-glass max-w-4xl w-full shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col border-2 border-[#005DA6] dark:border-[#FFD500] rounded-none">
         
         {/* Header banner */}
         <div className="bg-[#005DA6] border-b-2 border-[#FFD500] px-4 sm:px-6 py-4 text-white flex items-center justify-between shrink-0">
@@ -162,7 +162,7 @@ export default function CheckInModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1 max-h-[78vh]">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1 max-h-[80vh]">
           {/* Mode Registration Switcher */}
           {!visitorToEdit && (
             <div className="bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-none flex items-center gap-2 border border-slate-200 dark:border-slate-700">
@@ -208,13 +208,13 @@ export default function CheckInModal({
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* Identity Group */}
             <div className="space-y-4">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 pb-1 border-b border-slate-100 dark:border-slate-800">
                 <User size={13} />
-                Identitas Tamu
+                1. Identitas Tamu Pemohon
               </h4>
 
               <div>
@@ -228,7 +228,7 @@ export default function CheckInModal({
                     setVisitorName(e.target.value);
                     if (errors.visitorName) setErrors({ ...errors, visitorName: '' });
                   }}
-                  placeholder="Contoh: DIKY TRI JUNIANTO"
+                  placeholder="Contoh: BUDI SANTOSO"
                   className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.visitorName ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-slate-800 dark:text-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
                 />
                 {errors.visitorName && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.visitorName}</span>}
@@ -247,7 +247,7 @@ export default function CheckInModal({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Jenis Kelamin
@@ -289,7 +289,6 @@ export default function CheckInModal({
                 />
               </div>
 
-
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Instansi / Perusahaan Tamu <span className="text-rose-500">*</span>
@@ -301,7 +300,7 @@ export default function CheckInModal({
                     setCompany(e.target.value);
                     if (errors.company) setErrors({ ...errors, company: '' });
                   }}
-                  placeholder="Contoh: PT PT SUCOFINDO / PLN BANGSRI"
+                  placeholder="Contoh: PT SUCOFINDO / PT PLN (PERSERO)"
                   className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.company ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-slate-800 dark:text-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
                 />
                 {errors.company && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.company}</span>}
@@ -313,25 +312,8 @@ export default function CheckInModal({
             <div className="space-y-4">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 pb-1 border-b border-slate-100 dark:border-slate-800">
                 <Briefcase size={13} />
-                Detail Kunjungan Pelayanan
+                2. Detail Kunjungan & Akses Masuk
               </h4>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Tujuan / Keperluan Kunjungan <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={purpose}
-                  onChange={(e) => {
-                    setPurpose(e.target.value);
-                    if (errors.purpose) setErrors({ ...errors, purpose: '' });
-                  }}
-                  placeholder="Contoh: Rapat Koordinasi Proyek / Auditing K3L / Maintenance Alat"
-                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.purpose ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
-                />
-                {errors.purpose && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.purpose}</span>}
-              </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -374,7 +356,24 @@ export default function CheckInModal({
                 {errors.visited && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.visited}</span>}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Tujuan / Keperluan Kunjungan <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={purpose}
+                  onChange={(e) => {
+                    setPurpose(e.target.value);
+                    if (errors.purpose) setErrors({ ...errors, purpose: '' });
+                  }}
+                  placeholder="Contoh: Rapat Koordinasi Proyek / Auditing K3L / Maintenance Alat"
+                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.purpose ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
+                />
+                {errors.purpose && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.purpose}</span>}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Main Gate Pass (Kartu Utama)
@@ -402,54 +401,55 @@ export default function CheckInModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-                    <span>Jadwal / Waktu Kedatangan</span>
-                    <span className="text-[10px] text-slate-400 font-normal">Pilih via Kalender 📅</span>
-                  </label>
-                  <div className="flex gap-1.5">
-                    <input
-                      type="datetime-local"
-                      title="Pilih Tanggal & Jam dari Kalender"
-                      onChange={(e) => {
-                        if (!e.target.value) return;
-                        const dateObj = new Date(e.target.value);
-                        const pad = (n: number) => String(n).padStart(2, '0');
-                        const day = dateObj.getDate();
-                        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                        const monthName = monthNames[dateObj.getMonth()];
-                        const year = dateObj.getFullYear();
-                        const hours = pad(dateObj.getHours());
-                        const mins = pad(dateObj.getMinutes());
-                        setSchedule(`${day} ${monthName} ${year} - ${hours}.${mins}`);
-                      }}
-                      className="px-2 py-2 bg-slate-100 dark:bg-[#152033] border border-slate-300 dark:border-slate-700 rounded-none text-slate-800 dark:text-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#005DA6] cursor-pointer"
-                    />
-                    <input
-                      type="text"
-                      value={schedule}
-                      onChange={(e) => setSchedule(e.target.value)}
-                      placeholder="Contoh: 24 July 2026 - 10.00"
-                      className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
-                    />
-                  </div>
+              {/* Jadwal Kedatangan */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                  <span>Jadwal / Waktu Kedatangan</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Pilih via Kalender 📅</span>
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="datetime-local"
+                    title="Pilih Tanggal & Jam dari Kalender"
+                    onChange={(e) => {
+                      if (!e.target.value) return;
+                      const dateObj = new Date(e.target.value);
+                      const pad = (n: number) => String(n).padStart(2, '0');
+                      const day = dateObj.getDate();
+                      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                      const monthName = monthNames[dateObj.getMonth()];
+                      const year = dateObj.getFullYear();
+                      const hours = pad(dateObj.getHours());
+                      const mins = pad(dateObj.getMinutes());
+                      setSchedule(`${day} ${monthName} ${year} - ${hours}.${mins}`);
+                    }}
+                    className="px-3 py-2 bg-slate-100 dark:bg-[#152033] border border-slate-300 dark:border-slate-700 rounded-none text-slate-800 dark:text-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#005DA6] cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={schedule}
+                    onChange={(e) => setSchedule(e.target.value)}
+                    placeholder="Contoh: 24 July 2026 - 10.00"
+                    className="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+                  />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Status Kunjungan Awal
-                  </label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as VisitorStatus)}
-                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
-                  >
-                    <option value="IN-PROGRESS">IN-PROGRESS (Sedang Berkunjung)</option>
-                    <option value="SCHEDULED">SCHEDULED (Rencana Pertemuan)</option>
-                    <option value="PENDING">PENDING (Menunggu Persetujuan)</option>
-                    <option value="DONE">DONE (Selesai Berkunjung/Out)</option>
-                  </select>
-                </div>
+              </div>
+
+              {/* Status Kunjungan Awal */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Status Kunjungan Awal
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as VisitorStatus)}
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+                >
+                  <option value="IN-PROGRESS">IN-PROGRESS (Sedang Berkunjung)</option>
+                  <option value="SCHEDULED">SCHEDULED (Rencana Pertemuan)</option>
+                  <option value="PENDING">PENDING (Menunggu Persetujuan)</option>
+                  <option value="DONE">DONE (Selesai Berkunjung/Out)</option>
+                </select>
               </div>
 
               {/* Pass Expiration & Validity Selection */}
@@ -459,49 +459,44 @@ export default function CheckInModal({
                   <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">Expired Otomatis ⏳</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <select
-                      value={validityOption}
-                      onChange={(e) => {
-                        const opt = e.target.value as any;
-                        setValidityOption(opt);
-                        const today = new Date();
-                        const pad = (n: number) => String(n).padStart(2, '0');
-                        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                        
-                        let targetDate = new Date();
-                        if (opt === 'SAME_DAY') {
-                          setValidUntil(`${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()} - 23.59`);
-                        } else if (opt === '1_DAY') {
-                          targetDate.setDate(today.getDate() + 1);
-                          setValidUntil(`${targetDate.getDate()} ${monthNames[targetDate.getMonth()]} ${targetDate.getFullYear()} - 23.59`);
-                        } else if (opt === '3_DAYS') {
-                          targetDate.setDate(today.getDate() + 3);
-                          setValidUntil(`${targetDate.getDate()} ${monthNames[targetDate.getMonth()]} ${targetDate.getFullYear()} - 23.59`);
-                        } else if (opt === '1_WEEK') {
-                          targetDate.setDate(today.getDate() + 7);
-                          setValidUntil(`${targetDate.getDate()} ${monthNames[targetDate.getMonth()]} ${targetDate.getFullYear()} - 23.59`);
-                        }
-                      }}
-                      className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
-                    >
-                      <option value="SAME_DAY">Berlaku Hari Ini (s/d 23.59)</option>
-                      <option value="1_DAY">1 Hari (24 Jam)</option>
-                      <option value="3_DAYS">3 Hari</option>
-                      <option value="1_WEEK">1 Minggu (7 Hari)</option>
-                      <option value="CUSTOM">Custom Tanggal & Jam</option>
-                    </select>
-                  </div>
+                  <select
+                    value={validityOption}
+                    onChange={(e) => {
+                      const opt = e.target.value as any;
+                      setValidityOption(opt);
+                      const today = new Date();
+                      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                      
+                      let targetDate = new Date();
+                      if (opt === 'SAME_DAY') {
+                        setValidUntil(`${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()} - 23.59`);
+                      } else if (opt === '1_DAY') {
+                        targetDate.setDate(today.getDate() + 1);
+                        setValidUntil(`${targetDate.getDate()} ${monthNames[targetDate.getMonth()]} ${targetDate.getFullYear()} - 23.59`);
+                      } else if (opt === '3_DAYS') {
+                        targetDate.setDate(today.getDate() + 3);
+                        setValidUntil(`${targetDate.getDate()} ${monthNames[targetDate.getMonth()]} ${targetDate.getFullYear()} - 23.59`);
+                      } else if (opt === '1_WEEK') {
+                        targetDate.setDate(today.getDate() + 7);
+                        setValidUntil(`${targetDate.getDate()} ${monthNames[targetDate.getMonth()]} ${targetDate.getFullYear()} - 23.59`);
+                      }
+                    }}
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+                  >
+                    <option value="SAME_DAY">Berlaku Hari Ini (s/d 23.59)</option>
+                    <option value="1_DAY">1 Hari (24 Jam)</option>
+                    <option value="3_DAYS">3 Hari Kerja</option>
+                    <option value="1_WEEK">1 Minggu (7 Hari)</option>
+                    <option value="CUSTOM">Custom Tanggal & Jam</option>
+                  </select>
 
-                  <div>
-                    <input
-                      type="text"
-                      value={validUntil}
-                      onChange={(e) => setValidUntil(e.target.value)}
-                      placeholder="Waktu Expired (24 July 2026 - 23.59)"
-                      className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={validUntil}
+                    onChange={(e) => setValidUntil(e.target.value)}
+                    placeholder="Waktu Expired (24 July 2026 - 23.59)"
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+                  />
                 </div>
               </div>
 
