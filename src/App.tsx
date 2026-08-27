@@ -1618,18 +1618,6 @@ export default function App() {
         triggerToast={triggerToast}
       />
 
-      {/* Persistent Floating Action Button: Hubungkan Email */}
-      <div className="fixed bottom-4 right-4 z-40 no-print animate-bounce">
-        <button
-          onClick={() => setIsEmailConfigModalOpen(true)}
-          className="px-4 py-2.5 bg-[#005DA6] hover:bg-[#004070] text-white border-2 border-[#FFD500] shadow-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all hover:scale-105 rounded-none"
-          title="Buka Pengaturan Koneksi Gmail Google Apps Script"
-        >
-          <Mail size={16} className="text-[#FFD500]" />
-          <span>Hubungkan Gmail ✉️</span>
-        </button>
-      </div>
-
     </div>
   );
 }
