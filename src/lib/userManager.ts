@@ -19,8 +19,8 @@ const STORAGE_KEY = 'simata_users';
 const hashPassword = (pw: string): string => btoa(unescape(encodeURIComponent(pw)));
 
 const DEFAULT_USERS: AppUser[] = [
-  { username: 'admin', passwordHash: hashPassword('admin'), role: 'SEKRETARIAT', displayName: 'Sekretariat PLN' },
-  { username: 'security', passwordHash: hashPassword('security'), role: 'SECURITY', displayName: 'Petugas Security' },
+  { username: 'admin', passwordHash: hashPassword('admintjb123'), role: 'SEKRETARIAT', displayName: 'Sekretariat PLN' },
+  { username: 'security', passwordHash: hashPassword('securitytjb123'), role: 'SECURITY', displayName: 'Petugas Security' },
 ];
 
 export const loadUsers = (): AppUser[] => {
@@ -28,7 +28,29 @@ export const loadUsers = (): AppUser[] => {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Auto-migration: if old default hashes exist, upgrade them to new requested passwords
+        const oldAdminHash = hashPassword('admin');
+        const oldSecurityHash = hashPassword('security');
+        let mutated = false;
+
+        const updatedUsers = parsed.map((u: AppUser) => {
+          if (u.username.toLowerCase() === 'admin' && u.passwordHash === oldAdminHash) {
+            mutated = true;
+            return { ...u, passwordHash: hashPassword('admintjb123') };
+          }
+          if (u.username.toLowerCase() === 'security' && u.passwordHash === oldSecurityHash) {
+            mutated = true;
+            return { ...u, passwordHash: hashPassword('securitytjb123') };
+          }
+          return u;
+        });
+
+        if (mutated) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUsers));
+        }
+        return updatedUsers;
+      }
     }
   } catch (_) {}
   // First run — seed defaults
