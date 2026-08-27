@@ -42,6 +42,7 @@ import NotificationCenter from './components/NotificationCenter';
 import ThemeStudioModal from './components/ThemeStudioModal';
 import UserManagement from './components/UserManagement';
 import EmailConfigModal from './components/EmailConfigModal';
+import GuestQrStandeeModal from './components/GuestQrStandeeModal';
 import { createNotification } from './lib/notificationHelper';
 import { Visitor, VisitorStatus, SystemNotification } from './types';
 import { INITIAL_VISITORS } from './data/mockData';
@@ -121,6 +122,7 @@ export default function App() {
   const [adminUsername, setAdminUsername] = useState<string>('admin');
   const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState(false);
   const [isEmailConfigModalOpen, setIsEmailConfigModalOpen] = useState(false);
+  const [isGuestQrStandeeOpen, setIsGuestQrStandeeOpen] = useState(false);
   
   // Theme state
   const [darkMode, setDarkMode] = useState(false);
@@ -1090,6 +1092,16 @@ export default function App() {
               <span>{isEmailConfigured() ? 'Email Aktif ✅' : 'Koneksi Email ✉️'}</span>
             </button>
 
+            {/* QR Standee Pos Masuk Button */}
+            <button
+              onClick={() => setIsGuestQrStandeeOpen(true)}
+              className="flex items-center gap-1.5 py-2 px-3 bg-amber-400 hover:bg-amber-300 dark:bg-amber-500 dark:hover:bg-amber-400 border-2 border-slate-900 dark:border-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider cursor-pointer shadow-sm rounded-none transition-all"
+              title="Buka & Cetak QR Standee Pos Masuk untuk Scan Tamu"
+            >
+              <QrCode size={14} className="text-slate-950" />
+              <span>QR Tamu 📱</span>
+            </button>
+
             {/* Light/Dark Toggle */}
             <button
               onClick={toggleTheme}
@@ -1596,6 +1608,13 @@ export default function App() {
           />
         );
       })()}
+
+      {/* Guest QR Standee Pos Modal */}
+      <GuestQrStandeeModal
+        isOpen={isGuestQrStandeeOpen}
+        onClose={() => setIsGuestQrStandeeOpen(false)}
+        triggerToast={triggerToast}
+      />
 
       {/* Persistent Floating Action Button: Hubungkan Email */}
       <div className="fixed bottom-4 right-4 z-40 no-print animate-bounce">
