@@ -321,6 +321,16 @@ export default function App() {
 
   const handleSelectTab = (tab: 'buku-tamu' | 'janji-temu' | 'pengajuan-tamu' | 'notifikasi' | 'laporan' | 'kelola-user') => {
     setCurrentTab(tab);
+    if (tab === 'buku-tamu' || tab === 'janji-temu') {
+      if (isSupabaseConfigured()) {
+        fetchVisitorsFromSupabase().then((data) => {
+          if (data && data.length > 0) {
+            setVisitors(data);
+            localStorage.setItem('simata_visitors', JSON.stringify(data));
+          }
+        });
+      }
+    }
     try {
       const url = new URL(window.location.href);
       if (tab === 'pengajuan-tamu') {
@@ -342,6 +352,14 @@ export default function App() {
     localStorage.setItem('simata_user_role', 'ADMIN');
     localStorage.setItem('simata_admin_name', roleName);
     localStorage.setItem('simata_admin_username', username);
+    if (isSupabaseConfigured()) {
+      fetchVisitorsFromSupabase().then((data) => {
+        if (data && data.length > 0) {
+          setVisitors(data);
+          localStorage.setItem('simata_visitors', JSON.stringify(data));
+        }
+      });
+    }
   };
 
   const handleAdminLogout = () => {
