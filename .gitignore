@@ -12,3 +12,5 @@ coverage/
 *.doc
 *.pdf
 *SOP*
+flowchart_*.jpg
+flowchart_*.png
