@@ -557,12 +557,15 @@ export default function VisitorTable({
                     <div className="grid grid-cols-3 gap-1 text-[10px] font-mono bg-slate-100 dark:bg-slate-950/40 p-2 border border-slate-200/60 dark:border-slate-800 text-center">
                       <div>
                         <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold">IN</span>
+                        <span className="text-[8px] text-slate-400 block -mt-0.5 mb-0.5 font-sans font-normal">(Maingate)</span>
                         <span className="font-bold text-emerald-600 dark:text-emerald-400">
                           {item.inTime ? item.inTime.split(' - ')[1] || item.inTime : '-'}
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold">POS 2</span>
+                        <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold truncate" title="Receptionist PLN">
+                          RECEPTIONIST
+                        </span>
                         <span className="font-bold text-sky-600 dark:text-sky-400">
                           {item.secondGateTime ? item.secondGateTime.split(' - ')[1] || item.secondGateTime : '-'}
                         </span>
@@ -686,18 +689,23 @@ export default function VisitorTable({
                   onClick={() => handleSort('inTime')}
                   className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[125px]"
                 >
-                  <div className="flex items-center gap-1">
-                    IN
-                    {sortField === 'inTime' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  <div className="flex flex-col items-start leading-tight">
+                    <div className="flex items-center gap-1">
+                      <span>IN</span>
+                      {sortField === 'inTime' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                    </div>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal tracking-tight">
+                      (Maingate)
+                    </span>
                   </div>
                 </th>
 
                 <th
                   onClick={() => handleSort('secondGateTime' as any)}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all whitespace-nowrap min-w-[125px]"
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all whitespace-nowrap min-w-[155px]"
                 >
                   <div className="flex items-center gap-1">
-                    SECOND GATE
+                    <span>Receptionist PLN</span>
                     {sortField === ('secondGateTime' as any) && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
                   </div>
                 </th>
@@ -917,7 +925,7 @@ export default function VisitorTable({
                             <button
                               onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(item.id)}
                               className="px-2 py-1 bg-sky-700 hover:bg-sky-800 active:bg-sky-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex flex-col items-start gap-0.5 cursor-pointer font-mono"
-                              title="Klik untuk memperbarui / konfirmasi ulang jam Pos 2"
+                              title="Klik untuk memperbarui / konfirmasi ulang jam Receptionist PLN"
                             >
                               <div className="flex items-center gap-1">
                                 <Layers size={11} className="text-sky-200" />
@@ -936,10 +944,10 @@ export default function VisitorTable({
                           <button
                             onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(item.id)}
                             className="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-bold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
-                            title="Konfirmasi Akses Pos 2 (Stakeholder Dalam)"
+                            title="Konfirmasi Akses Receptionist PLN"
                           >
                             <Layers size={11} />
-                            + Pos 2
+                            + Receptionist
                           </button>
                         ) : (
                           <span className="text-slate-400 font-sans italic">-</span>
@@ -1425,11 +1433,11 @@ export default function VisitorTable({
                         <Layers size={15} />
                       </div>
                       <div className="text-left">
-                        <span className="block font-black uppercase">Konfirmasi Akses Pos 2 (Second Gate Pass)</span>
+                        <span className="block font-black uppercase">Konfirmasi Akses Receptionist PLN</span>
                         <span className="text-[10px] text-sky-100 font-normal">
                           {quickActionVisitor.secondGateTime
-                            ? `Masuk Pos 2: ${quickActionVisitor.secondGateTime}`
-                            : `Verifikasi Pass Pos 2 (${quickActionVisitor.secondGatePass || 'Auto Pass'})`}
+                            ? `Receptionist PLN: ${quickActionVisitor.secondGateTime}`
+                            : `Verifikasi Receptionist PLN (${quickActionVisitor.secondGatePass || 'Auto Pass'})`}
                         </span>
                       </div>
                     </div>
