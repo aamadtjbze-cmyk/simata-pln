@@ -809,7 +809,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('stakeholder' as any)}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[150px]"
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[190px]"
                 >
                   <div className="flex flex-col items-start leading-tight">
                     <div className="flex items-center gap-1">
@@ -1051,11 +1051,11 @@ export default function VisitorTable({
                         {item.id}
                       </td>
 
-                      {/* Stakeholder / Entitas & Tempat Area */}
-                      <td className="p-4">
+                      {/* Stakeholder / Entitas & Tempat Area - Full text, no truncate clipping */}
+                      <td className="p-4 min-w-[190px]">
                         <div className="flex flex-col items-start gap-1">
                           {getStakeholderBadge(item.stakeholder)}
-                          <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 uppercase leading-tight line-clamp-2 max-w-[170px]" title={item.visited}>
+                          <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 uppercase leading-tight whitespace-normal break-words" title={item.visited}>
                             {item.visited}
                           </span>
                         </div>
