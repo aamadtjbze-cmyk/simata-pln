@@ -1049,9 +1049,14 @@ export default function VisitorTable({
                         {getStatusBadge(item.status)}
                       </td>
 
-                      {/* Schedule */}
+                      {/* Schedule - jam & tanggal dipisah 2 baris agar kolom tidak melebar */}
                       <td className="p-2.5 text-slate-500 dark:text-slate-400 font-mono whitespace-nowrap">
-                        {item.schedule}
+                        <span className="block font-bold text-slate-600 dark:text-slate-300">
+                          {item.schedule?.split(' - ')[1] || item.schedule}
+                        </span>
+                        <span className="block text-[8.5px] text-slate-400 dark:text-slate-500 font-sans">
+                          {item.schedule?.split(' - ')[0] || ''}
+                        </span>
                       </td>
 
                       {/* IN Timestamp & Action Button */}
@@ -1147,8 +1152,11 @@ export default function VisitorTable({
                           >
                             <div className="flex items-center gap-1">
                               <Building size={11} className="text-sky-200" />
-                              <span>{item.receptionistTime}</span>
+                              <span>{item.receptionistTime?.split(' - ')[1] || item.receptionistTime}</span>
                             </div>
+                            <span className="text-[8.5px] font-sans text-sky-200/80">
+                              {item.receptionistTime?.split(' - ')[0] || ''}
+                            </span>
                             {item.receptionistBadge && (
                               <span className="text-[8.5px] font-bold bg-sky-900/60 text-sky-200 px-1 py-0.2 rounded-none">
                                 {item.receptionistBadge}
@@ -1172,10 +1180,15 @@ export default function VisitorTable({
                       {/* OUT Timestamp / Check-Out Action Button */}
                       <td className="p-2.5 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
                         {item.outTime ? (
-                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                            <Check size={10} className="text-emerald-500" />
-                            {item.outTime}
-                          </span>
+                          <div className="flex flex-col items-start gap-0.5">
+                            <span className="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                              <Check size={10} className="text-emerald-500" />
+                              {item.outTime.split(' - ')[1] || item.outTime}
+                            </span>
+                            <span className="text-[8.5px] text-slate-400 dark:text-slate-500 font-sans">
+                              {item.outTime.split(' - ')[0] || ''}
+                            </span>
+                          </div>
                         ) : item.status === 'IN-PROGRESS' ? (
                           <button
                             onClick={() => onCheckOut(item.id)}
@@ -1225,14 +1238,14 @@ export default function VisitorTable({
                         </span>
                       </td>
 
-                      {/* Gate Passes */}
-                      <td className="p-2.5 min-w-[110px]">
+                      {/* Gate Passes - dibiarkan membungkus supaya nomor pass panjang tidak melebarkan kolom */}
+                      <td className="p-2.5 min-w-[110px] max-w-[130px]">
                         <div className="flex flex-col gap-0.5">
-                          <span className="font-mono text-[10px] text-amber-600 dark:text-amber-500 font-bold bg-amber-50 dark:bg-amber-950/20 px-1 rounded-none border border-amber-200/50 dark:border-amber-900/30 block w-fit whitespace-nowrap">
+                          <span className="font-mono text-[10px] text-amber-600 dark:text-amber-500 font-bold bg-amber-50 dark:bg-amber-950/20 px-1 rounded-none border border-amber-200/50 dark:border-amber-900/30 block w-fit whitespace-normal break-all" title={item.mainGatePass || ''}>
                             {item.mainGatePass || '-'}
                           </span>
                           {item.secondGatePass && (
-                            <span className="font-mono text-[10px] text-sky-600 dark:text-sky-400 font-bold bg-sky-50 dark:bg-sky-950/20 px-1 rounded-none border border-sky-200/50 dark:border-sky-900/30 block w-fit whitespace-nowrap mt-0.5">
+                            <span className="font-mono text-[10px] text-sky-600 dark:text-sky-400 font-bold bg-sky-50 dark:bg-sky-950/20 px-1 rounded-none border border-sky-200/50 dark:border-sky-900/30 block w-fit whitespace-normal break-all mt-0.5" title={item.secondGatePass}>
                               {item.secondGatePass}
                             </span>
                           )}
