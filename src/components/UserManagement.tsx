@@ -7,6 +7,8 @@ import React, { useState, useEffect } from 'react';
 import { UserPlus, KeyRound, Trash2, ShieldCheck, User, X, Eye, EyeOff } from 'lucide-react';
 import { AppUser, loadUsers, addUser, changePassword, deleteUser } from '../lib/userManager';
 
+import { Stakeholder, UserRole } from '../types';
+
 interface UserManagementProps {
   currentUsername: string;
   triggerToast: (msg: string, type?: 'success' | 'info' | 'danger') => void;
@@ -21,7 +23,8 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
   // Add user form
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [newRole, setNewRole] = useState<'SEKRETARIAT' | 'SECURITY'>('SEKRETARIAT');
+  const [newRole, setNewRole] = useState<UserRole>('RECEPTIONIST');
+  const [newStakeholder, setNewStakeholder] = useState<Stakeholder | 'ALL'>('PLN');
   const [newDisplayName, setNewDisplayName] = useState('');
 
   // Change password form
@@ -35,15 +38,16 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
 
   const resetForms = () => {
     setNewUsername(''); setNewPassword(''); setNewDisplayName('');
+    setNewRole('RECEPTIONIST'); setNewStakeholder('PLN');
     setTargetUsername(''); setNewPw(''); setShowPw(false);
     setMode('list');
   };
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    const err = addUser(newUsername, newPassword, newRole, newDisplayName);
+    const err = addUser(newUsername, newPassword, newRole, newDisplayName, newStakeholder);
     if (err) { triggerToast(err, 'danger'); return; }
-    triggerToast(`User "${newUsername}" berhasil ditambahkan.`, 'success');
+    triggerToast(`User "${newUsername}" (${newStakeholder}) berhasil ditambahkan.`, 'success');
     refresh(); resetForms();
   };
 
@@ -66,8 +70,8 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
       triggerToast('Akun Admin Utama (admin) terlindungi & tidak dapat dihapus!', 'danger');
       return;
     }
-    if (currentUser?.role === 'SECURITY' && targetUser.role === 'SEKRETARIAT') {
-      triggerToast('Role Security tidak diizinkan untuk menghapus akun Admin Sekretariat!', 'danger');
+    if (currentUser?.role !== 'SUPERADMIN' && targetUser.role === 'SUPERADMIN') {
+      triggerToast('Hanya Superadmin yang dapat menghapus akun Administrator!', 'danger');
       return;
     }
     if (!confirm(`Hapus user "${targetUser.username}" (${targetUser.displayName})?`)) return;
@@ -120,7 +124,8 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
               <tr>
                 <th className="px-3 py-2 text-left font-black uppercase tracking-wide">Username</th>
                 <th className="px-3 py-2 text-left font-black uppercase tracking-wide">Nama</th>
-                <th className="px-3 py-2 text-left font-black uppercase tracking-wide">Role</th>
+                <th className="px-3 py-2 text-left font-black uppercase tracking-wide">Entitas</th>
+                <th className="px-3 py-2 text-left font-black uppercase tracking-wide">Role / Pos</th>
                 <th className="px-3 py-2 text-center font-black uppercase tracking-wide">Hapus</th>
               </tr>
             </thead>
@@ -128,13 +133,29 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
               {users.map((u, i) => {
                 const isSelf = u.username.toLowerCase() === currentUsername.toLowerCase();
                 const isMainAdmin = u.username.toLowerCase() === 'admin';
-                const isSecurityDeletingSekretariat = currentUser?.role === 'SECURITY' && u.role === 'SEKRETARIAT';
-                const isDisabled = isSelf || isMainAdmin || isSecurityDeletingSekretariat;
+                const isDisabled = isSelf || isMainAdmin;
                 
                 let tooltip = "Hapus user";
                 if (isSelf) tooltip = "Tidak dapat menghapus akun Anda sendiri";
                 else if (isMainAdmin) tooltip = "Akun Admin Utama (admin) terlindungi";
-                else if (isSecurityDeletingSekretariat) tooltip = "Role Security tidak dapat menghapus akun Admin Sekretariat";
+
+                const getRoleBadge = (role: UserRole) => {
+                  switch (role) {
+                    case 'SUPERADMIN':
+                    case 'SEKRETARIAT':
+                      return { label: 'Superadmin', bg: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' };
+                    case 'MAINGATE_SECURITY':
+                      return { label: 'Main Gate', bg: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' };
+                    case 'POS2_SECURITY':
+                      return { label: 'Pos 2 Gate', bg: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' };
+                    case 'RECEPTIONIST':
+                      return { label: 'Receptionist', bg: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' };
+                    default:
+                      return { label: role, bg: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200' };
+                  }
+                };
+
+                const badge = getRoleBadge(u.role);
 
                 return (
                   <tr key={u.username} className={i % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800/50'}>
@@ -144,15 +165,16 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
                         <span className="ml-2 text-[9px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 px-1.5 py-0.5 font-black uppercase">Aktif</span>
                       )}
                     </td>
-                    <td className="px-3 py-2.5">{u.displayName}</td>
+                    <td className="px-3 py-2.5 font-medium">{u.displayName}</td>
                     <td className="px-3 py-2.5">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase ${
-                        u.role === 'SEKRETARIAT'
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                          : 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300'
-                      }`}>
+                      <span className="font-bold text-[10px] uppercase font-mono px-1.5 py-0.5 border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        {u.stakeholder || 'ALL'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase ${badge.bg}`}>
                         <ShieldCheck size={9} />
-                        {u.role === 'SEKRETARIAT' ? 'Sekretariat' : 'Security'}
+                        {badge.label}
                       </span>
                     </td>
                     <td className="px-3 py-2.5 text-center">
@@ -182,23 +204,35 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Username</label>
-              <input value={newUsername} onChange={e => setNewUsername(e.target.value)} placeholder="cth: budi.santoso" required className={inputClass} />
+              <input value={newUsername} onChange={e => setNewUsername(e.target.value)} placeholder="cth: recep.kpjb" required className={inputClass} />
             </div>
             <div>
               <label className={labelClass}>Nama Tampil</label>
-              <input value={newDisplayName} onChange={e => setNewDisplayName(e.target.value)} placeholder="cth: Budi Santoso" className={inputClass} />
+              <input value={newDisplayName} onChange={e => setNewDisplayName(e.target.value)} placeholder="cth: Resepsionis KPJB" className={inputClass} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>Password</label>
               <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min. 4 karakter" required className={inputClass} />
             </div>
             <div>
-              <label className={labelClass}>Role</label>
+              <label className={labelClass}>Role / Pos</label>
               <select value={newRole} onChange={e => setNewRole(e.target.value as any)} className={inputClass}>
-                <option value="SEKRETARIAT">Sekretariat PLN</option>
-                <option value="SECURITY">Pos Security</option>
+                <option value="RECEPTIONIST">Receptionist / Lobby</option>
+                <option value="POS2_SECURITY">Security Pos 2 (Gate Unit)</option>
+                <option value="MAINGATE_SECURITY">Security Main Gate</option>
+                <option value="SUPERADMIN">Superadmin / Sekretariat</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Instansi / Stakeholder</label>
+              <select value={newStakeholder} onChange={e => setNewStakeholder(e.target.value as any)} className={inputClass}>
+                <option value="PLN">PT PLN UIK TJB</option>
+                <option value="KPJB">PT KPJB</option>
+                <option value="TJBPS">PT TJB Power Services</option>
+                <option value="AGP">PT Adhi Guna Putera (AGP)</option>
+                <option value="ALL">Semua / Kawasan (Main Gate & Superadmin)</option>
               </select>
             </div>
           </div>

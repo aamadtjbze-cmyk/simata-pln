@@ -77,6 +77,9 @@ export const visitorToRow = (v: Visitor) => ({
   in_time: v.inTime,
   out_time: v.outTime,
   second_gate_time: v.secondGateTime || null,
+  receptionist_time: v.receptionistTime || null,
+  receptionist_badge: v.receptionistBadge || null,
+  stakeholder: v.stakeholder || 'PLN',
   status: v.status,
   main_gate_pass: v.mainGatePass || '',
   second_gate_pass: v.secondGatePass || '',
@@ -112,6 +115,9 @@ export const rowToVisitor = (row: any): Visitor => {
     inTime: row.in_time || null,
     outTime: row.out_time || null,
     secondGateTime: extractedSecondGateTime,
+    receptionistTime: row.receptionist_time || null,
+    receptionistBadge: row.receptionist_badge || null,
+    stakeholder: (row.stakeholder as any) || 'PLN',
     status: row.status,
     mainGatePass: row.main_gate_pass,
     secondGatePass: row.second_gate_pass,
@@ -162,8 +168,8 @@ export const saveVisitorToSupabase = async (visitor: Visitor): Promise<boolean> 
     const { error } = await supabase.from('visitors').upsert(row);
 
     if (error) {
-      console.warn('Supabase upsert with second_gate_time failed, retrying without column:', error.message);
-      const { second_gate_time, ...fallbackRow } = row;
+      console.warn('Supabase upsert with extended columns failed, retrying with core columns:', error.message);
+      const { second_gate_time, receptionist_time, receptionist_badge, stakeholder, ...fallbackRow } = row;
       const fallbackResult = await supabase.from('visitors').upsert(fallbackRow);
       if (fallbackResult.error) {
         console.error('Supabase fallback upsert error:', fallbackResult.error.message);

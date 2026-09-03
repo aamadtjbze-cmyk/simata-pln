@@ -45,8 +45,8 @@ import UserManagement from './components/UserManagement';
 import EmailConfigModal from './components/EmailConfigModal';
 import GuestQrStandeeModal from './components/GuestQrStandeeModal';
 import { generateDailyPassNumber, generateSecondGatePassNumber } from './utils/passGenerator';
-import { createNotification } from './lib/notificationHelper';
-import { Visitor, VisitorStatus, SystemNotification } from './types';
+import { Visitor, VisitorStatus, SystemNotification, Stakeholder, UserRole } from './types';
+import { AppUser } from './lib/userManager';
 import { INITIAL_VISITORS } from './data/mockData';
 import { decodePassToken, encodePassToken } from './utils/security';
 import {
@@ -122,6 +122,8 @@ export default function App() {
   const [userRole, setUserRole] = useState<'GUEST' | 'ADMIN'>('GUEST');
   const [adminRoleName, setAdminRoleName] = useState<string>('Sekretariat PLN');
   const [adminUsername, setAdminUsername] = useState<string>('admin');
+  const [activeUserRole, setActiveUserRole] = useState<UserRole>('SUPERADMIN');
+  const [activeStakeholder, setActiveStakeholder] = useState<Stakeholder | 'ALL'>('ALL');
   const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState(false);
   const [isEmailConfigModalOpen, setIsEmailConfigModalOpen] = useState(false);
   const [isGuestQrStandeeOpen, setIsGuestQrStandeeOpen] = useState(false);
@@ -235,6 +237,10 @@ export default function App() {
     if (savedAdminName) setAdminRoleName(savedAdminName);
     const savedAdminUsername = localStorage.getItem('simata_admin_username');
     if (savedAdminUsername) setAdminUsername(savedAdminUsername);
+    const savedAdminRole = localStorage.getItem('simata_admin_role') as UserRole | null;
+    if (savedAdminRole) setActiveUserRole(savedAdminRole);
+    const savedAdminStakeholder = localStorage.getItem('simata_admin_stakeholder') as Stakeholder | 'ALL' | null;
+    if (savedAdminStakeholder) setActiveStakeholder(savedAdminStakeholder);
 
     // Direct link parameter routing (e.g. ?portal=tamu or ?tab=pengajuan)
     const urlParams = new URLSearchParams(window.location.search);
@@ -459,10 +465,16 @@ export default function App() {
     } catch (e) {}
   };
 
-  const handleAdminLoginSuccess = (roleName: string, username: string) => {
+  const handleAdminLoginSuccess = (roleName: string, username: string, userObj?: AppUser) => {
     setUserRole('ADMIN');
     setAdminRoleName(roleName);
     setAdminUsername(username);
+    if (userObj) {
+      setActiveUserRole(userObj.role);
+      setActiveStakeholder(userObj.stakeholder || 'ALL');
+      localStorage.setItem('simata_admin_role', userObj.role);
+      localStorage.setItem('simata_admin_stakeholder', userObj.stakeholder || 'ALL');
+    }
     handleSelectTab('buku-tamu');
     localStorage.setItem('simata_user_role', 'ADMIN');
     localStorage.setItem('simata_admin_name', roleName);
@@ -480,10 +492,15 @@ export default function App() {
   const handleAdminLogout = () => {
     setUserRole('GUEST');
     setAdminRoleName('');
+    setActiveUserRole('SUPERADMIN');
+    setActiveStakeholder('ALL');
     handleSelectTab('pengajuan-tamu');
     localStorage.setItem('simata_user_role', 'GUEST');
     localStorage.removeItem('simata_admin_name');
-    triggerToast('Anda telah Logout dari akun Admin. Kembali ke Mode Tamu.', 'info');
+    localStorage.removeItem('simata_admin_username');
+    localStorage.removeItem('simata_admin_role');
+    localStorage.removeItem('simata_admin_stakeholder');
+    triggerToast('Anda telah Logout dari akun Petugas / Admin. Kembali ke Mode Tamu.', 'info');
   };
 
   // Quick database connection health check on click (no popup menu)
@@ -696,7 +713,7 @@ export default function App() {
     saveAndSync(updated, updatedVisitor);
   };
 
-  // Konfirmasi Masuk Pos 2 / Second Gate
+  // Konfirmasi Masuk Pos 2 (Gate Unit: Second Gate KPJB / Pos Total 8 AGP)
   const handleSecondGateCheckIn = (visitorId: string, customPass?: string) => {
     const today = new Date();
     const pad = (num: number) => String(num).padStart(2, '0');
@@ -706,11 +723,13 @@ export default function App() {
     const original = visitors.find((v) => v.id === visitorId);
     if (!original) return;
 
-    const assignedPass = customPass || original.secondGatePass || generateSecondGatePassNumber(visitors);
-    const noteMarker = `[Pos 2: ${formattedNow}]`;
+    const stk = original.stakeholder || 'PLN';
+    const assignedPass = customPass || original.secondGatePass || (stk === 'AGP' ? `T8-${pad(today.getMinutes())}` : generateSecondGatePassNumber(visitors));
+    const gateLabel = stk === 'AGP' ? 'Pos Total 8 (AGP)' : 'Second Gate KPJB';
+    const noteMarker = `[${gateLabel}: ${formattedNow}]`;
     const updatedNotes = original.notes
-      ? original.notes.includes('[Pos 2:')
-      ? original.notes.replace(/\[Pos 2: .*?\]/, noteMarker)
+      ? original.notes.includes(`[${gateLabel}:`)
+      ? original.notes.replace(new RegExp(`\\[${gateLabel}: .*?\\]`), noteMarker)
       : `${original.notes} | ${noteMarker}`
       : noteMarker;
 
@@ -723,7 +742,38 @@ export default function App() {
     };
 
     const updated = visitors.map((v) => (v.id === visitorId ? updatedVisitor : v));
-    triggerToast(`Akses Pos 2 (${assignedPass}) untuk ${original.visitorName} berhasil dikonfirmasi!`, 'info');
+    triggerToast(`Akses ${gateLabel} (${assignedPass}) untuk ${original.visitorName} berhasil dikonfirmasi!`, 'info');
+    if (visitorForBadge && visitorForBadge.id === visitorId) {
+      setVisitorForBadge(updatedVisitor);
+    }
+
+    const notif = createNotification(updatedVisitor, original.status);
+    saveAndSyncNotifications([notif, ...notifications]);
+    saveAndSync(updated, updatedVisitor);
+  };
+
+  // Konfirmasi Masuk Meja Receptionist / Lobby Kantor Stakeholder
+  const handleReceptionistCheckIn = (visitorId: string, badgeNumber?: string) => {
+    const today = new Date();
+    const pad = (num: number) => String(num).padStart(2, '0');
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const formattedNow = `${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()} - ${pad(today.getHours())}.${pad(today.getMinutes())}`;
+
+    const original = visitors.find((v) => v.id === visitorId);
+    if (!original) return;
+
+    const stk = original.stakeholder || 'PLN';
+    const assignedBadge = badgeNumber || original.receptionistBadge || `BDG-${stk}-${pad(today.getHours())}${pad(today.getMinutes())}`;
+
+    const updatedVisitor: Visitor = {
+      ...original,
+      receptionistTime: formattedNow,
+      receptionistBadge: assignedBadge,
+      status: 'IN-PROGRESS',
+    };
+
+    const updated = visitors.map((v) => (v.id === visitorId ? updatedVisitor : v));
+    triggerToast(`Tamu ${original.visitorName} berhasil diterima di Receptionist ${stk}!`, 'success');
     if (visitorForBadge && visitorForBadge.id === visitorId) {
       setVisitorForBadge(updatedVisitor);
     }
@@ -1140,11 +1190,18 @@ export default function App() {
             ) : (
               <div className="flex items-center gap-2">
                 <div className="hidden lg:flex flex-col items-end text-right select-none">
-                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-none animate-pulse"></span>
-                    {adminRoleName || 'Admin PLN'}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[8.5px] font-black uppercase px-1.5 py-0.2 bg-blue-50 dark:bg-blue-950/70 text-[#005DA6] dark:text-[#FFD500] border border-[#005DA6]/40 dark:border-[#FFD500]/40 font-mono">
+                      {activeStakeholder === 'ALL' ? 'KAWASAN PLTU TJB' : activeStakeholder}
+                    </span>
+                    <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-none animate-pulse"></span>
+                      {adminRoleName || 'Petugas'}
+                    </span>
+                  </div>
+                  <span className="text-[8px] font-mono font-bold text-slate-400">
+                    {activeUserRole}
                   </span>
-                  <span className="text-[8.5px] font-bold text-slate-400">AKSES FULL TERBUKA</span>
                 </div>
 
                 <button
@@ -1304,17 +1361,19 @@ export default function App() {
                 Laporan & Metrik
               </button>
 
-              <button
-                onClick={() => handleSelectTab('kelola-user')}
-                className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 border-t-2 border-l-2 border-r-2 cursor-pointer shrink-0 ${
-                  currentTab === 'kelola-user'
-                    ? 'bg-white dark:bg-[#111c30] text-[#005DA6] dark:text-[#FFD500] border-t-2 border-r-2 border-l-2 border-[#005DA6] dark:border-[#005DA6] -mb-[2px] z-10 font-black'
-                    : 'bg-slate-100 dark:bg-slate-900/40 text-slate-500 border-transparent hover:text-slate-700 dark:hover:text-slate-300'
-                }`}
-              >
-                <UserCheck2 size={13} />
-                Kelola User
-              </button>
+              {(activeUserRole === 'SUPERADMIN' || activeUserRole === 'SEKRETARIAT') && (
+                <button
+                  onClick={() => handleSelectTab('kelola-user')}
+                  className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 border-t-2 border-l-2 border-r-2 cursor-pointer shrink-0 ${
+                    currentTab === 'kelola-user'
+                      ? 'bg-white dark:bg-[#111c30] text-[#005DA6] dark:text-[#FFD500] border-t-2 border-r-2 border-l-2 border-[#005DA6] dark:border-[#005DA6] -mb-[2px] z-10 font-black'
+                      : 'bg-slate-100 dark:bg-slate-900/40 text-slate-500 border-transparent hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  <UserCheck2 size={13} />
+                  Kelola User
+                </button>
+              )}
 
               <button
                 onClick={() => setIsEmailConfigModalOpen(true)}
@@ -1367,6 +1426,9 @@ export default function App() {
                 onRejectBooking={handleRejectBooking}
                 onCheckInAppointment={handleCheckInAppointment}
                 onSecondGateCheckIn={handleSecondGateCheckIn}
+                onReceptionistCheckIn={handleReceptionistCheckIn}
+                currentUserRole={activeUserRole}
+                activeStakeholder={activeStakeholder}
               />
             </div>
           )}
@@ -1415,6 +1477,9 @@ export default function App() {
                 onRejectBooking={handleRejectBooking}
                 onCheckInAppointment={handleCheckInAppointment}
                 onSecondGateCheckIn={handleSecondGateCheckIn}
+                onReceptionistCheckIn={handleReceptionistCheckIn}
+                currentUserRole={activeUserRole}
+                activeStakeholder={activeStakeholder}
               />
             </div>
           )}
@@ -1448,6 +1513,7 @@ export default function App() {
             <div className="w-full">
               <ReportModule
                 visitors={visitors}
+                activeStakeholder={activeStakeholder}
               />
             </div>
           )}

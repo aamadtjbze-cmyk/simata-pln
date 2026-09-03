@@ -18,8 +18,12 @@ CREATE TABLE IF NOT EXISTS public.visitors (
     in_time TEXT,
     out_time TEXT,
     status TEXT NOT NULL DEFAULT 'PENDING',
+    stakeholder TEXT NOT NULL DEFAULT 'PLN', -- 'PLN' | 'KPJB' | 'TJBPS' | 'AGP'
     main_gate_pass TEXT DEFAULT 'TJB-PASS-01',
     second_gate_pass TEXT DEFAULT 'TJB-PASS-02',
+    second_gate_time TEXT,
+    receptionist_time TEXT,
+    receptionist_badge TEXT,
     valid_until TEXT,
     validity_option TEXT DEFAULT 'SAME_DAY',
     notes TEXT,
@@ -27,8 +31,15 @@ CREATE TABLE IF NOT EXISTS public.visitors (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Migrasi jika tabel sudah ada sebelumnya (Non-Destructive):
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS stakeholder TEXT DEFAULT 'PLN';
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS second_gate_time TEXT;
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS receptionist_time TEXT;
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS receptionist_badge TEXT;
+
 -- 2. Create Indexes for High Performance Search & Filters
 CREATE INDEX IF NOT EXISTS idx_visitors_status ON public.visitors(status);
+CREATE INDEX IF NOT EXISTS idx_visitors_stakeholder ON public.visitors(stakeholder);
 CREATE INDEX IF NOT EXISTS idx_visitors_schedule ON public.visitors(schedule);
 CREATE INDEX IF NOT EXISTS idx_visitors_created_at ON public.visitors(created_at DESC);
 

@@ -5,12 +5,25 @@
 
 export type VisitorStatus = 'DONE' | 'IN-PROGRESS' | 'SCHEDULED' | 'PENDING' | 'EXPIRED' | 'REJECTED';
 
+export type Stakeholder = 'PLN' | 'KPJB' | 'TJBPS' | 'AGP';
+
+export type UserRole = 
+  | 'SUPERADMIN' 
+  | 'SEKRETARIAT' 
+  | 'MAINGATE_SECURITY' 
+  | 'POS2_SECURITY' 
+  | 'RECEPTIONIST' 
+  | 'SECURITY';
+
 export interface Visitor {
   id: string; // Form ID e.g. TJB-VST-002934
   schedule: string; // date string
-  inTime: string | null; // date string or null
-  outTime: string | null; // date string or null
-  secondGateTime?: string | null; // date string for Pos 2
+  inTime: string | null; // date string or null (Check-in Main Gate)
+  outTime: string | null; // date string or null (Check-out)
+  secondGateTime?: string | null; // date string for Pos 2 (KPJB / AGP Total 8)
+  receptionistTime?: string | null; // date string for Receptionist / Lobby
+  receptionistBadge?: string | null; // badge nomor meja resepsionis / lobby
+  stakeholder?: Stakeholder; // Entitas tujuan: PLN, KPJB, TJBPS, AGP
   visitorName: string;
   mainGatePass: string;
   secondGatePass: string;
@@ -30,6 +43,7 @@ export interface Visitor {
 export interface VisitorFilter {
   searchQuery: string;
   status: VisitorStatus | 'ALL';
+  stakeholder?: Stakeholder | 'ALL';
   dateFrom: string;
   dateTo: string;
   purpose: string;

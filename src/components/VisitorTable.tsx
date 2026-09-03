@@ -31,7 +31,7 @@ import {
   Clock,
   Shield
 } from 'lucide-react';
-import { Visitor, VisitorStatus } from '../types';
+import { Visitor, VisitorStatus, Stakeholder, UserRole } from '../types';
 import { generateWhatsAppPassUrl } from '../lib/email';
 import { getProductionPassUrl } from '../utils/security';
 
@@ -47,9 +47,12 @@ interface VisitorTableProps {
   onRejectBooking?: (visitorId: string, reason: string) => void;
   onCheckInAppointment?: (visitorId: string) => void;
   onSecondGateCheckIn?: (visitorId: string, customPass?: string) => void;
+  onReceptionistCheckIn?: (visitorId: string, badgeNumber?: string) => void;
+  currentUserRole?: UserRole;
+  activeStakeholder?: Stakeholder | 'ALL';
 }
 
-type SortField = 'id' | 'schedule' | 'inTime' | 'outTime' | 'visitorName' | 'company' | 'purpose' | 'visited' | 'status';
+type SortField = 'id' | 'schedule' | 'inTime' | 'outTime' | 'visitorName' | 'company' | 'purpose' | 'visited' | 'status' | 'stakeholder';
 
 export default function VisitorTable({
   visitors,
@@ -63,15 +66,26 @@ export default function VisitorTable({
   onRejectBooking,
   onCheckInAppointment,
   onSecondGateCheckIn,
+  onReceptionistCheckIn,
+  currentUserRole = 'SUPERADMIN',
+  activeStakeholder = 'ALL',
 }: VisitorTableProps) {
   // Filtering states
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<VisitorStatus | 'ALL'>('ALL');
   const [filterPurpose, setFilterPurpose] = useState('ALL');
+  const [filterStakeholder, setFilterStakeholder] = useState<Stakeholder | 'ALL'>(activeStakeholder || 'ALL');
   const [scheduleFilter, setScheduleFilter] = useState('');
   const [inFilter, setInFilter] = useState('');
   const [secondGateFilter, setSecondGateFilter] = useState('');
+  const [receptionistFilter, setReceptionistFilter] = useState('');
   const [outFilter, setOutFilter] = useState('');
+
+  useEffect(() => {
+    if (activeStakeholder) {
+      setFilterStakeholder(activeStakeholder);
+    }
+  }, [activeStakeholder]);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -178,9 +192,11 @@ export default function VisitorTable({
     setSearch('');
     setFilterStatus('ALL');
     setFilterPurpose('ALL');
+    setFilterStakeholder(activeStakeholder || 'ALL');
     setScheduleFilter('');
     setInFilter('');
     setSecondGateFilter('');
+    setReceptionistFilter('');
     setOutFilter('');
     setCurrentPage(1);
   };
@@ -194,6 +210,7 @@ export default function VisitorTable({
       item.company.toLowerCase().includes(search.toLowerCase()) ||
       item.visited.toLowerCase().includes(search.toLowerCase()) ||
       item.purpose.toLowerCase().includes(search.toLowerCase()) ||
+      (item.stakeholder && item.stakeholder.toLowerCase().includes(search.toLowerCase())) ||
       (item.email && item.email.toLowerCase().includes(search.toLowerCase())) ||
       (item.phone && item.phone.toLowerCase().includes(search.toLowerCase())) ||
       (item.identifyNo && item.identifyNo.toLowerCase().includes(search.toLowerCase()));
@@ -203,6 +220,10 @@ export default function VisitorTable({
 
     // Filter purposes
     const matchesPurpose = filterPurpose === 'ALL' || item.purpose === filterPurpose;
+
+    // Filter Stakeholders (locked to activeStakeholder if logged in user is scoped to one entity)
+    const effectiveStakeholder = (activeStakeholder && activeStakeholder !== 'ALL') ? activeStakeholder : filterStakeholder;
+    const matchesStakeholder = effectiveStakeholder === 'ALL' || (item.stakeholder || 'PLN') === effectiveStakeholder;
 
     // Filter Schedule Date
     const matchesScheduleFilter =
@@ -219,6 +240,11 @@ export default function VisitorTable({
       !secondGateFilter ||
       (item.secondGateTime && item.secondGateTime.toLowerCase().includes(secondGateFilter.toLowerCase()));
 
+    // Filter RECEPTIONIST Date
+    const matchesReceptionistFilter =
+      !receptionistFilter ||
+      (item.receptionistTime && item.receptionistTime.toLowerCase().includes(receptionistFilter.toLowerCase()));
+
     // Filter OUT Date
     const matchesOutFilter =
       !outFilter ||
@@ -228,9 +254,11 @@ export default function VisitorTable({
       matchesSearch &&
       matchesStatus &&
       matchesPurpose &&
+      matchesStakeholder &&
       matchesScheduleFilter &&
       matchesInFilter &&
       matchesSecondGateFilter &&
+      matchesReceptionistFilter &&
       matchesOutFilter
     );
   });
@@ -331,6 +359,36 @@ export default function VisitorTable({
     }
   };
 
+  const getStakeholderBadge = (stk?: Stakeholder) => {
+    switch (stk) {
+      case 'KPJB':
+        return (
+          <span className="px-1.5 py-0.5 text-[9px] font-black uppercase font-mono bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-300 dark:border-purple-800 rounded-none">
+            KPJB
+          </span>
+        );
+      case 'TJBPS':
+        return (
+          <span className="px-1.5 py-0.5 text-[9px] font-black uppercase font-mono bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800 rounded-none">
+            TJBPS
+          </span>
+        );
+      case 'AGP':
+        return (
+          <span className="px-1.5 py-0.5 text-[9px] font-black uppercase font-mono bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800 rounded-none">
+            AGP
+          </span>
+        );
+      case 'PLN':
+      default:
+        return (
+          <span className="px-1.5 py-0.5 text-[9px] font-black uppercase font-mono bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-300 dark:border-blue-800 rounded-none">
+            PLN
+          </span>
+        );
+    }
+  };
+
   const isAllPageSelected =
     currentPagedItems.length > 0 &&
     currentPagedItems.every((item) => selectedIds.includes(item.id));
@@ -361,6 +419,31 @@ export default function VisitorTable({
         {/* Toolbar Controls */}
         <div className="flex flex-wrap items-center gap-3">
           
+          {/* Stakeholder / Entitas filter dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-500 hidden xl:inline">Entitas:</span>
+            {activeStakeholder && activeStakeholder !== 'ALL' ? (
+              <span className="py-2 px-3 bg-blue-50 dark:bg-blue-950/60 text-[#005DA6] dark:text-[#FFD500] border-2 border-[#005DA6] text-xs font-black uppercase tracking-wider font-mono">
+                {activeStakeholder}
+              </span>
+            ) : (
+              <select
+                value={filterStakeholder}
+                onChange={(e) => {
+                  setFilterStakeholder(e.target.value as any);
+                  setCurrentPage(1);
+                }}
+                className="py-2.5 pl-3 pr-8 bg-white dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-[#005DA6] dark:text-[#FFD500] text-xs font-black focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+              >
+                <option value="ALL">Semua Entitas (Kawasan)</option>
+                <option value="PLN">PLN UIK TJB</option>
+                <option value="KPJB">KPJB</option>
+                <option value="TJBPS">TJB Power Services</option>
+                <option value="AGP">Adhi Guna Putera (AGP)</option>
+              </select>
+            )}
+          </div>
+
           {/* Status filter dropdown */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-slate-500 hidden xl:inline">Status:</span>
@@ -522,16 +605,19 @@ export default function VisitorTable({
                     </div>
                   </div>
 
-                  {/* Card Body: Visitor Name, Company, Purpose, Visited */}
+                  {/* Card Body: Visitor Name, Stakeholder, Company, Purpose, Visited */}
                   <div className="space-y-2 text-xs">
                     <div>
-                      <button
-                        onClick={() => setQuickActionVisitor(item)}
-                        className="font-black text-sm text-slate-900 dark:text-slate-100 uppercase tracking-tight text-left hover:text-[#005DA6] dark:hover:text-[#FFD500] flex items-center gap-1"
-                      >
-                        {item.visitorName}
-                        <ExternalLink size={12} className="opacity-50" />
-                      </button>
+                      <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                        {getStakeholderBadge(item.stakeholder)}
+                        <button
+                          onClick={() => setQuickActionVisitor(item)}
+                          className="font-black text-sm text-slate-900 dark:text-slate-100 uppercase tracking-tight text-left hover:text-[#005DA6] dark:hover:text-[#FFD500] flex items-center gap-1"
+                        >
+                          {item.visitorName}
+                          <ExternalLink size={12} className="opacity-50" />
+                        </button>
+                      </div>
                       <p className="font-bold text-slate-600 dark:text-slate-300 uppercase text-[11px] flex items-center gap-1 mt-0.5">
                         <Building size={12} className="text-[#005DA6] shrink-0" />
                         {item.company}
@@ -553,25 +639,34 @@ export default function VisitorTable({
                       </div>
                     </div>
 
-                    {/* Timestamps Grid */}
-                    <div className="grid grid-cols-3 gap-1 text-[10px] font-mono bg-slate-100 dark:bg-slate-950/40 p-2 border border-slate-200/60 dark:border-slate-800 text-center">
+                    {/* Timestamps Grid (4 Columns: IN, POS 2, LOBBY, OUT) */}
+                    <div className="grid grid-cols-4 gap-1 text-[10px] font-mono bg-slate-100 dark:bg-slate-950/40 p-2 border border-slate-200/60 dark:border-slate-800 text-center">
                       <div>
                         <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold">IN</span>
-                        <span className="text-[8px] text-slate-400 block -mt-0.5 mb-0.5 font-sans font-normal">(Maingate)</span>
+                        <span className="text-[8px] text-slate-400 block -mt-0.5 mb-0.5 font-sans font-normal truncate">Maingate</span>
                         <span className="font-bold text-emerald-600 dark:text-emerald-400">
                           {item.inTime ? item.inTime.split(' - ')[1] || item.inTime : '-'}
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold truncate" title="Receptionist PLN">
-                          RECEPTIONIST
+                        <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold truncate">POS 2</span>
+                        <span className="text-[8px] text-slate-400 block -mt-0.5 mb-0.5 font-sans font-normal truncate">
+                          {item.stakeholder === 'AGP' ? 'Total 8' : item.stakeholder === 'KPJB' ? 'KPJB' : 'N/A'}
                         </span>
+                        <span className="font-bold text-purple-600 dark:text-purple-400">
+                          {item.secondGateTime ? item.secondGateTime.split(' - ')[1] || item.secondGateTime : (item.stakeholder === 'PLN' || item.stakeholder === 'TJBPS' ? '-' : '-')}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold truncate">LOBBY</span>
+                        <span className="text-[8px] text-slate-400 block -mt-0.5 mb-0.5 font-sans font-normal truncate">Recep</span>
                         <span className="font-bold text-sky-600 dark:text-sky-400">
-                          {item.secondGateTime ? item.secondGateTime.split(' - ')[1] || item.secondGateTime : '-'}
+                          {item.receptionistTime ? item.receptionistTime.split(' - ')[1] || item.receptionistTime : '-'}
                         </span>
                       </div>
                       <div>
                         <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold">OUT</span>
+                        <span className="text-[8px] text-slate-400 block -mt-0.5 mb-0.5 font-sans font-normal truncate">Keluar</span>
                         <span className="font-bold text-rose-600 dark:text-rose-400">
                           {item.outTime ? item.outTime.split(' - ')[1] || item.outTime : '-'}
                         </span>
@@ -667,7 +762,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('id')}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all font-mono w-36"
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all font-mono w-32"
                 >
                   <div className="flex items-center gap-1">
                     Form ID
@@ -676,8 +771,18 @@ export default function VisitorTable({
                 </th>
 
                 <th
+                  onClick={() => handleSort('stakeholder' as any)}
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[95px]"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Entitas</span>
+                    {sortField === ('stakeholder' as any) && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  </div>
+                </th>
+
+                <th
                   onClick={() => handleSort('schedule')}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[130px]"
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[125px]"
                 >
                   <div className="flex items-center gap-1">
                     Schedule
@@ -687,7 +792,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('inTime')}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[125px]"
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[120px]"
                 >
                   <div className="flex flex-col items-start leading-tight">
                     <div className="flex items-center gap-1">
@@ -702,17 +807,33 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('secondGateTime' as any)}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all whitespace-nowrap min-w-[155px]"
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all whitespace-nowrap min-w-[140px]"
                 >
-                  <div className="flex items-center gap-1">
-                    <span>Receptionist PLN</span>
-                    {sortField === ('secondGateTime' as any) && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  <div className="flex flex-col items-start leading-tight">
+                    <div className="flex items-center gap-1">
+                      <span>POS 2</span>
+                      {sortField === ('secondGateTime' as any) && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                    </div>
+                    <span className="text-[9.5px] text-slate-400 dark:text-slate-500 font-normal tracking-tight">
+                      (KPJB / Total 8)
+                    </span>
+                  </div>
+                </th>
+
+                <th
+                  className="p-4 whitespace-nowrap min-w-[135px]"
+                >
+                  <div className="flex flex-col items-start leading-tight">
+                    <span>RECEPTIONIST</span>
+                    <span className="text-[9.5px] text-slate-400 dark:text-slate-500 font-normal tracking-tight">
+                      (Lobby Kantor)
+                    </span>
                   </div>
                 </th>
 
                 <th
                   onClick={() => handleSort('outTime')}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[125px]"
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[110px]"
                 >
                   <div className="flex items-center gap-1">
                     OUT
@@ -781,6 +902,7 @@ export default function VisitorTable({
               <tr className="bg-slate-50 dark:bg-slate-950/20 border-b border-slate-200 dark:border-slate-800/80 font-mono text-[10px]">
                 <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
                 <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
                 
                 {/* Schedule date search input */}
                 <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
@@ -815,6 +937,19 @@ export default function VisitorTable({
                       type="text"
                       value={secondGateFilter}
                       onChange={(e) => setSecondGateFilter(e.target.value)}
+                      placeholder="dd/mm/yyyy"
+                      className="w-full text-[10px] px-2 py-1 bg-white dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005DA6] placeholder-slate-400"
+                    />
+                  </div>
+                </td>
+
+                {/* RECEPTIONIST date search input */}
+                <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={receptionistFilter}
+                      onChange={(e) => setReceptionistFilter(e.target.value)}
                       placeholder="dd/mm/yyyy"
                       className="w-full text-[10px] px-2 py-1 bg-white dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005DA6] placeholder-slate-400"
                     />
@@ -874,6 +1009,11 @@ export default function VisitorTable({
                         {item.id}
                       </td>
 
+                      {/* Stakeholder / Entitas */}
+                      <td className="p-4 whitespace-nowrap">
+                        {getStakeholderBadge(item.stakeholder)}
+                      </td>
+
                       {/* Schedule */}
                       <td className="p-4 text-slate-500 dark:text-slate-400 font-mono whitespace-nowrap">
                         {item.schedule}
@@ -886,7 +1026,7 @@ export default function VisitorTable({
                             <button
                               onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
                               className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-emerald-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer font-mono"
-                              title="Klik untuk memperbarui / konfirmasi ulang jam Check-In Pos 1"
+                              title="Klik untuk memperbarui jam Check-In Pos 1 Maingate"
                             >
                               <UserCheck2 size={11} className="text-[#FFD500]" />
                               <span>{item.inTime}</span>
@@ -899,7 +1039,7 @@ export default function VisitorTable({
                             <button
                               onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
                               className="px-2.5 py-1 bg-[#005DA6] hover:bg-[#004070] active:bg-[#003056] text-white font-extrabold rounded-none text-[10px] border-b border-r border-[#FFD500] shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
-                              title="Konfirmasi Tamu Tiba di Pos 1 Utama"
+                              title="Konfirmasi Tamu Tiba di Pos 1 Utama (Maingate)"
                             >
                               <UserCheck2 size={11} className="text-[#FFD500]" />
                               + Check-In 1
@@ -918,36 +1058,74 @@ export default function VisitorTable({
                         )}
                       </td>
 
-                      {/* SECOND GATE Timestamp & Pass Button */}
+                      {/* POS 2 (Gate Unit: KPJB / Pos Total 8 AGP) */}
                       <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
-                        {item.secondGateTime ? (
-                          item.status === 'IN-PROGRESS' ? (
+                        {item.stakeholder === 'KPJB' || item.stakeholder === 'AGP' ? (
+                          item.secondGateTime ? (
+                            item.status === 'IN-PROGRESS' ? (
+                              <button
+                                onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(item.id)}
+                                className="px-2 py-1 bg-purple-700 hover:bg-purple-800 active:bg-purple-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-purple-300 shadow-sm transition-all flex flex-col items-start gap-0.5 cursor-pointer font-mono"
+                                title={`Klik untuk konfirmasi ulang jam Pos 2 (${item.stakeholder === 'AGP' ? 'Pos Total 8' : 'Gate KPJB'})`}
+                              >
+                                <div className="flex items-center gap-1">
+                                  <Layers size={11} className="text-purple-200" />
+                                  <span>{item.secondGateTime}</span>
+                                </div>
+                                {item.secondGatePass && (
+                                  <span className="text-[8.5px] font-bold bg-purple-900/60 text-purple-200 px-1 py-0.2 rounded-none">
+                                    {item.secondGatePass}
+                                  </span>
+                                )}
+                              </button>
+                            ) : (
+                              <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{item.secondGateTime}</span>
+                            )
+                          ) : (item.status === 'IN-PROGRESS' || item.status === 'SCHEDULED') ? (
                             <button
                               onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(item.id)}
-                              className="px-2 py-1 bg-sky-700 hover:bg-sky-800 active:bg-sky-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex flex-col items-start gap-0.5 cursor-pointer font-mono"
-                              title="Klik untuk memperbarui / konfirmasi ulang jam Receptionist PLN"
+                              className="px-2 py-1 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold rounded-none text-[10px] border-b border-r border-purple-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
+                              title={`Konfirmasi Akses ${item.stakeholder === 'AGP' ? 'Pos Total 8' : 'Second Gate KPJB'}`}
                             >
-                              <div className="flex items-center gap-1">
-                                <Layers size={11} className="text-sky-200" />
-                                <span>{item.secondGateTime}</span>
-                              </div>
-                              {item.secondGatePass && (
-                                <span className="text-[8.5px] font-bold bg-sky-900/60 text-sky-200 px-1 py-0.2 rounded-none">
-                                  {item.secondGatePass}
-                                </span>
-                              )}
+                              <Layers size={11} />
+                              {item.stakeholder === 'AGP' ? '+ Pos Total 8' : '+ Gate KPJB'}
                             </button>
                           ) : (
-                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{item.secondGateTime}</span>
+                            <span className="text-slate-400 font-sans italic">-</span>
                           )
-                        ) : (item.status === 'IN-PROGRESS' || item.status === 'SCHEDULED') ? (
+                        ) : (
+                          <span className="text-[9.5px] font-sans font-medium text-slate-400 dark:text-slate-600 italic">
+                            Tanpa Pos 2
+                          </span>
+                        )}
+                      </td>
+
+                      {/* RECEPTIONIST (Lobby Kantor Unit) */}
+                      <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
+                        {item.receptionistTime ? (
                           <button
-                            onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(item.id)}
-                            className="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-bold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
-                            title="Konfirmasi Akses Receptionist PLN"
+                            onClick={() => onReceptionistCheckIn && onReceptionistCheckIn(item.id)}
+                            className="px-2 py-1 bg-sky-700 hover:bg-sky-800 active:bg-sky-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex flex-col items-start gap-0.5 cursor-pointer font-mono"
+                            title={`Tamu sudah diterima di Meja Resepsionis ${item.stakeholder || 'PLN'}`}
                           >
-                            <Layers size={11} />
-                            + Receptionist
+                            <div className="flex items-center gap-1">
+                              <Building size={11} className="text-sky-200" />
+                              <span>{item.receptionistTime}</span>
+                            </div>
+                            {item.receptionistBadge && (
+                              <span className="text-[8.5px] font-bold bg-sky-900/60 text-sky-200 px-1 py-0.2 rounded-none">
+                                {item.receptionistBadge}
+                              </span>
+                            )}
+                          </button>
+                        ) : (item.status === 'IN-PROGRESS' || item.inTime) ? (
+                          <button
+                            onClick={() => onReceptionistCheckIn && onReceptionistCheckIn(item.id)}
+                            className="px-2 py-1 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-bold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
+                            title={`Konfirmasi Tamu Tiba di Meja Receptionist ${item.stakeholder || 'PLN'}`}
+                          >
+                            <Building size={11} />
+                            + Terima Lobby
                           </button>
                         ) : (
                           <span className="text-slate-400 font-sans italic">-</span>
@@ -1419,25 +1597,56 @@ export default function VisitorTable({
                   </div>
                 )}
 
-                {/* Action 4: Second Gate Pass (Pos 2) */}
-                {(quickActionVisitor.status === 'IN-PROGRESS' || quickActionVisitor.status === 'SCHEDULED') && (
+                {/* Action 4: Second Gate Pass (Pos 2 - KPJB & AGP Only) */}
+                {(quickActionVisitor.stakeholder === 'KPJB' || quickActionVisitor.stakeholder === 'AGP') &&
+                  (quickActionVisitor.status === 'IN-PROGRESS' || quickActionVisitor.status === 'SCHEDULED' || Boolean(quickActionVisitor.inTime)) && (
+                    <button
+                      onClick={() => {
+                        if (onSecondGateCheckIn) onSecondGateCheckIn(quickActionVisitor.id);
+                        setQuickActionVisitor(null);
+                      }}
+                      className="w-full p-3 bg-purple-700 hover:bg-purple-800 text-white rounded-none text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-2xs group"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 bg-purple-500/20 text-white">
+                          <Layers size={15} />
+                        </div>
+                        <div className="text-left">
+                          <span className="block font-black uppercase">
+                            {quickActionVisitor.stakeholder === 'AGP' ? 'Konfirmasi Pos Total 8 (AGP)' : 'Konfirmasi Second Gate KPJB'}
+                          </span>
+                          <span className="text-[10px] text-purple-200 font-normal">
+                            {quickActionVisitor.secondGateTime
+                              ? `Tercatat: ${quickActionVisitor.secondGateTime}`
+                              : `Verifikasi & Beri Gate Pass ${quickActionVisitor.stakeholder}`}
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronRight size={16} className="text-purple-200 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  )}
+
+                {/* Action 5: Receptionist / Lobby Reception Check-In (All Stakeholders) */}
+                {(quickActionVisitor.status === 'IN-PROGRESS' || Boolean(quickActionVisitor.inTime)) && (
                   <button
                     onClick={() => {
-                      if (onSecondGateCheckIn) onSecondGateCheckIn(quickActionVisitor.id);
+                      if (onReceptionistCheckIn) onReceptionistCheckIn(quickActionVisitor.id);
                       setQuickActionVisitor(null);
                     }}
                     className="w-full p-3 bg-sky-600 hover:bg-sky-700 text-white rounded-none text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-2xs group"
                   >
                     <div className="flex items-center gap-2.5">
                       <div className="p-2 bg-sky-500/20 text-white">
-                        <Layers size={15} />
+                        <Building size={15} />
                       </div>
                       <div className="text-left">
-                        <span className="block font-black uppercase">Konfirmasi Akses Receptionist PLN</span>
+                        <span className="block font-black uppercase">
+                          Konfirmasi Tiba di Receptionist {quickActionVisitor.stakeholder || 'PLN'}
+                        </span>
                         <span className="text-[10px] text-sky-100 font-normal">
-                          {quickActionVisitor.secondGateTime
-                            ? `Receptionist PLN: ${quickActionVisitor.secondGateTime}`
-                            : `Verifikasi Receptionist PLN (${quickActionVisitor.secondGatePass || 'Auto Pass'})`}
+                          {quickActionVisitor.receptionistTime
+                            ? `Tercatat di Lobby: ${quickActionVisitor.receptionistTime}`
+                            : `Terima Tamu di Meja Resepsionis ${quickActionVisitor.stakeholder || 'PLN'}`}
                         </span>
                       </div>
                     </div>

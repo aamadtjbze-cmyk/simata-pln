@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Save, User, Briefcase, FileText, Lock, Users2, Calendar, Phone, ShieldCheck } from 'lucide-react';
-import { Visitor, VisitorStatus } from '../types';
+import { Visitor, VisitorStatus, Stakeholder } from '../types';
 import { COMMON_PURPOSES, PLN_DIVISIONS } from '../data/mockData';
 import { generateDailyPassNumber } from '../utils/passGenerator';
 
@@ -27,6 +27,7 @@ export default function CheckInModal({
   visitors = [],
 }: CheckInModalProps) {
   const [visitorName, setVisitorName] = useState('');
+  const [stakeholder, setStakeholder] = useState<Stakeholder>('PLN');
   const [company, setCompany] = useState('');
   const [purpose, setPurpose] = useState('');
   const [visited, setVisited] = useState('');
@@ -48,6 +49,7 @@ export default function CheckInModal({
   useEffect(() => {
     if (visitorToEdit) {
       setVisitorName(visitorToEdit.visitorName);
+      setStakeholder(visitorToEdit.stakeholder || 'PLN');
       setCompany(visitorToEdit.company);
       setPurpose(visitorToEdit.purpose);
       setVisited(visitorToEdit.visited);
@@ -128,6 +130,9 @@ export default function CheckInModal({
       schedule,
       inTime: visitorToEdit ? visitorToEdit.inTime : (status === 'IN-PROGRESS' ? formattedInTime : null),
       secondGateTime: visitorToEdit ? visitorToEdit.secondGateTime : null,
+      receptionistTime: visitorToEdit ? visitorToEdit.receptionistTime : null,
+      receptionistBadge: visitorToEdit ? visitorToEdit.receptionistBadge : null,
+      stakeholder: stakeholder,
       outTime: visitorToEdit ? visitorToEdit.outTime : null,
       visitorName: visitorName.toUpperCase(),
       mainGatePass: effectiveMainGatePass,
@@ -324,6 +329,29 @@ export default function CheckInModal({
                 2. Detail Kunjungan & Akses Masuk
               </h4>
 
+              {/* Stakeholder Picker */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Instansi / Stakeholder Tujuan <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={stakeholder}
+                  onChange={(e) => setStakeholder(e.target.value as Stakeholder)}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#152033] border border-[#005DA6] dark:border-[#FFD500] rounded-none text-slate-800 dark:text-slate-200 text-xs font-black focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+                >
+                  <option value="PLN">PT PLN (Persero) UIK Tanjung Jati B</option>
+                  <option value="KPJB">PT Komipo Pembangkitan Jawa Bali (KPJB)</option>
+                  <option value="TJBPS">PT TJB Power Services (TJBPS)</option>
+                  <option value="AGP">PT Adhi Guna Putera (AGP)</option>
+                </select>
+                <span className="text-[10px] text-slate-500 font-mono mt-1 block">
+                  {stakeholder === 'KPJB' && '➔ Rute: Maingate PLN ➔ Second Gate KPJB ➔ Receptionist KPJB (3 Checkpoint)'}
+                  {stakeholder === 'TJBPS' && '➔ Rute: Maingate PLN ➔ Receptionist TJBPS (Langsung, 2 Checkpoint)'}
+                  {stakeholder === 'PLN' && '➔ Rute: Maingate PLN ➔ Receptionist PLN (Langsung, 2 Checkpoint)'}
+                  {stakeholder === 'AGP' && '➔ Rute: Maingate PLN ➔ Pos Total 8 ➔ Receptionist AGP (3 Checkpoint)'}
+                </span>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Divisi / Pegawai yang Dikunjungi <span className="text-rose-500">*</span>
@@ -377,7 +405,7 @@ export default function CheckInModal({
                     if (errors.purpose) setErrors({ ...errors, purpose: '' });
                   }}
                   placeholder="Contoh: Rapat Koordinasi Proyek / Auditing K3L / Maintenance Alat"
-                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.purpose ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
+                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.purpose ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]} `}
                 />
                 {errors.purpose && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.purpose}</span>}
               </div>
@@ -400,16 +428,20 @@ export default function CheckInModal({
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    2nd Gate Pass (Kartu Pos 2)
+                    {stakeholder === 'KPJB' && 'Second Gate Pass (Kartu Pos 2 KPJB)'}
+                    {stakeholder === 'AGP' && 'Pos Total 8 Pass (Kartu Pos 2 AGP)'}
+                    {(stakeholder === 'PLN' || stakeholder === 'TJBPS') && '2nd Gate Pass (Opsional / Tidak Ada Pos 2)'}
                   </label>
                   <input
                     type="text"
                     value={secondGatePass}
                     onChange={(e) => setSecondGatePass(e.target.value)}
-                    placeholder="Contoh: 014 k (Opsional)"
+                    placeholder={stakeholder === 'KPJB' ? 'Contoh: 024 k' : stakeholder === 'AGP' ? 'Contoh: T8-012' : 'Opsional'}
                     className="w-full px-4 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
                   />
-                  <span className="text-[9.5px] text-slate-400 block mt-1">Hanya diisi jika tamu masuk ke area Pos 2.</span>
+                  <span className="text-[9.5px] text-slate-400 block mt-1">
+                    {stakeholder === 'KPJB' || stakeholder === 'AGP' ? 'Diisi oleh Petugas Pos 2 saat verifikasi masuk unit.' : 'Tidak perlu diisi untuk rute langsung tanpa Pos 2.'}
+                  </span>
                 </div>
               </div>
 

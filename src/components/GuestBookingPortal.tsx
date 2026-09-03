@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { Calendar, User, Building, Phone, Mail, UserCheck, Clock, FileText, Send, CheckCircle, ShieldCheck, Info, Share2, Copy, Check, ExternalLink, Lock } from 'lucide-react';
 import PLNLogo from './PLNLogo';
-import { Visitor, VisitorStatus } from '../types';
+import { Visitor, VisitorStatus, Stakeholder } from '../types';
 
 interface GuestBookingPortalProps {
   onSaveVisitor: (visitor: Visitor) => void;
@@ -22,6 +22,29 @@ const PLN_DIVISIONS = [
   'BIDANG ENERGI PRIMER',
   'BIDANG K3L & KEAMANAN',
   'TEKNOLOGI INFORMASI (IT)',
+];
+
+const KPJB_DIVISIONS = [
+  'MANAGEMENT & DIREKSI KPJB',
+  'OPERATION DIVISION (UNIT 1-2)',
+  'MAINTENANCE DIVISION',
+  'HSE & SECURITY KPJB',
+  'COMMERCIAL & FINANCE',
+];
+
+const TJBPS_DIVISIONS = [
+  'MANAGEMENT TJBPS',
+  'PLANT OPERATION',
+  'PLANT MAINTENANCE',
+  'LOGISTICS & WAREHOUSE',
+  'SAFETY & ENVIRONMENT',
+];
+
+const AGP_DIVISIONS = [
+  'MANAGEMENT AGP',
+  'OPERASIONAL BONGKAR MUAT BATUBARA',
+  'LOGISTIK & JETTY',
+  'K3L & KEAMANAN AGP',
 ];
 
 const COMMON_PURPOSES = [
@@ -61,6 +84,7 @@ const RANDOM_COMPANY_PLACEHOLDERS = [
 export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerToast }: GuestBookingPortalProps) {
   const [namePlaceholder] = useState(() => RANDOM_NAME_PLACEHOLDERS[Math.floor(Math.random() * RANDOM_NAME_PLACEHOLDERS.length)]);
   const [companyPlaceholder] = useState(() => RANDOM_COMPANY_PLACEHOLDERS[Math.floor(Math.random() * RANDOM_COMPANY_PLACEHOLDERS.length)]);
+  const [stakeholder, setStakeholder] = useState<Stakeholder>('PLN');
   const [visitorName, setVisitorName] = useState('');
   const [company, setCompany] = useState('');
   const [phone, setPhone] = useState('');
@@ -142,6 +166,9 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
       schedule: formattedSchedule,
       inTime: null,
       outTime: null,
+      secondGateTime: null,
+      receptionistTime: null,
+      stakeholder: stakeholder,
       visitorName: visitorName.toUpperCase(),
       mainGatePass: '',
       secondGatePass: '',
@@ -159,7 +186,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
 
     onSaveVisitor(newVisitor);
     setSubmittedVisitor(newVisitor);
-    triggerToast(`Pengajuan Janji Temu atas nama ${newVisitor.visitorName} berhasil dikirim!`, 'success');
+    triggerToast(`Pengajuan Janji Temu atas nama ${newVisitor.visitorName} (${stakeholder}) berhasil dikirim!`, 'success');
   };
 
   const handleResetForm = () => {
@@ -414,13 +441,48 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
           <div className="space-y-3 pt-2">
             <h3 className="text-xs font-bold uppercase tracking-wider text-[#005DA6] dark:text-[#FFD500] flex items-center gap-1.5 pb-1 border-b border-slate-200 dark:border-slate-800">
               <Building size={14} />
-              2. Tujuan & Divisi PLN yang Dikunjungi
+              2. Instansi & Divisi yang Dikunjungi
             </h3>
+
+            {/* Pilihan Instansi / Stakeholder Tujuan */}
+            <div>
+              <label className="block text-xs font-semibold mb-1">
+                Instansi / Stakeholder Tujuan <span className="text-rose-500">*</span>
+              </label>
+              <select
+                value={stakeholder}
+                onChange={(e) => {
+                  setStakeholder(e.target.value as Stakeholder);
+                  setVisitedOption('');
+                  setVisitedCustomText('');
+                }}
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border border-[#005DA6] dark:border-[#FFD500] rounded-none text-xs font-black text-[#005DA6] dark:text-[#FFD500] focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+              >
+                <option value="PLN">PT PLN (Persero) UIK Tanjung Jati B</option>
+                <option value="KPJB">PT Komipo Pembangkitan Jawa Bali (KPJB)</option>
+                <option value="TJBPS">PT TJB Power Services (TJBPS)</option>
+                <option value="AGP">PT Adhi Guna Putera (AGP)</option>
+              </select>
+            </div>
+
+            {/* Banner Informasi Rute Masuk Checkpoint */}
+            <div className="p-2.5 bg-sky-50 dark:bg-sky-950/40 border-l-4 border-[#005DA6] dark:border-[#FFD500] text-[11px]">
+              <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200 mb-0.5">
+                <ShieldCheck size={14} className="text-[#005DA6] dark:text-[#FFD500]" />
+                <span>Rute Verifikasi Checkpoint ({stakeholder}):</span>
+              </div>
+              <p className="text-slate-600 dark:text-slate-300 font-mono text-[10.5px]">
+                {stakeholder === 'KPJB' && '1. Main Gate PLN ➔ 2. Second Gate KPJB ➔ 3. Receptionist KPJB (3 Checkpoint)'}
+                {stakeholder === 'TJBPS' && '1. Main Gate PLN ➔ 2. Receptionist TJBPS (Langsung Tanpa Pos 2, 2 Checkpoint)'}
+                {stakeholder === 'PLN' && '1. Main Gate PLN ➔ 2. Receptionist PLN (Langsung Tanpa Pos 2, 2 Checkpoint)'}
+                {stakeholder === 'AGP' && '1. Main Gate PLN ➔ 2. Pos Total 8 ➔ 3. Receptionist AGP (3 Checkpoint)'}
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
                 <label className="block text-xs font-semibold mb-1">
-                  Pegawai / Divisi PLN Tujuan <span className="text-rose-500">*</span>
+                  Pegawai / Divisi Tujuan di {stakeholder} <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={visitedOption}
@@ -430,11 +492,20 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                   }}
                   className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.visited ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
                 >
-                  <option value="">-- Pilih Divisi / Pegawai Tujuan --</option>
-                  {PLN_DIVISIONS.map((d) => (
+                  <option value="">-- Pilih Divisi / Kontak Tujuan --</option>
+                  {stakeholder === 'PLN' && PLN_DIVISIONS.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
-                  <option value="Lainnya">Lainnya (Tulis Nama Pegawai / Divisi Manual)</option>
+                  {stakeholder === 'KPJB' && KPJB_DIVISIONS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                  {stakeholder === 'TJBPS' && TJBPS_DIVISIONS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                  {stakeholder === 'AGP' && AGP_DIVISIONS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                  <option value="Lainnya">Lainnya (Ketik Nama Kontak / Divisi Manual)</option>
                 </select>
 
                 {visitedOption === 'Lainnya' && (

@@ -6,12 +6,12 @@
 import React, { useState } from 'react';
 import { Lock, User, KeyRound, ShieldAlert, LogIn, X } from 'lucide-react';
 import PLNLogo from './PLNLogo';
-import { verifyUser } from '../lib/userManager';
+import { AppUser, verifyUser } from '../lib/userManager';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (roleName: string, username: string) => void;
+  onLoginSuccess: (roleName: string, username: string, user?: AppUser) => void;
   triggerToast: (msg: string, type?: 'success' | 'info' | 'danger') => void;
 }
 
@@ -28,7 +28,7 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
     const user = verifyUser(username, password);
     if (user) {
       triggerToast(`Login Berhasil! Selamat datang, ${user.displayName}.`, 'success');
-      onLoginSuccess(user.displayName, user.username);
+      onLoginSuccess(user.displayName, user.username, user);
       onClose();
     } else {
       setErrorMsg('Username atau kata sandi tidak valid.');
@@ -117,8 +117,25 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
           </div>
 
 
+          {/* Panduan Akun Multi-Stakeholder */}
+          <div className="p-2.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[10px] space-y-1">
+            <p className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+              Kredensial Login Multi-Stakeholder:
+            </p>
+            <div className="grid grid-cols-2 gap-1 text-[9px] text-slate-600 dark:text-slate-400 font-mono">
+              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">admin</span> : admintjb123 (Superadmin)</div>
+              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">sec.maingate</span> : maingate123 (Main Gate)</div>
+              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">sec.kpjb</span> : kpjbgate123 (Gate KPJB)</div>
+              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">sec.total8</span> : total8gate123 (Pos Total 8)</div>
+              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">recep.kpjb</span> : kpjblobby123 (Lobby)</div>
+              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">recep.pln</span> : plnlobby123 (Lobby)</div>
+              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">recep.tjbps</span> : tjbpslobby123 (Lobby)</div>
+              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">recep.agp</span> : agplobby123 (Lobby)</div>
+            </div>
+          </div>
+
           {/* Form Actions */}
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
             <button
               type="submit"
               className="w-full py-3 bg-[#005DA6] hover:bg-[#004070] text-white font-black text-xs uppercase tracking-wider border-b-2 border-r-2 border-[#FFD500] cursor-pointer shadow-md flex items-center justify-center gap-2"

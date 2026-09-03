@@ -21,17 +21,23 @@ import {
   MapPin,
   CalendarDays
 } from 'lucide-react';
-import { Visitor, VisitorStatus } from '../types';
+import { Visitor, VisitorStatus, Stakeholder } from '../types';
 import PLNLogo from './PLNLogo';
 
 interface ReportModuleProps {
   visitors: Visitor[];
+  activeStakeholder?: Stakeholder | 'ALL';
 }
 
-export default function ReportModule({ visitors }: ReportModuleProps) {
+export default function ReportModule({ visitors, activeStakeholder = 'ALL' }: ReportModuleProps) {
   const [selectedMonth, setSelectedMonth] = useState<number>(() => new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(() => new Date().getFullYear());
+  const [filterStakeholder, setFilterStakeholder] = useState<Stakeholder | 'ALL'>(activeStakeholder || 'ALL');
   const [isPrintSimulationOpen, setIsPrintSimulationOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (activeStakeholder) setFilterStakeholder(activeStakeholder);
+  }, [activeStakeholder]);
 
   const monthNames = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -97,8 +103,13 @@ export default function ReportModule({ visitors }: ReportModuleProps) {
 
   // Compute selected month's visitors
   const monthlyVisitors = useMemo(() => {
-    return parsedVisitors.filter(v => v.parsedMonth === selectedMonth && v.parsedYear === selectedYear);
-  }, [parsedVisitors, selectedMonth, selectedYear]);
+    return parsedVisitors.filter(v => {
+      const matchDate = v.parsedMonth === selectedMonth && v.parsedYear === selectedYear;
+      const eff = (activeStakeholder && activeStakeholder !== 'ALL') ? activeStakeholder : filterStakeholder;
+      const matchStakeholder = eff === 'ALL' || (v.stakeholder || 'PLN') === eff;
+      return matchDate && matchStakeholder;
+    });
+  }, [parsedVisitors, selectedMonth, selectedYear, activeStakeholder, filterStakeholder]);
 
   // Daily statistics
   const dailyVisitorsCount = useMemo(() => {
@@ -215,16 +226,19 @@ export default function ReportModule({ visitors }: ReportModuleProps) {
   // Export to Excel / CSV format
   const handleExportCSV = () => {
     const listToExport = monthlyVisitors.length > 0 ? monthlyVisitors : visitors;
-    const headers = ['ID Form', 'Nama Tamu', 'Instansi / Perusahaan', 'Tujuan', 'Bertemu Pegawai / Divisi', 'Jadwal', 'Waktu Masuk', 'Waktu Keluar', 'Status', 'Masa Berlaku', 'No Telepon', 'Email', 'Main Gate Pass'];
+    const headers = ['ID Form', 'Entitas / Stakeholder', 'Nama Tamu', 'Instansi / Perusahaan', 'Tujuan', 'Bertemu Pegawai / Divisi', 'Jadwal', 'Waktu Masuk (Maingate)', 'Pos 2 (Gate Unit)', 'Receptionist (Lobby)', 'Waktu Keluar', 'Status', 'Masa Berlaku', 'No Telepon', 'Email', 'Main Gate Pass'];
     
     const rows = listToExport.map(v => [
       `"${v.id}"`,
+      `"${v.stakeholder || 'PLN'}"`,
       `"${(v.visitorName || '').replace(/"/g, '""')}"`,
       `"${(v.company || '').replace(/"/g, '""')}"`,
       `"${(v.purpose || '').replace(/"/g, '""')}"`,
       `"${(v.visited || '').replace(/"/g, '""')}"`,
       `"${v.schedule || ''}"`,
       `"${v.inTime || '-'}"`,
+      `"${v.secondGateTime ? `${v.secondGateTime} (${v.secondGatePass || '-'})` : '-'}"`,
+      `"${v.receptionistTime ? `${v.receptionistTime} (${v.receptionistBadge || '-'})` : '-'}"`,
       `"${v.outTime || '-'}"`,
       `"${v.status || ''}"`,
       `"${v.validUntil || '-'}"`,
@@ -265,6 +279,28 @@ export default function ReportModule({ visitors }: ReportModuleProps) {
 
         {/* Filter Controls & Actions */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* Stakeholder Selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-sans">Entitas:</span>
+            {activeStakeholder && activeStakeholder !== 'ALL' ? (
+              <span className="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-[#005DA6] dark:text-[#FFD500] border border-[#005DA6] text-xs font-black uppercase font-mono">
+                {activeStakeholder}
+              </span>
+            ) : (
+              <select
+                value={filterStakeholder}
+                onChange={(e) => setFilterStakeholder(e.target.value as any)}
+                className="px-3 py-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-[#005DA6] dark:text-[#FFD500] text-xs font-black focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+              >
+                <option value="ALL">Semua Kawasan</option>
+                <option value="PLN">PLN UIK TJB</option>
+                <option value="KPJB">KPJB</option>
+                <option value="TJBPS">TJB Power Services</option>
+                <option value="AGP">Adhi Guna Putera (AGP)</option>
+              </select>
+            )}
+          </div>
+
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-sans flex items-center gap-1">
               <Calendar size={13} className="text-[#005DA6]" /> Bulan:
