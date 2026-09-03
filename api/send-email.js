@@ -106,16 +106,23 @@ export default async function handler(req, res) {
     const startIdx = accounts.length > 1 ? brevoRotation++ % accounts.length : 0;
     let lastError = null;
     let lastStatus = 500;
+    const skipped = [];
 
     for (let i = 0; i < accounts.length; i++) {
       const account = accounts[(startIdx + i) % accounts.length];
       const { ok, status, result } = await sendViaBrevoAccount(account, payloadBase);
 
       if (ok) {
-        return res.status(200).json({ success: true, messageId: result.messageId, senderUsed: account.sender });
+        return res.status(200).json({
+          success: true,
+          messageId: result.messageId,
+          senderUsed: account.sender,
+          skippedAccounts: skipped.length ? skipped : undefined,
+        });
       }
 
       console.warn(`[Brevo Serverless] Gagal kirim via ${account.sender} (status ${status}):`, result);
+      skipped.push({ sender: account.sender, status, message: result?.message || result?.code || 'unknown' });
       lastError = result;
       lastStatus = status;
     }
