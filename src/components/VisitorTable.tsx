@@ -328,38 +328,38 @@ export default function VisitorTable({
     switch (status) {
       case 'DONE':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-none text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900 font-sans">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-none text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900 font-sans">
             DONE
           </span>
         );
       case 'IN-PROGRESS':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-none text-xs font-bold bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900 animate-pulse font-sans">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-none text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900 animate-pulse font-sans">
             IN-PROGRESS
           </span>
         );
       case 'SCHEDULED':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-none text-xs font-bold bg-sky-50 text-sky-600 border border-sky-100 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900 font-sans">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-none text-[10px] font-bold bg-sky-50 text-sky-600 border border-sky-100 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900 font-sans">
             SCHEDULED
           </span>
         );
       case 'PENDING':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-none text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-850 dark:text-slate-400 dark:border-slate-800 font-sans">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-none text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-850 dark:text-slate-400 dark:border-slate-800 font-sans">
             PENDING
           </span>
         );
       case 'EXPIRED':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-none text-xs font-bold bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900 font-sans">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-none text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900 font-sans">
             EXPIRED
           </span>
         );
       case 'REJECTED':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-none text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 font-sans">
-            DITOLAK / REJECTED
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-none text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 font-sans">
+            DITOLAK
           </span>
         );
     }
@@ -809,7 +809,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('stakeholder' as any)}
-                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[190px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[165px]"
                 >
                   <div className="flex flex-col items-start leading-tight">
                     <div className="flex items-center gap-1">
@@ -824,7 +824,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('status')}
-                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-center min-w-[105px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-center min-w-[92px]"
                 >
                   <div className="flex items-center justify-center gap-1">
                     Status
@@ -1035,17 +1035,17 @@ export default function VisitorTable({
                       </td>
 
                       {/* Stakeholder / Entitas & Tempat Area - Full text, no truncate clipping */}
-                      <td className="p-2.5 min-w-[190px]">
+                      <td className="p-2.5 min-w-[165px]">
                         <div className="flex flex-col items-start gap-1">
                           {getStakeholderBadge(item.stakeholder)}
-                          <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 uppercase leading-tight whitespace-normal break-words" title={item.visited}>
+                          <span className="text-[9px] font-bold text-slate-800 dark:text-slate-200 uppercase leading-tight whitespace-normal break-words" title={item.visited}>
                             {item.visited}
                           </span>
                         </div>
                       </td>
 
                       {/* Status badge - Full visibility */}
-                      <td className="p-2.5 text-center min-w-[105px] whitespace-nowrap">
+                      <td className="p-2.5 text-center min-w-[92px] whitespace-nowrap">
                         {getStatusBadge(item.status)}
                       </td>
 
