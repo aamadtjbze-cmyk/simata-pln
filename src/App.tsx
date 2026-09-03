@@ -275,12 +275,16 @@ export default function App() {
       const lookupTerm = decoded || passIdParam || rawToken || '';
 
       if (lookupTerm) {
-        // 1. Cek dulu di cache lokal untuk render secepat kilat
+        // 1. Cek dulu di cache lokal untuk render secepat kilat (prioritaskan yang statusnya sudah SCHEDULED/IN-PROGRESS)
         try {
           const savedVisitorsStr = localStorage.getItem('simata_visitors');
           const listToSearch: Visitor[] = savedVisitorsStr ? JSON.parse(savedVisitorsStr) : INITIAL_VISITORS;
-          const match = listToSearch.find((v) => 
-            v.id.toLowerCase() === lookupTerm.toLowerCase() ||
+          const exactMatch = listToSearch.find((v) => v.id.toLowerCase() === lookupTerm.toLowerCase());
+          const match = exactMatch || listToSearch.find((v) => 
+            (v.status === 'SCHEDULED' || v.status === 'IN-PROGRESS') &&
+            ((v.email && v.email.toLowerCase().includes(lookupTerm.toLowerCase())) ||
+             (v.visitorName && v.visitorName.toLowerCase().includes(lookupTerm.toLowerCase())))
+          ) || listToSearch.find((v) => 
             (v.email && v.email.toLowerCase().includes(lookupTerm.toLowerCase())) ||
             (v.visitorName && v.visitorName.toLowerCase().includes(lookupTerm.toLowerCase()))
           );
@@ -299,21 +303,39 @@ export default function App() {
         if (isSupabaseConfigured()) {
           const supabase = getSupabaseClient();
           if (supabase) {
+            // Prioritaskan exact match ID terlebih dahulu
             supabase
               .from('visitors')
               .select('*')
-              .or(`id.ilike.%${lookupTerm}%,email.ilike.%${lookupTerm}%,visitor_name.ilike.%${lookupTerm}%`)
+              .eq('id', lookupTerm)
               .limit(1)
               .then(
                 ({ data, error }) => {
                   if (data && data.length > 0 && !error) {
                     const fetchedVisitor = rowToVisitor(data[0]);
                     setVisitorForBadge(fetchedVisitor);
-                    // Bersihkan address bar browser dengan token acak terenkripsi
                     try {
                       window.history.replaceState({}, '', `/?pass=${encodePassToken(fetchedVisitor.id)}`);
                     } catch (e) {}
+                    return;
                   }
+                  // Jika tidak ketemu by exact ID, cari by email/nama & ambil yang sudah disetujui
+                  supabase
+                    .from('visitors')
+                    .select('*')
+                    .or(`email.ilike.%${lookupTerm}%,visitor_name.ilike.%${lookupTerm}%`)
+                    .order('created_at', { ascending: false })
+                    .limit(10)
+                    .then(({ data: fallbackData }) => {
+                      if (fallbackData && fallbackData.length > 0) {
+                        const approvedFirst = fallbackData.find((r: any) => r.status === 'SCHEDULED' || r.status === 'IN-PROGRESS') || fallbackData[0];
+                        const fetchedVisitor = rowToVisitor(approvedFirst);
+                        setVisitorForBadge(fetchedVisitor);
+                        try {
+                          window.history.replaceState({}, '', `/?pass=${encodePassToken(fetchedVisitor.id)}`);
+                        } catch (e) {}
+                      }
+                    });
                 },
                 (err) => console.warn('[Pass Token Sync] Gagal memuat data dari cloud:', err)
               );
@@ -643,12 +665,37 @@ export default function App() {
       mainGatePass: assignedMainPass,
     };
 
-    const updated = visitors.map((v) => (v.id === visitorId ? updatedVisitor : v));
-    triggerToast(`Janji Pertemuan ${original.visitorName} telah DISETUJUI. Barcode QR dikirim ke email!`, 'success');
+    // Auto-approve permohonan duplikat dari orang yang sama jika ada submit berulang
+    const duplicateApproved: Visitor[] = [];
+    const updated = visitors.map((v) => {
+      if (v.id === visitorId) return updatedVisitor;
+      if (
+        v.status === 'PENDING' &&
+        v.visitorName.toUpperCase() === original.visitorName.toUpperCase() &&
+        (v.email === original.email || v.phone === original.phone || v.schedule === original.schedule)
+      ) {
+        const dup: Visitor = {
+          ...v,
+          status: 'SCHEDULED',
+          mainGatePass: assignedMainPass,
+        };
+        duplicateApproved.push(dup);
+        return dup;
+      }
+      return v;
+    });
+
+    triggerToast(`Janji Pertemuan ${original.visitorName} telah DISETUJUI. Barcode QR aktif & dikirim ke email!`, 'success');
 
     const notif = createNotification(updatedVisitor, original.status);
     saveAndSyncNotifications([notif, ...notifications]);
     saveAndSync(updated, updatedVisitor);
+
+    // Simpan duplikat yang ikut diapprove ke Supabase
+    duplicateApproved.forEach((dup) => saveVisitorToSupabase(dup));
+
+    // Sinkronkan badge modal langsung jika sedang dibuka
+    setVisitorForBadge(updatedVisitor);
 
     // Open email notification confirmation popup
     setVisitorForEmailSentModal(updatedVisitor);

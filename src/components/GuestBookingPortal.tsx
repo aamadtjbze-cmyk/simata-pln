@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Calendar, User, Building, Phone, Mail, UserCheck, Clock, FileText, Send, CheckCircle, ShieldCheck, Info, Share2, Copy, Check, ExternalLink, Lock } from 'lucide-react';
+import { Calendar, User, Building, Phone, Mail, UserCheck, Clock, FileText, Send, CheckCircle, ShieldCheck, Info, Share2, Copy, Check, ExternalLink, Lock, Loader2 } from 'lucide-react';
 import PLNLogo from './PLNLogo';
 import { Visitor, VisitorStatus, Stakeholder } from '../types';
 
@@ -103,6 +103,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
   const [copiedLink, setCopiedLink] = useState(false);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Generate unique Form ID e.g. TJB-VST-005010
   const generateNewFormId = () => {
@@ -113,6 +114,8 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const newErrors: { [key: string]: string } = {};
 
     const finalVisited = visitedOption === 'Lainnya' ? visitedCustomText : visitedOption;
@@ -128,6 +131,8 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
       triggerToast('Mohon lengkapi seluruh kolom wajib pengajuan janji temu.', 'danger');
       return;
     }
+
+    setIsSubmitting(true);
 
     const today = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -189,10 +194,12 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
 
     onSaveVisitor(newVisitor);
     setSubmittedVisitor(newVisitor);
+    setIsSubmitting(false);
     triggerToast(`Pengajuan Janji Temu atas nama ${newVisitor.visitorName} (${stakeholder}) berhasil dikirim!`, 'success');
   };
 
   const handleResetForm = () => {
+    setIsSubmitting(false);
     setSubmittedVisitor(null);
     setVisitorName('');
     setCompany('');
@@ -618,10 +625,11 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
 
             <button
               type="submit"
-              className="py-3 px-6 bg-[#005DA6] hover:bg-[#004070] text-white font-black text-xs uppercase tracking-wider border-b-2 border-r-2 border-[#FFD500] cursor-pointer shadow-md flex items-center gap-2"
+              disabled={isSubmitting}
+              className="py-3 px-6 bg-[#005DA6] hover:bg-[#004070] text-white font-black text-xs uppercase tracking-wider border-b-2 border-r-2 border-[#FFD500] cursor-pointer shadow-md flex items-center gap-2 disabled:opacity-50"
             >
-              <Send size={15} />
-              Kirim Pengajuan Janji Temu
+              {isSubmitting ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+              <span>{isSubmitting ? 'Mengirim Pengajuan...' : 'Kirim Pengajuan Janji Temu'}</span>
             </button>
           </div>
 
