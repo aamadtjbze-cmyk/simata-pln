@@ -43,10 +43,11 @@ const TJBPS_DIVISIONS = [
 ];
 
 const AGP_DIVISIONS = [
-  'MANAGEMENT AGP',
-  'OPERASIONAL BONGKAR MUAT BATUBARA',
-  'LOGISTIK & JETTY',
-  'K3L & KEAMANAN AGP',
+  'Operation Dept',
+  'Maintenance Dept',
+  'QHSSE Dept',
+  'SDM Keuangan & Umum Dept',
+  'Pemanduan Dept',
 ];
 
 const COMMON_PURPOSES = [

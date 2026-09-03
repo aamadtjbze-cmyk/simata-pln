@@ -116,7 +116,7 @@ export const INITIAL_VISITORS: Visitor[] = [
     secondGatePass: 'T8-005',
     company: 'PT LOGISTIK ENERGI',
     purpose: 'Bongkar Muat Batubara',
-    visited: 'OPERASIONAL BONGKAR MUAT BATUBARA',
+    visited: 'Operation Dept',
     status: 'DONE',
     phone: '082154382765',
     identifyNo: '3578012404940004',
@@ -324,8 +324,9 @@ export const TJBPS_DIVISIONS = [
 ];
 
 export const AGP_DIVISIONS = [
-  'Operasional Bongkar Muat Batubara',
-  'Logistik & Jetty',
-  'K3L & Keamanan AGP',
-  'Administrasi & Keuangan AGP',
+  'Operation Dept',
+  'Maintenance Dept',
+  'QHSSE Dept',
+  'SDM Keuangan & Umum Dept',
+  'Pemanduan Dept',
 ];
