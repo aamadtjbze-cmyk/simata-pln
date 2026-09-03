@@ -58,7 +58,6 @@ import {
   saveVisitorToSupabase,
   deleteVisitorFromSupabase,
   rowToVisitor,
-  ensureSecondGateTimeColumn,
 } from './lib/supabase';
 import {
   isEmailConfigured,
@@ -360,8 +359,6 @@ export default function App() {
     // Supabase Cloud Initialization & Realtime Subscription
     let supabaseChannel: any = null;
     if (isSupabaseConfigured()) {
-      // Saran Audit #1: pastikan kolom second_gate_time ada di DB
-      ensureSecondGateTimeColumn();
 
       // ponytail: gabungkan health check + data fetch dalam satu operasi
       // untuk mengurangi concurrent connections ke Supabase free tier.

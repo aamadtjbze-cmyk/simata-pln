@@ -64,18 +64,9 @@ export const isSupabaseConfigured = (): boolean => {
  * Format Visitor object to DB row format
  */
 export const visitorToRow = (v: Visitor) => {
-  // Pastikan fallback data pos 2 dan receptionist tersimpan di notes jika schema DB Supabase belum dimigrasi
-  let mergedNotes = v.notes || '';
-  if (v.secondGateTime && !mergedNotes.includes(`[Pos 2: ${v.secondGateTime}]`)) {
-    mergedNotes = mergedNotes ? `${mergedNotes} | [Pos 2: ${v.secondGateTime}]` : `[Pos 2: ${v.secondGateTime}]`;
-  }
-  if (v.receptionistTime && !mergedNotes.includes(`[Lobby: ${v.receptionistTime}]`)) {
-    mergedNotes = mergedNotes ? `${mergedNotes} | [Lobby: ${v.receptionistTime}]` : `[Lobby: ${v.receptionistTime}]`;
-  }
-  if (v.stakeholder && !mergedNotes.includes(`[Entitas: ${v.stakeholder}]`)) {
-    mergedNotes = mergedNotes ? `${mergedNotes} | [Entitas: ${v.stakeholder}]` : `[Entitas: ${v.stakeholder}]`;
-  }
-
+  // second_gate_time, receptionist_time, receptionist_badge, dan stakeholder kini
+  // punya kolom sendiri di DB, jadi tidak lagi diselipkan sebagai penanda
+  // "[Pos 2: ...]" / "[Lobby: ...]" / "[Entitas: ...]" ke dalam notes tamu.
   return {
     id: v.id,
     visitor_name: v.visitorName,
@@ -100,7 +91,7 @@ export const visitorToRow = (v: Visitor) => {
     valid_until_ts: v.validUntilTs || null,
     validity_option: v.validityOption || 'SAME_DAY',
     ktp_photo_path: v.ktpPhotoPath || null,
-    notes: mergedNotes,
+    notes: v.notes || '',
     updated_at: new Date().toISOString(),
   };
 };
@@ -270,33 +261,6 @@ export const checkSupabaseHealth = async (): Promise<{ connected: boolean; messa
   }
 };
 
-/**
- * Saran Audit #1: Pastikan kolom second_gate_time ada di tabel visitors.
- * Dijalankan sekali saat app startup jika Supabase dikonfigurasi.
- * Jika kolom sudah ada: tidak ada perubahan. Jika belum: coba tambahkan via RPC.
- * Jika tidak ada privilege DDL, fallback ke notes-tag yang sudah berjalan.
- */
-export const ensureSecondGateTimeColumn = async (): Promise<void> => {
-  const supabase = getSupabaseClient();
-  if (!supabase) return;
-
-  try {
-    // Cek apakah kolom sudah ada
-    const { error } = await supabase
-      .from('visitors')
-      .select('second_gate_time')
-      .limit(1);
-
-    if (!error) return; // Kolom sudah ada ✅
-
-    // Kolom belum ada — coba buat via rpc exec (butuh service_role key)
-    await supabase.rpc('exec', {
-      query: 'ALTER TABLE visitors ADD COLUMN IF NOT EXISTS second_gate_time TEXT;',
-    });
-  } catch {
-    // Silent fail — sistem tetap berjalan dengan fallback notes-tag
-  }
-};
 
 /**
  * Storage bucket untuk foto KTP tamu. Dibuat/dikonfigurasi lewat SQL migration

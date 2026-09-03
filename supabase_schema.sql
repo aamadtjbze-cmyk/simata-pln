@@ -72,6 +72,19 @@ USING (true);
 ALTER PUBLICATION supabase_realtime ADD TABLE public.visitors;
 
 -- ==============================================================================
+-- CHECKPOINT POS 2, RECEPTIONIST, DAN ENTITAS
+-- ==============================================================================
+-- Empat kolom ini sempat tidak ada di database, sehingga aplikasi menyelipkan
+-- nilainya sebagai penanda teks di dalam kolom notes ("[Pos 2: ...]",
+-- "[Lobby: ...]", "[Entitas: ...]"). Akibatnya data checkpoint tidak bisa
+-- di-query/difilter dengan benar dan catatan tamu jadi tercampur.
+-- Jangan dihapus: aplikasi menulis langsung ke kolom-kolom ini.
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS second_gate_time   TEXT;
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS receptionist_time  TEXT;
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS receptionist_badge TEXT;
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS stakeholder        TEXT DEFAULT 'PLN';
+
+-- ==============================================================================
 -- FOTO KTP TAMU - Kolom, Storage Bucket, RLS, dan Auto-Delete Retensi 7 Hari
 -- ==============================================================================
 
