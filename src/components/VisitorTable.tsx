@@ -31,7 +31,8 @@ import {
   Clock,
   Shield,
   Mail,
-  Loader2
+  Loader2,
+  QrCode
 } from 'lucide-react';
 import { Visitor, VisitorStatus, Stakeholder, UserRole } from '../types';
 import { generateWhatsAppPassUrl } from '../lib/email';
@@ -721,13 +722,24 @@ export default function VisitorTable({
                     </div>
 
                     <div className="flex items-center gap-1">
-                      {item.status === 'SCHEDULED' && onCheckInAppointment && (
-                        <button
-                          onClick={() => onCheckInAppointment(item.id)}
-                          className="px-2 py-1 bg-[#005DA6] hover:bg-[#004070] text-white text-[10px] font-bold uppercase cursor-pointer"
-                        >
-                          Check-In 1
-                        </button>
+                      {item.status === 'SCHEDULED' && (
+                        <>
+                          <button
+                            onClick={() => onViewBadge(item)}
+                            className="px-2 py-1 bg-[#005DA6] hover:bg-[#004070] text-[#FFD500] border border-[#FFD500] text-[10px] font-bold uppercase cursor-pointer flex items-center gap-1"
+                            title="Buka Barcode QR Pass Tamu"
+                          >
+                            <QrCode size={11} /> Barcode
+                          </button>
+                          {onCheckInAppointment && (
+                            <button
+                              onClick={() => onCheckInAppointment(item.id)}
+                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase cursor-pointer flex items-center gap-1"
+                            >
+                              <UserCheck2 size={11} /> Check-In 1
+                            </button>
+                          )}
+                        </>
                       )}
                       {item.status === 'IN-PROGRESS' && (
                         <button
@@ -1173,11 +1185,20 @@ export default function VisitorTable({
                         ) : item.status === 'PENDING' ? (
                           <button
                             onClick={() => onApproveBooking && onApproveBooking(item.id)}
-                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-none text-[10px] border-b border-r border-emerald-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-none text-[10px] border-b border-r border-emerald-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer whitespace-nowrap"
                             title="Setujui Janji Temu Sekretariat"
                           >
                             <CheckSquare size={11} />
                             Setujui Janji
+                          </button>
+                        ) : item.status === 'SCHEDULED' ? (
+                          <button
+                            onClick={() => onViewBadge(item)}
+                            className="px-2.5 py-1 bg-[#005DA6] hover:bg-[#004070] text-white font-bold rounded-none text-[10px] border-b border-r border-[#FFD500] shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer whitespace-nowrap"
+                            title="Buka Barcode QR Pass Tamu"
+                          >
+                            <QrCode size={11} className="text-[#FFD500]" />
+                            Buka Barcode
                           </button>
                         ) : (
                           <span className="text-slate-400 font-sans italic">-</span>
@@ -1234,11 +1255,20 @@ export default function VisitorTable({
                       <td className="p-4 text-center min-w-[150px] sticky right-0 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.06)] z-10">
                         <div className="flex items-center justify-center gap-1">
                           
-                          {/* View Badge */}
+                          {/* View Barcode Pass */}
+                          <button
+                            onClick={() => onViewBadge(item)}
+                            title="Buka Barcode QR Pass Tamu Digital"
+                            className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[#005DA6] dark:text-[#FFD500] rounded-none hover:border border-[#005DA6] dark:border-[#FFD500] transition-all cursor-pointer"
+                          >
+                            <QrCode size={15} />
+                          </button>
+
+                          {/* Print Pass */}
                           <button
                             onClick={() => onViewBadge(item)}
                             title="Cetak Pass Masuk Tamu"
-                            className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[#005DA6] dark:text-[#FFD500] rounded-none hover:border border-[#005DA6] dark:border-[#FFD500] transition-all cursor-pointer"
+                            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-none transition-all cursor-pointer"
                           >
                             <Printer size={15} />
                           </button>

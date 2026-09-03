@@ -4,7 +4,7 @@
  */
 
 import React, { useRef, useState } from 'react';
-import { X, Printer, Shield, Eye, Flame, CheckCircle, Smartphone, Copy, ExternalLink, QrCode, Check, AlertTriangle, XCircle, Calendar, Lock, Clock, CheckSquare, Mail, Loader2 } from 'lucide-react';
+import { X, Printer, Shield, Eye, Flame, CheckCircle, Smartphone, Copy, ExternalLink, QrCode, Check, AlertTriangle, XCircle, Calendar, Lock, Clock, CheckSquare, Mail, Loader2, Building, Layers } from 'lucide-react';
 import { Visitor } from '../types';
 import PLNLogo from './PLNLogo';
 import { encodePassToken, checkPassExpiration, getProductionPassUrl } from '../utils/security';
@@ -15,6 +15,7 @@ interface BadgeModalProps {
   onBookAppointment?: () => void;
   onCheckInAppointment?: (visitorId: string) => void;
   onSecondGateCheckIn?: (visitorId: string, customPass?: string) => void;
+  onReceptionistCheckIn?: (visitorId: string, badgeNumber?: string) => void;
   onCheckOut?: (visitorId: string) => void;
   onApproveBooking?: (visitorId: string) => void;
   onResendEmail?: (visitor: Visitor) => Promise<boolean>;
@@ -26,6 +27,7 @@ export default function BadgeModal({
   onBookAppointment,
   onCheckInAppointment,
   onSecondGateCheckIn,
+  onReceptionistCheckIn,
   onCheckOut,
   onApproveBooking,
   onResendEmail,
@@ -38,6 +40,8 @@ export default function BadgeModal({
   const badgeRef = useRef<HTMLDivElement>(null);
   const passUrl = getProductionPassUrl(visitor.id);
   const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(passUrl)}`;
+  const hasPos2 = visitor.stakeholder === 'KPJB' || visitor.stakeholder === 'AGP';
+  const pos2Label = visitor.stakeholder === 'AGP' ? 'Pos Total 8' : 'Gate KPJB';
 
   const formatDateTimeDisplay = (str: string | null | undefined, fallback: string) => {
     if (!str) return <span className="text-slate-400 font-sans italic text-[8.5px] block mt-1">{fallback}</span>;
@@ -235,17 +239,23 @@ export default function BadgeModal({
                 </div>
               </div>
 
-              <div className="pt-1.5 pb-1 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-3 gap-1 text-center font-sans">
+              <div className={`pt-1.5 pb-1 border-t border-slate-100 dark:border-slate-800/80 grid ${hasPos2 ? 'grid-cols-4' : 'grid-cols-3'} gap-1 text-center font-sans`}>
                 <div className="bg-slate-50 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
-                  <span className="text-[6.5px] uppercase font-bold text-slate-400 block tracking-tighter">Check-In 1 (Pos 1)</span>
+                  <span className="text-[6.5px] uppercase font-bold text-slate-400 block tracking-tighter">Pos 1 Utama</span>
                   {formatDateTimeDisplay(visitor.inTime, 'Belum In')}
                 </div>
+                {hasPos2 && (
+                  <div className="bg-purple-50/50 dark:bg-purple-950/30 p-1 border border-purple-200/60 dark:border-purple-800 flex flex-col justify-between">
+                    <span className="text-[6.5px] uppercase font-bold text-purple-600 dark:text-purple-400 block tracking-tighter truncate">{pos2Label}</span>
+                    {formatDateTimeDisplay(visitor.secondGateTime, 'Belum In')}
+                  </div>
+                )}
                 <div className="bg-sky-50/50 dark:bg-sky-950/30 p-1 border border-sky-200/60 dark:border-sky-800 flex flex-col justify-between">
-                  <span className="text-[6.5px] uppercase font-bold text-sky-600 dark:text-sky-400 block tracking-tighter">Check-In 2 (Pos 2)</span>
-                  {formatDateTimeDisplay(visitor.secondGateTime, 'Belum In')}
+                  <span className="text-[6.5px] uppercase font-bold text-sky-600 dark:text-sky-400 block tracking-tighter truncate">Lobby {visitor.stakeholder || 'PLN'}</span>
+                  {formatDateTimeDisplay(visitor.receptionistTime, 'Belum In')}
                 </div>
                 <div className="bg-amber-500/10 dark:bg-amber-950/30 p-1 border border-amber-500/20 dark:border-amber-800 flex flex-col justify-between">
-                  <span className="text-[6.5px] uppercase font-bold text-amber-600 dark:text-amber-400 block tracking-tighter">Check-Out (Keluar)</span>
+                  <span className="text-[6.5px] uppercase font-bold text-amber-600 dark:text-amber-400 block tracking-tighter">Check-Out</span>
                   {formatDateTimeDisplay(visitor.outTime, 'Belum Out')}
                 </div>
               </div>
@@ -382,38 +392,60 @@ export default function BadgeModal({
                   Presensi Gate Masuk / Keluar Tamu
                 </span>
 
-                <div className="grid grid-cols-3 gap-1.5">
-                  {/* Button Check-In 1 */}
+                <div className={`grid ${hasPos2 ? 'grid-cols-4' : 'grid-cols-3'} gap-1`}>
+                  {/* Button Check-In 1 (Pos 1 Maingate) */}
                   <button
                     type="button"
                     onClick={() => onCheckInAppointment && onCheckInAppointment(visitor.id)}
-                    className={`py-2 px-1 rounded-none text-[9.5px] font-black uppercase tracking-wider flex flex-col items-center justify-center transition-all ${
+                    className={`py-2 px-1 rounded-none text-[9px] font-black uppercase tracking-wider flex flex-col items-center justify-center transition-all ${
                       visitor.inTime
                         ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 cursor-default'
                         : 'bg-[#005DA6] hover:bg-[#004070] text-white border-b-2 border-r-2 border-[#FFD500] cursor-pointer active:scale-95'
                     }`}
+                    title="Konfirmasi Check-In Pos 1 Utama (Maingate)"
                   >
-                    <span className="text-[7.5px] font-normal opacity-80">Pos 1 Utama</span>
-                    <span className="flex items-center gap-1 mt-0.5">
-                      {visitor.inTime ? <Check size={11} /> : null}
+                    <span className="text-[7px] font-normal opacity-80 truncate max-w-full">Pos 1 Utama</span>
+                    <span className="flex items-center gap-0.5 mt-0.5 whitespace-nowrap">
+                      {visitor.inTime ? <Check size={10} /> : null}
                       {visitor.inTime ? 'IN 1 OK' : 'Check-In 1'}
                     </span>
                   </button>
 
-                  {/* Button Check-In 2 (Pos 2 / Stakeholder) */}
+                  {/* Button Check-In Pos 2 (KPJB / AGP only) */}
+                  {hasPos2 && (
+                    <button
+                      type="button"
+                      onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(visitor.id)}
+                      className={`py-2 px-1 rounded-none text-[9px] font-black uppercase tracking-wider flex flex-col items-center justify-center transition-all ${
+                        visitor.secondGateTime
+                          ? 'bg-purple-100 text-purple-800 border border-purple-300 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800 cursor-default'
+                          : 'bg-purple-700 hover:bg-purple-800 text-white border-b-2 border-r-2 border-purple-300 cursor-pointer active:scale-95'
+                      }`}
+                      title={`Konfirmasi Masuk ${pos2Label}`}
+                    >
+                      <span className="text-[7px] font-normal opacity-80 truncate max-w-full">{pos2Label}</span>
+                      <span className="flex items-center gap-0.5 mt-0.5 whitespace-nowrap">
+                        {visitor.secondGateTime ? <Check size={10} /> : null}
+                        {visitor.secondGateTime ? 'POS 2 OK' : 'Check-In 2'}
+                      </span>
+                    </button>
+                  )}
+
+                  {/* Button Check-In Lobby Receptionist (All Stakeholders) */}
                   <button
                     type="button"
-                    onClick={() => onSecondGateCheckIn && onSecondGateCheckIn(visitor.id)}
-                    className={`py-2 px-1 rounded-none text-[9.5px] font-black uppercase tracking-wider flex flex-col items-center justify-center transition-all ${
-                      visitor.secondGateTime
+                    onClick={() => onReceptionistCheckIn && onReceptionistCheckIn(visitor.id)}
+                    className={`py-2 px-1 rounded-none text-[9px] font-black uppercase tracking-wider flex flex-col items-center justify-center transition-all ${
+                      visitor.receptionistTime
                         ? 'bg-sky-100 text-sky-800 border border-sky-300 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800 cursor-default'
                         : 'bg-sky-600 hover:bg-sky-700 text-white border-b-2 border-r-2 border-sky-300 cursor-pointer active:scale-95'
                     }`}
+                    title={`Konfirmasi Tamu Tiba di Meja Receptionist ${visitor.stakeholder || 'PLN'}`}
                   >
-                    <span className="text-[7.5px] font-normal opacity-80">Pos 2 Dalam</span>
-                    <span className="flex items-center gap-1 mt-0.5">
-                      {visitor.secondGateTime ? <Check size={11} /> : null}
-                      {visitor.secondGateTime ? 'IN 2 OK' : 'Check-In 2'}
+                    <span className="text-[7px] font-normal opacity-80 truncate max-w-full">Lobby {visitor.stakeholder || 'PLN'}</span>
+                    <span className="flex items-center gap-0.5 mt-0.5 whitespace-nowrap">
+                      {visitor.receptionistTime ? <Check size={10} /> : null}
+                      {visitor.receptionistTime ? 'LOBBY OK' : 'Terima Lobby'}
                     </span>
                   </button>
 
@@ -421,15 +453,16 @@ export default function BadgeModal({
                   <button
                     type="button"
                     onClick={() => onCheckOut && onCheckOut(visitor.id)}
-                    className={`py-2 px-1 rounded-none text-[9.5px] font-black uppercase tracking-wider flex flex-col items-center justify-center transition-all ${
+                    className={`py-2 px-1 rounded-none text-[9px] font-black uppercase tracking-wider flex flex-col items-center justify-center transition-all ${
                       visitor.outTime
                         ? 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 cursor-default'
                         : 'bg-amber-500 hover:bg-amber-600 text-white border-b-2 border-r-2 border-amber-300 cursor-pointer active:scale-95'
                     }`}
+                    title="Konfirmasi Check-Out Kepulangan Tamu Selesai"
                   >
-                    <span className="text-[7.5px] font-normal opacity-80">Kepulangan</span>
-                    <span className="flex items-center gap-1 mt-0.5">
-                      {visitor.outTime ? <Check size={11} /> : null}
+                    <span className="text-[7px] font-normal opacity-80 truncate max-w-full">Kepulangan</span>
+                    <span className="flex items-center gap-0.5 mt-0.5 whitespace-nowrap">
+                      {visitor.outTime ? <Check size={10} /> : null}
                       {visitor.outTime ? 'OUT OK' : 'Check-Out'}
                     </span>
                   </button>

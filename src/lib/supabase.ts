@@ -63,41 +63,79 @@ export const isSupabaseConfigured = (): boolean => {
 /**
  * Format Visitor object to DB row format
  */
-export const visitorToRow = (v: Visitor) => ({
-  id: v.id,
-  visitor_name: v.visitorName,
-  company: v.company,
-  phone: v.phone || '',
-  email: v.email || '',
-  identify_no: v.identifyNo || '',
-  gender: v.gender || 'Laki-laki',
-  visited: v.visited,
-  purpose: v.purpose,
-  schedule: v.schedule,
-  in_time: v.inTime,
-  out_time: v.outTime,
-  second_gate_time: v.secondGateTime || null,
-  receptionist_time: v.receptionistTime || null,
-  receptionist_badge: v.receptionistBadge || null,
-  stakeholder: v.stakeholder || 'PLN',
-  status: v.status,
-  main_gate_pass: v.mainGatePass || '',
-  second_gate_pass: v.secondGatePass || '',
-  valid_until: v.validUntil || '',
-  validity_option: v.validityOption || 'SAME_DAY',
-  notes: v.notes || '',
-  updated_at: new Date().toISOString(),
-});
+export const visitorToRow = (v: Visitor) => {
+  // Pastikan fallback data pos 2 dan receptionist tersimpan di notes jika schema DB Supabase belum dimigrasi
+  let mergedNotes = v.notes || '';
+  if (v.secondGateTime && !mergedNotes.includes(`[Pos 2: ${v.secondGateTime}]`)) {
+    mergedNotes = mergedNotes ? `${mergedNotes} | [Pos 2: ${v.secondGateTime}]` : `[Pos 2: ${v.secondGateTime}]`;
+  }
+  if (v.receptionistTime && !mergedNotes.includes(`[Lobby: ${v.receptionistTime}]`)) {
+    mergedNotes = mergedNotes ? `${mergedNotes} | [Lobby: ${v.receptionistTime}]` : `[Lobby: ${v.receptionistTime}]`;
+  }
+  if (v.stakeholder && !mergedNotes.includes(`[Entitas: ${v.stakeholder}]`)) {
+    mergedNotes = mergedNotes ? `${mergedNotes} | [Entitas: ${v.stakeholder}]` : `[Entitas: ${v.stakeholder}]`;
+  }
+
+  return {
+    id: v.id,
+    visitor_name: v.visitorName,
+    company: v.company,
+    phone: v.phone || '',
+    email: v.email || '',
+    identify_no: v.identifyNo || '',
+    gender: v.gender || 'Laki-laki',
+    visited: v.visited,
+    purpose: v.purpose,
+    schedule: v.schedule,
+    in_time: v.inTime,
+    out_time: v.outTime,
+    second_gate_time: v.secondGateTime || null,
+    receptionist_time: v.receptionistTime || null,
+    receptionist_badge: v.receptionistBadge || null,
+    stakeholder: v.stakeholder || 'PLN',
+    status: v.status,
+    main_gate_pass: v.mainGatePass || '',
+    second_gate_pass: v.secondGatePass || '',
+    valid_until: v.validUntil || '',
+    validity_option: v.validityOption || 'SAME_DAY',
+    notes: mergedNotes,
+    updated_at: new Date().toISOString(),
+  };
+};
 
 /**
  * Format DB row to Visitor object
  */
 export const rowToVisitor = (row: any): Visitor => {
   let extractedSecondGateTime = row.second_gate_time || row.secondGateTime || null;
-  if (!extractedSecondGateTime && row.notes && typeof row.notes === 'string') {
-    const match = row.notes.match(/\[Pos 2: (.*?)\]/);
-    if (match && match[1]) {
-      extractedSecondGateTime = match[1];
+  let extractedReceptionistTime = row.receptionist_time || row.receptionistTime || null;
+  let extractedReceptionistBadge = row.receptionist_badge || row.receptionistBadge || null;
+  let extractedStakeholder = row.stakeholder || null;
+
+  if (row.notes && typeof row.notes === 'string') {
+    if (!extractedSecondGateTime) {
+      const match = row.notes.match(/\[(?:Pos 2|Second Gate KPJB|Pos Total 8 \(AGP\)|Gate Unit): (.*?)\]/);
+      if (match && match[1]) {
+        extractedSecondGateTime = match[1];
+      }
+    }
+    if (!extractedReceptionistTime) {
+      const match = row.notes.match(/\[(?:Lobby|Receptionist): (.*?)\]/);
+      if (match && match[1]) {
+        extractedReceptionistTime = match[1];
+      }
+    }
+    if (!extractedReceptionistBadge) {
+      const match = row.notes.match(/\[Badge Lobby: (.*?)\]/);
+      if (match && match[1]) {
+        extractedReceptionistBadge = match[1];
+      }
+    }
+    if (!extractedStakeholder) {
+      const match = row.notes.match(/\[Entitas: (.*?)\]/);
+      if (match && match[1]) {
+        extractedStakeholder = match[1];
+      }
     }
   }
 
@@ -115,9 +153,9 @@ export const rowToVisitor = (row: any): Visitor => {
     inTime: row.in_time || null,
     outTime: row.out_time || null,
     secondGateTime: extractedSecondGateTime,
-    receptionistTime: row.receptionist_time || null,
-    receptionistBadge: row.receptionist_badge || null,
-    stakeholder: (row.stakeholder as any) || 'PLN',
+    receptionistTime: extractedReceptionistTime,
+    receptionistBadge: extractedReceptionistBadge,
+    stakeholder: (extractedStakeholder as any) || 'PLN',
     status: row.status,
     mainGatePass: row.main_gate_pass,
     secondGatePass: row.second_gate_pass,

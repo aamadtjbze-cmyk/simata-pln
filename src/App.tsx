@@ -771,7 +771,9 @@ export default function App() {
     const mins = pad(today.getMinutes());
     const formattedInTime = `${day} ${monthName} ${year} - ${hours}.${mins}`;
 
-    const original = visitors.find((v) => v.id === visitorId);
+    const original = (visitorForBadge && visitorForBadge.id === visitorId)
+      ? { ...visitors.find((v) => v.id === visitorId), ...visitorForBadge }
+      : visitors.find((v) => v.id === visitorId);
     if (!original) return;
 
     // ponytail: guard – konfirmasi sebelum menimpa jam masuk yang sudah tercatat
@@ -788,11 +790,14 @@ export default function App() {
       status: 'IN-PROGRESS',
       inTime: formattedInTime,
       mainGatePass: assignedMainPass,
+      secondGateTime: original.secondGateTime || null,
+      receptionistTime: original.receptionistTime || null,
+      outTime: original.outTime || null,
     };
 
     const updated = visitors.map((v) => (v.id === visitorId ? updatedVisitor : v));
     triggerToast(`Konfirmasi kedatangan ${original.visitorName} berhasil. Kartu masuk (${assignedMainPass}) diaktifkan!`, 'success');
-    setVisitorForBadge(updatedVisitor);
+    setVisitorForBadge((prev) => (prev && prev.id === visitorId ? updatedVisitor : prev));
 
     const notif = createNotification(updatedVisitor, original.status);
     saveAndSyncNotifications([notif, ...notifications]);
@@ -806,7 +811,9 @@ export default function App() {
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const formattedNow = `${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()} - ${pad(today.getHours())}.${pad(today.getMinutes())}`;
 
-    const original = visitors.find((v) => v.id === visitorId);
+    const original = (visitorForBadge && visitorForBadge.id === visitorId)
+      ? { ...visitors.find((v) => v.id === visitorId), ...visitorForBadge }
+      : visitors.find((v) => v.id === visitorId);
     if (!original) return;
 
     const stk = original.stakeholder || 'PLN';
@@ -815,8 +822,8 @@ export default function App() {
     const noteMarker = `[${gateLabel}: ${formattedNow}]`;
     const updatedNotes = original.notes
       ? original.notes.includes(`[${gateLabel}:`)
-      ? original.notes.replace(new RegExp(`\\[${gateLabel}: .*?\\]`), noteMarker)
-      : `${original.notes} | ${noteMarker}`
+        ? original.notes.replace(new RegExp(`\\[${gateLabel}: .*?\\]`), noteMarker)
+        : `${original.notes} | ${noteMarker}`
       : noteMarker;
 
     const updatedVisitor: Visitor = {
@@ -825,13 +832,15 @@ export default function App() {
       secondGateTime: formattedNow,
       notes: updatedNotes,
       status: 'IN-PROGRESS',
+      // Pastikan inTime, receptionistTime, outTime tetap utuh tanpa tertimpa!
+      inTime: original.inTime || null,
+      receptionistTime: original.receptionistTime || null,
+      outTime: original.outTime || null,
     };
 
     const updated = visitors.map((v) => (v.id === visitorId ? updatedVisitor : v));
     triggerToast(`Akses ${gateLabel} (${assignedPass}) untuk ${original.visitorName} berhasil dikonfirmasi!`, 'info');
-    if (visitorForBadge && visitorForBadge.id === visitorId) {
-      setVisitorForBadge(updatedVisitor);
-    }
+    setVisitorForBadge((prev) => (prev && prev.id === visitorId ? updatedVisitor : prev));
 
     const notif = createNotification(updatedVisitor, original.status);
     saveAndSyncNotifications([notif, ...notifications]);
@@ -845,24 +854,35 @@ export default function App() {
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const formattedNow = `${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()} - ${pad(today.getHours())}.${pad(today.getMinutes())}`;
 
-    const original = visitors.find((v) => v.id === visitorId);
+    const original = (visitorForBadge && visitorForBadge.id === visitorId)
+      ? { ...visitors.find((v) => v.id === visitorId), ...visitorForBadge }
+      : visitors.find((v) => v.id === visitorId);
     if (!original) return;
 
     const stk = original.stakeholder || 'PLN';
     const assignedBadge = badgeNumber || original.receptionistBadge || `BDG-${stk}-${pad(today.getHours())}${pad(today.getMinutes())}`;
+    const noteMarker = `[Lobby: ${formattedNow}]`;
+    const updatedNotes = original.notes
+      ? original.notes.includes(`[Lobby:`)
+        ? original.notes.replace(new RegExp(`\\[Lobby: .*?\\]`), noteMarker)
+        : `${original.notes} | ${noteMarker}`
+      : noteMarker;
 
     const updatedVisitor: Visitor = {
       ...original,
       receptionistTime: formattedNow,
       receptionistBadge: assignedBadge,
+      notes: updatedNotes,
       status: 'IN-PROGRESS',
+      // Pastikan inTime, secondGateTime, outTime tetap utuh tanpa tertimpa!
+      inTime: original.inTime || null,
+      secondGateTime: original.secondGateTime || null,
+      outTime: original.outTime || null,
     };
 
     const updated = visitors.map((v) => (v.id === visitorId ? updatedVisitor : v));
     triggerToast(`Tamu ${original.visitorName} berhasil diterima di Receptionist ${stk}!`, 'success');
-    if (visitorForBadge && visitorForBadge.id === visitorId) {
-      setVisitorForBadge(updatedVisitor);
-    }
+    setVisitorForBadge((prev) => (prev && prev.id === visitorId ? updatedVisitor : prev));
 
     const notif = createNotification(updatedVisitor, original.status);
     saveAndSyncNotifications([notif, ...notifications]);
@@ -881,30 +901,28 @@ export default function App() {
     const mins = pad(today.getMinutes());
     const formattedOutTime = `${day} ${monthName} ${year} - ${hours}.${mins}`;
 
-    const original = visitors.find((v) => v.id === visitorId);
-    let updatedVisitor: Visitor | undefined;
-    const updated = visitors.map((v) => {
-      if (v.id === visitorId) {
-        updatedVisitor = {
-          ...v,
-          status: 'DONE' as VisitorStatus,
-          outTime: formattedOutTime,
-        };
-        return updatedVisitor;
-      }
-      return v;
-    });
+    const original = (visitorForBadge && visitorForBadge.id === visitorId)
+      ? { ...visitors.find((v) => v.id === visitorId), ...visitorForBadge }
+      : visitors.find((v) => v.id === visitorId);
+    if (!original) return;
 
-    if (original && updatedVisitor) {
-      triggerToast(`Tamu ${original.visitorName} telah berhasil Check-Out.`, 'success');
-      if (visitorForBadge && visitorForBadge.id === visitorId) {
-        setVisitorForBadge(updatedVisitor);
-      }
-      
-      const notif = createNotification(updatedVisitor, original.status);
-      const newNotifs = [notif, ...notifications];
-      saveAndSyncNotifications(newNotifs);
-    }
+    const updatedVisitor: Visitor = {
+      ...original,
+      status: 'DONE' as VisitorStatus,
+      outTime: formattedOutTime,
+      // Pastikan semua timestamp kedatangan tidak terhapus saat check-out!
+      inTime: original.inTime || null,
+      secondGateTime: original.secondGateTime || null,
+      receptionistTime: original.receptionistTime || null,
+    };
+
+    const updated = visitors.map((v) => (v.id === visitorId ? updatedVisitor : v));
+    triggerToast(`Tamu ${original.visitorName} telah berhasil Check-Out.`, 'success');
+    setVisitorForBadge((prev) => (prev && prev.id === visitorId ? updatedVisitor : prev));
+    
+    const notif = createNotification(updatedVisitor, original.status);
+    const newNotifs = [notif, ...notifications];
+    saveAndSyncNotifications(newNotifs);
     saveAndSync(updated, updatedVisitor);
   };
 
@@ -1671,6 +1689,7 @@ export default function App() {
           onClose={handleCloseBadgeModal}
           onCheckInAppointment={handleCheckInAppointment}
           onSecondGateCheckIn={handleSecondGateCheckIn}
+          onReceptionistCheckIn={handleReceptionistCheckIn}
           onCheckOut={handleCheckOut}
           onResendEmail={handleResendEmail}
           onApproveBooking={userRole === 'ADMIN' ? handleApproveBooking : undefined}
