@@ -788,7 +788,7 @@ export default function VisitorTable({
               {/* Main Header Labels */}
               <tr className="bg-slate-100 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800/50 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider select-none">
                 
-                <th className="p-2.5 w-12 text-center">
+                <th className="p-2.5 text-center w-[36px] min-w-[36px] max-w-[36px] sticky left-0 z-20 bg-slate-100 dark:bg-slate-950">
                   <input
                     type="checkbox"
                     checked={isAllPageSelected}
@@ -799,7 +799,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('id')}
-                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all font-mono w-32"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all font-mono w-[64px] min-w-[64px] max-w-[64px] sticky left-[36px] z-20 bg-slate-100 dark:bg-slate-950"
                 >
                   <div className="flex items-center gap-1">
                     Form ID
@@ -809,7 +809,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('stakeholder' as any)}
-                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[165px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all w-[165px] min-w-[165px] max-w-[165px] sticky left-[100px] z-20 bg-slate-100 dark:bg-slate-950"
                 >
                   <div className="flex flex-col items-start leading-tight">
                     <div className="flex items-center gap-1">
@@ -824,7 +824,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('status')}
-                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-center min-w-[92px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-center w-[92px] min-w-[92px] max-w-[92px] sticky left-[265px] z-20 bg-slate-100 dark:bg-slate-950 shadow-[4px_0_8px_rgba(0,0,0,0.06)]"
                 >
                   <div className="flex items-center justify-center gap-1">
                     Status
@@ -927,10 +927,11 @@ export default function VisitorTable({
 
               {/* Column Date Filter Inputs */}
               <tr className="bg-slate-50 dark:bg-slate-950/20 border-b border-slate-200 dark:border-slate-800/80 font-mono text-[10px]">
-                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
+                {/* 4 sel pertama ikut dibekukan agar sejajar dengan kolom identitas di atasnya */}
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800 w-[36px] min-w-[36px] max-w-[36px] sticky left-0 z-10 bg-slate-50 dark:bg-slate-950"></td>
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800 w-[64px] min-w-[64px] max-w-[64px] sticky left-[36px] z-10 bg-slate-50 dark:bg-slate-950"></td>
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800 w-[165px] min-w-[165px] max-w-[165px] sticky left-[100px] z-10 bg-slate-50 dark:bg-slate-950"></td>
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800 w-[92px] min-w-[92px] max-w-[92px] sticky left-[265px] z-10 bg-slate-50 dark:bg-slate-950 shadow-[4px_0_8px_rgba(0,0,0,0.06)]"></td>
 
                 {/* Schedule date search input */}
                 <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
@@ -1008,6 +1009,13 @@ export default function VisitorTable({
               {currentPagedItems.length > 0 ? (
                 currentPagedItems.map((item, index) => {
                   const isSelected = selectedIds.includes(item.id);
+                  // Sel yang dibekukan (sticky) wajib punya latar SOLID — versi transparan
+                  // seperti bg-slate-50/50 akan membuat isi tabel terlihat menembus saat digeser.
+                  const stickyBg = isSelected
+                    ? 'bg-amber-50 dark:bg-amber-950'
+                    : index % 2 === 0
+                    ? 'bg-white dark:bg-slate-900'
+                    : 'bg-slate-50 dark:bg-slate-950';
                   return (
                     <tr
                       key={item.id}
@@ -1019,8 +1027,9 @@ export default function VisitorTable({
                           : 'bg-slate-50/50 dark:bg-slate-950/20'
                       }`}
                     >
+                      {/* === Blok identitas dibekukan (freeze panes ala Excel) === */}
                       {/* Checkbox select */}
-                      <td className="p-2.5 text-center">
+                      <td className={`p-2.5 text-center w-[36px] min-w-[36px] max-w-[36px] sticky left-0 z-10 ${stickyBg}`}>
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -1030,12 +1039,15 @@ export default function VisitorTable({
                       </td>
 
                       {/* Form ID Link */}
-                      <td className="p-2.5 font-bold text-[#005DA6] dark:text-[#FFD500] hover:underline cursor-pointer font-mono" onClick={() => onViewBadge(item)}>
+                      <td
+                        className={`p-2.5 font-bold text-[#005DA6] dark:text-[#FFD500] hover:underline cursor-pointer font-mono w-[64px] min-w-[64px] max-w-[64px] sticky left-[36px] z-10 ${stickyBg}`}
+                        onClick={() => onViewBadge(item)}
+                      >
                         {item.id}
                       </td>
 
                       {/* Stakeholder / Entitas & Tempat Area - Full text, no truncate clipping */}
-                      <td className="p-2.5 min-w-[165px]">
+                      <td className={`p-2.5 w-[165px] min-w-[165px] max-w-[165px] sticky left-[100px] z-10 ${stickyBg}`}>
                         <div className="flex flex-col items-start gap-1">
                           {getStakeholderBadge(item.stakeholder)}
                           <span className="text-[9px] font-bold text-slate-800 dark:text-slate-200 uppercase leading-tight whitespace-normal break-words" title={item.visited}>
@@ -1044,8 +1056,8 @@ export default function VisitorTable({
                         </div>
                       </td>
 
-                      {/* Status badge - Full visibility */}
-                      <td className="p-2.5 text-center min-w-[92px] whitespace-nowrap">
+                      {/* Status badge - kolom beku terakhir, diberi bayangan sebagai penanda batas */}
+                      <td className={`p-2.5 text-center w-[92px] min-w-[92px] max-w-[92px] whitespace-nowrap sticky left-[265px] z-10 shadow-[4px_0_8px_rgba(0,0,0,0.06)] ${stickyBg}`}>
                         {getStatusBadge(item.status)}
                       </td>
 
