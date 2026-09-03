@@ -58,7 +58,7 @@ export const INITIAL_VISITORS: Visitor[] = [
     secondGatePass: '',
     company: 'PT. PISELA GRACIA',
     purpose: 'Antar dokumen',
-    visited: 'PLANT OPERATION',
+    visited: 'Operation Dept',
     status: 'DONE',
     phone: '081211223344',
     identifyNo: '3171052203890002',
@@ -315,11 +315,12 @@ export const KPJB_DIVISIONS = [
 ];
 
 export const TJBPS_DIVISIONS = [
-  'Plant Operation',
-  'Plant Maintenance',
-  'Logistics & Warehouse',
-  'Safety & Environment',
-  'Administration & Finance',
+  'Operation Dept',
+  'Maintenance Dept',
+  'Development Dept',
+  'HSSE Dept',
+  'FA Dept',
+  'HRD Dept',
 ];
 
 export const AGP_DIVISIONS = [

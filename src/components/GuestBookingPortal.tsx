@@ -34,11 +34,12 @@ const KPJB_DIVISIONS = [
 ];
 
 const TJBPS_DIVISIONS = [
-  'MANAGEMENT TJBPS',
-  'PLANT OPERATION',
-  'PLANT MAINTENANCE',
-  'LOGISTICS & WAREHOUSE',
-  'SAFETY & ENVIRONMENT',
+  'Operation Dept',
+  'Maintenance Dept',
+  'Development Dept',
+  'HSSE Dept',
+  'FA Dept',
+  'HRD Dept',
 ];
 
 const AGP_DIVISIONS = [
