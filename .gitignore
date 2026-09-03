@@ -16,3 +16,4 @@ flowchart_*.jpg
 flowchart_*.png
 .vercel
 supabase/.temp
+backup-*.json
