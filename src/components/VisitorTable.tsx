@@ -788,7 +788,7 @@ export default function VisitorTable({
               {/* Main Header Labels */}
               <tr className="bg-slate-100 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800/50 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider select-none">
                 
-                <th className="p-4 w-12 text-center">
+                <th className="p-2.5 w-12 text-center">
                   <input
                     type="checkbox"
                     checked={isAllPageSelected}
@@ -799,7 +799,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('id')}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all font-mono w-32"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all font-mono w-32"
                 >
                   <div className="flex items-center gap-1">
                     Form ID
@@ -809,7 +809,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('stakeholder' as any)}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[190px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[190px]"
                 >
                   <div className="flex flex-col items-start leading-tight">
                     <div className="flex items-center gap-1">
@@ -824,7 +824,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('schedule')}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[125px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[125px]"
                 >
                   <div className="flex items-center gap-1">
                     Schedule
@@ -834,7 +834,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('inTime')}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[120px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[120px]"
                 >
                   <div className="flex flex-col items-start leading-tight">
                     <div className="flex items-center gap-1">
@@ -849,7 +849,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('secondGateTime' as any)}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all whitespace-nowrap min-w-[140px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all whitespace-nowrap min-w-[140px]"
                 >
                   <div className="flex flex-col items-start leading-tight">
                     <div className="flex items-center gap-1">
@@ -863,7 +863,7 @@ export default function VisitorTable({
                 </th>
 
                 <th
-                  className="p-4 whitespace-nowrap min-w-[135px]"
+                  className="p-2.5 whitespace-nowrap min-w-[135px]"
                 >
                   <div className="flex flex-col items-start leading-tight">
                     <span>RECEPTIONIST</span>
@@ -875,7 +875,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('outTime')}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[110px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[110px]"
                 >
                   <div className="flex items-center gap-1">
                     OUT
@@ -885,7 +885,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('visitorName')}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[140px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[140px]"
                 >
                   <div className="flex items-center gap-1">
                     Visitor
@@ -893,11 +893,11 @@ export default function VisitorTable({
                   </div>
                 </th>
 
-                <th className="p-4 min-w-[110px]">Gate Pass</th>
+                <th className="p-2.5 min-w-[110px]">Gate Pass</th>
 
                 <th
                   onClick={() => handleSort('company')}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[150px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[150px]"
                 >
                   <div className="flex items-center gap-1">
                     Company
@@ -907,7 +907,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('purpose')}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-xs min-w-[130px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-xs min-w-[130px]"
                 >
                   <div className="flex items-center gap-1 text-slate-550">
                     Purpose
@@ -917,7 +917,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('visited')}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[170px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[170px]"
                 >
                   <div className="flex items-center gap-1">
                     Visited
@@ -927,7 +927,7 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('status')}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-center min-w-[130px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-center min-w-[130px]"
                 >
                   <div className="flex items-center justify-center gap-1">
                     Status
@@ -935,7 +935,7 @@ export default function VisitorTable({
                   </div>
                 </th>
 
-                <th className="p-4 text-center min-w-[220px] sticky right-0 bg-slate-100 dark:bg-slate-950 z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.06)]">
+                <th className="p-2.5 text-center min-w-[270px] sticky right-0 bg-slate-100 dark:bg-slate-950 z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.06)]">
                   Aksi
                 </th>
               </tr>
@@ -1037,7 +1037,7 @@ export default function VisitorTable({
                       }`}
                     >
                       {/* Checkbox select */}
-                      <td className="p-4 text-center">
+                      <td className="p-2.5 text-center">
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -1047,12 +1047,12 @@ export default function VisitorTable({
                       </td>
 
                       {/* Form ID Link */}
-                      <td className="p-4 font-bold text-[#005DA6] dark:text-[#FFD500] hover:underline cursor-pointer font-mono" onClick={() => onViewBadge(item)}>
+                      <td className="p-2.5 font-bold text-[#005DA6] dark:text-[#FFD500] hover:underline cursor-pointer font-mono" onClick={() => onViewBadge(item)}>
                         {item.id}
                       </td>
 
                       {/* Stakeholder / Entitas & Tempat Area - Full text, no truncate clipping */}
-                      <td className="p-4 min-w-[190px]">
+                      <td className="p-2.5 min-w-[190px]">
                         <div className="flex flex-col items-start gap-1">
                           {getStakeholderBadge(item.stakeholder)}
                           <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 uppercase leading-tight whitespace-normal break-words" title={item.visited}>
@@ -1062,12 +1062,12 @@ export default function VisitorTable({
                       </td>
 
                       {/* Schedule */}
-                      <td className="p-4 text-slate-500 dark:text-slate-400 font-mono whitespace-nowrap">
+                      <td className="p-2.5 text-slate-500 dark:text-slate-400 font-mono whitespace-nowrap">
                         {item.schedule}
                       </td>
 
                       {/* IN Timestamp & Action Button */}
-                      <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
+                      <td className="p-2.5 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
                         {item.inTime ? (
                           <div className="flex flex-col items-start gap-0.5">
                             <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-700 rounded-none text-[10px] font-black flex items-center gap-1 font-mono shadow-2xs">
@@ -1103,7 +1103,7 @@ export default function VisitorTable({
                       </td>
 
                       {/* POS 2 (Gate Unit: KPJB / Pos Total 8 AGP) */}
-                      <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
+                      <td className="p-2.5 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
                         {item.stakeholder === 'KPJB' || item.stakeholder === 'AGP' ? (
                           item.secondGateTime ? (
                             item.status === 'IN-PROGRESS' ? (
@@ -1150,7 +1150,7 @@ export default function VisitorTable({
                       </td>
 
                       {/* RECEPTIONIST (Lobby Kantor Unit) */}
-                      <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
+                      <td className="p-2.5 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
                         {item.receptionistTime ? (
                           <button
                             onClick={() => onReceptionistCheckIn && onReceptionistCheckIn(item.id)}
@@ -1182,7 +1182,7 @@ export default function VisitorTable({
                       </td>
 
                       {/* OUT Timestamp / Check-Out Action Button */}
-                      <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
+                      <td className="p-2.5 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
                         {item.outTime ? (
                           <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1">
                             <Check size={10} className="text-emerald-500" />
@@ -1220,7 +1220,7 @@ export default function VisitorTable({
                       </td>
 
                       {/* Visitor Name with Quick Action Menu Trigger */}
-                      <td className="p-4 text-slate-800 dark:text-slate-100 font-extrabold uppercase">
+                      <td className="p-2.5 text-slate-800 dark:text-slate-100 font-extrabold uppercase">
                         <button
                           onClick={() => setQuickActionVisitor(item)}
                           className="group flex items-center gap-1.5 text-[#005DA6] dark:text-[#FFD500] hover:underline font-black cursor-pointer text-left uppercase"
@@ -1232,7 +1232,7 @@ export default function VisitorTable({
                       </td>
 
                       {/* Gate Passes */}
-                      <td className="p-4 min-w-[110px]">
+                      <td className="p-2.5 min-w-[110px]">
                         <div className="flex flex-col gap-0.5">
                           <span className="font-mono text-[10px] text-amber-600 dark:text-amber-500 font-bold bg-amber-50 dark:bg-amber-950/20 px-1 rounded-none border border-amber-200/50 dark:border-amber-900/30 block w-fit whitespace-nowrap">
                             {item.mainGatePass || '-'}
@@ -1246,27 +1246,27 @@ export default function VisitorTable({
                       </td>
 
                       {/* Company - Full text, no truncate clipping */}
-                      <td className="p-4 text-slate-600 dark:text-slate-300 font-extrabold uppercase min-w-[150px] whitespace-normal break-words" title={item.company}>
+                      <td className="p-2.5 text-slate-600 dark:text-slate-300 font-extrabold uppercase min-w-[150px] whitespace-normal break-words" title={item.company}>
                         {item.company}
                       </td>
 
                       {/* Purpose - Full text, no truncate clipping */}
-                      <td className="p-4 text-slate-500 dark:text-slate-400 capitalize min-w-[130px] whitespace-normal break-words" title={item.purpose}>
+                      <td className="p-2.5 text-slate-500 dark:text-slate-400 capitalize min-w-[130px] whitespace-normal break-words" title={item.purpose}>
                         {item.purpose}
                       </td>
 
                       {/* Visited employee/department - Full text, highlighted */}
-                      <td className="p-4 text-slate-800 dark:text-slate-200 font-bold uppercase min-w-[170px] whitespace-normal break-words" title={item.visited}>
+                      <td className="p-2.5 text-slate-800 dark:text-slate-200 font-bold uppercase min-w-[170px] whitespace-normal break-words" title={item.visited}>
                         <span className="text-[#005DA6] dark:text-[#FFD500] font-black">{item.visited}</span>
                       </td>
 
                       {/* Status badge - Full visibility */}
-                      <td className="p-4 text-center min-w-[130px] whitespace-nowrap">
+                      <td className="p-2.5 text-center min-w-[130px] whitespace-nowrap">
                         {getStatusBadge(item.status)}
                       </td>
 
                       {/* Row action shortcuts - Sticky on the right */}
-                      <td className="p-3 text-center min-w-[220px] sticky right-0 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.06)] z-10">
+                      <td className="p-3 text-center min-w-[270px] sticky right-0 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.06)] z-10">
                         <div className="flex items-center justify-center gap-1.5 flex-wrap">
 
                           {/* View Barcode Pass */}
