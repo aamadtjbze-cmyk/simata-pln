@@ -46,7 +46,7 @@ import EmailConfigModal from './components/EmailConfigModal';
 import GuestQrStandeeModal from './components/GuestQrStandeeModal';
 import { generateDailyPassNumber, generateSecondGatePassNumber } from './utils/passGenerator';
 import { Visitor, VisitorStatus, SystemNotification, Stakeholder, UserRole } from './types';
-import { AppUser } from './lib/userManager';
+import { AppUser, restoreSession, logoutUser } from './lib/userManager';
 import { INITIAL_VISITORS } from './data/mockData';
 import { decodePassToken, encodePassToken, getProductionPassUrl } from './utils/security';
 import { sendApprovalEmail } from './lib/email';
@@ -228,37 +228,31 @@ export default function App() {
       setBgStyle(initialDarkModeValue ? 'midnight-deep' : 'slate-50');
     }
 
-    // Load saved privilege role from localStorage
-    const savedRole = localStorage.getItem('simata_user_role') as 'GUEST' | 'ADMIN' | null;
-    const savedAdminName = localStorage.getItem('simata_admin_name');
-    if (savedRole) {
-      setUserRole(savedRole);
-    } else {
-      setUserRole('GUEST');
-    }
-    if (savedAdminName) setAdminRoleName(savedAdminName);
-    const savedAdminUsername = localStorage.getItem('simata_admin_username');
-    if (savedAdminUsername) setAdminUsername(savedAdminUsername);
-    const savedAdminRole = localStorage.getItem('simata_admin_role') as UserRole | null;
-    if (savedAdminRole) setActiveUserRole(savedAdminRole);
-    const savedAdminStakeholder = localStorage.getItem('simata_admin_stakeholder') as Stakeholder | 'ALL' | null;
-    if (savedAdminStakeholder) setActiveStakeholder(savedAdminStakeholder);
-
     // Direct link parameter routing (e.g. ?portal=tamu or ?tab=pengajuan)
     const urlParams = new URLSearchParams(window.location.search);
     const portalParam = urlParams.get('portal');
     const tabParam = urlParams.get('tab') || urlParams.get('menu') || urlParams.get('form');
+    const wantsGuestPortal = portalParam === 'tamu' || tabParam === 'pengajuan' || tabParam === 'tamu' || tabParam === 'form';
 
-    if (portalParam === 'tamu' || tabParam === 'pengajuan' || tabParam === 'tamu' || tabParam === 'form') {
-      setCurrentTab('pengajuan-tamu');
-      setUserRole('GUEST');
-    } else if (savedRole === 'ADMIN') {
-      if (tabParam === 'janji-temu') setCurrentTab('janji-temu');
-      else if (tabParam === 'notifikasi') setCurrentTab('notifikasi');
-      else if (tabParam === 'laporan') setCurrentTab('laporan');
-      else setCurrentTab('buku-tamu');
-    } else {
-      setCurrentTab('pengajuan-tamu');
+    setUserRole('GUEST');
+    setCurrentTab('pengajuan-tamu');
+
+    // Pulihkan sesi login Supabase Auth (JWT server-verified, bukan flag localStorage
+    // yang bisa dipalsukan lewat DevTools) — hanya jika tamu tidak sedang membuka
+    // link portal pengajuan tamu secara langsung.
+    if (!wantsGuestPortal) {
+      restoreSession().then((user) => {
+        if (!user) return;
+        setUserRole('ADMIN');
+        setAdminRoleName(user.displayName);
+        setAdminUsername(user.username);
+        setActiveUserRole(user.role);
+        setActiveStakeholder(user.stakeholder);
+        if (tabParam === 'janji-temu') setCurrentTab('janji-temu');
+        else if (tabParam === 'notifikasi') setCurrentTab('notifikasi');
+        else if (tabParam === 'laporan') setCurrentTab('laporan');
+        else setCurrentTab('buku-tamu');
+      });
     }
 
     // Auto open email config modal if ?email=1 or ?modal=email or ?tab=email
@@ -490,19 +484,16 @@ export default function App() {
   };
 
   const handleAdminLoginSuccess = (roleName: string, username: string, userObj?: AppUser) => {
+    // Sesi login sesungguhnya (JWT) sudah disimpan otomatis oleh supabase-js;
+    // state React di bawah ini cuma cache tampilan untuk render saat ini.
     setUserRole('ADMIN');
     setAdminRoleName(roleName);
     setAdminUsername(username);
     if (userObj) {
       setActiveUserRole(userObj.role);
       setActiveStakeholder(userObj.stakeholder || 'ALL');
-      localStorage.setItem('simata_admin_role', userObj.role);
-      localStorage.setItem('simata_admin_stakeholder', userObj.stakeholder || 'ALL');
     }
     handleSelectTab('buku-tamu');
-    localStorage.setItem('simata_user_role', 'ADMIN');
-    localStorage.setItem('simata_admin_name', roleName);
-    localStorage.setItem('simata_admin_username', username);
     if (isSupabaseConfigured()) {
       fetchVisitorsFromSupabase().then((data) => {
         if (data && data.length > 0) {
@@ -514,17 +505,14 @@ export default function App() {
   };
 
   const handleAdminLogout = () => {
-    setUserRole('GUEST');
-    setAdminRoleName('');
-    setActiveUserRole('SUPERADMIN');
-    setActiveStakeholder('ALL');
-    handleSelectTab('pengajuan-tamu');
-    localStorage.setItem('simata_user_role', 'GUEST');
-    localStorage.removeItem('simata_admin_name');
-    localStorage.removeItem('simata_admin_username');
-    localStorage.removeItem('simata_admin_role');
-    localStorage.removeItem('simata_admin_stakeholder');
-    triggerToast('Anda telah Logout dari akun Petugas / Admin. Kembali ke Mode Tamu.', 'info');
+    logoutUser().finally(() => {
+      setUserRole('GUEST');
+      setAdminRoleName('');
+      setActiveUserRole('SUPERADMIN');
+      setActiveStakeholder('ALL');
+      handleSelectTab('pengajuan-tamu');
+      triggerToast('Anda telah Logout dari akun Petugas / Admin. Kembali ke Mode Tamu.', 'info');
+    });
   };
 
   // Quick database connection health check on click (no popup menu)

@@ -2,146 +2,135 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * User management stored in localStorage.
- * ponytail: simple btoa hash — good enough for internal app, not for public auth.
+ * User management via Supabase Auth. Login is verified server-side by
+ * Supabase's own auth server — no password ever lives in the client bundle
+ * or source code. Session state is a real signed JWT persisted by
+ * supabase-js, not a spoofable localStorage flag.
+ *
+ * Usernames map deterministically to Supabase Auth emails
+ * (`<username>@simata.internal`) so the login form can stay username-based.
+ * Role / stakeholder / display name are stored in Supabase Auth user_metadata.
+ *
+ * Creating, deleting, and resetting passwords for users requires the
+ * service_role key, which must never reach the browser — those operations
+ * are delegated to the `/api/admin-users` serverless function.
  */
 
 import { Stakeholder, UserRole } from '../types';
+import { getSupabaseClient } from './supabase';
 
 export interface AppUser {
+  id: string;
   username: string;
-  passwordHash: string;
   role: UserRole;
   stakeholder: Stakeholder | 'ALL';
   displayName: string;
 }
 
-const STORAGE_KEY = 'simata_users';
+const AUTH_EMAIL_DOMAIN = 'simata.internal';
 
-/** Simple non-crypto hash — enough to not store plaintext */
-const hashPassword = (pw: string): string => btoa(unescape(encodeURIComponent(pw)));
+export const toAuthEmail = (username: string): string =>
+  `${username.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '')}@${AUTH_EMAIL_DOMAIN}`;
 
-export const DEFAULT_USERS: AppUser[] = [
-  { username: 'admin', passwordHash: hashPassword('admintjb123'), role: 'SUPERADMIN', stakeholder: 'ALL', displayName: 'Sekretariat PLN (Superadmin)' },
-  { username: 'security', passwordHash: hashPassword('securitytjb123'), role: 'MAINGATE_SECURITY', stakeholder: 'ALL', displayName: 'Petugas Security Main Gate' },
-  { username: 'sec.maingate', passwordHash: hashPassword('maingate123'), role: 'MAINGATE_SECURITY', stakeholder: 'ALL', displayName: 'Petugas Main Gate PLN' },
-  { username: 'sec.kpjb', passwordHash: hashPassword('kpjbgate123'), role: 'POS2_SECURITY', stakeholder: 'KPJB', displayName: 'Security Second Gate KPJB' },
-  { username: 'sec.total8', passwordHash: hashPassword('total8gate123'), role: 'POS2_SECURITY', stakeholder: 'AGP', displayName: 'Security Pos Total 8 AGP' },
-  { username: 'recep.pln', passwordHash: hashPassword('plnlobby123'), role: 'RECEPTIONIST', stakeholder: 'PLN', displayName: 'Receptionist PLN' },
-  { username: 'recep.kpjb', passwordHash: hashPassword('kpjblobby123'), role: 'RECEPTIONIST', stakeholder: 'KPJB', displayName: 'Receptionist KPJB' },
-  { username: 'recep.tjbps', passwordHash: hashPassword('tjbpslobby123'), role: 'RECEPTIONIST', stakeholder: 'TJBPS', displayName: 'Receptionist TJBPS' },
-  { username: 'recep.agp', passwordHash: hashPassword('agplobby123'), role: 'RECEPTIONIST', stakeholder: 'AGP', displayName: 'Receptionist AGP' },
-];
-
-export const loadUsers = (): AppUser[] => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        let mutated = false;
-
-        // Migrasi data lama ke schema multi-stakeholder baru
-        const updatedUsers = parsed.map((u: any) => {
-          let updated = { ...u };
-          if (!updated.stakeholder) {
-            mutated = true;
-            updated.stakeholder = 'ALL';
-          }
-          if (updated.role === 'SEKRETARIAT') {
-            updated.role = 'SUPERADMIN';
-            mutated = true;
-          }
-          if (updated.role === 'SECURITY' && updated.username.toLowerCase().includes('sec')) {
-            updated.role = 'MAINGATE_SECURITY';
-            mutated = true;
-          }
-          return updated as AppUser;
-        });
-
-        // Pastikan default multi-stakeholder accounts tersedia jika belum ada
-        DEFAULT_USERS.forEach((defUser) => {
-          if (!updatedUsers.some((u: AppUser) => u.username.toLowerCase() === defUser.username.toLowerCase())) {
-            updatedUsers.push(defUser);
-            mutated = true;
-          }
-        });
-
-        if (mutated) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUsers));
-        }
-        return updatedUsers;
-      }
-    }
-  } catch (_) {}
-  // First run — seed defaults
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
-  return DEFAULT_USERS;
+const mapSupabaseUser = (user: any): AppUser => {
+  const meta = user?.user_metadata || {};
+  return {
+    id: user.id,
+    username: meta.username || (user.email || '').split('@')[0],
+    role: (meta.role as UserRole) || 'RECEPTIONIST',
+    stakeholder: meta.stakeholder || 'ALL',
+    displayName: meta.displayName || meta.username || user.email,
+  };
 };
 
-export const saveUsers = (users: AppUser[]): void => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
-};
+/** Verifikasi login — dijalankan oleh server Supabase, bukan di browser. */
+export const verifyUser = async (username: string, password: string): Promise<AppUser | null> => {
+  const supabase = getSupabaseClient();
+  if (!supabase || !username.trim() || !password) return null;
 
-export const verifyUser = (username: string, password: string): AppUser | null => {
-  const users = loadUsers();
-  const hash = hashPassword(password);
-  return users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.passwordHash === hash) ?? null;
-};
-
-export const addUser = (
-  username: string, 
-  password: string, 
-  role: AppUser['role'], 
-  displayName: string,
-  stakeholder: AppUser['stakeholder'] = 'ALL'
-): string | null => {
-  const users = loadUsers();
-  if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
-    return 'Username sudah digunakan.';
-  }
-  if (username.trim().length < 3) return 'Username minimal 3 karakter.';
-  if (password.length < 4) return 'Password minimal 4 karakter.';
-  users.push({ 
-    username: username.trim(), 
-    passwordHash: hashPassword(password), 
-    role, 
-    stakeholder,
-    displayName: displayName.trim() || username 
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: toAuthEmail(username),
+    password,
   });
-  saveUsers(users);
-  return null; // null = success
+  if (error || !data.user) return null;
+  return mapSupabaseUser(data.user);
 };
 
-export const changePassword = (username: string, newPassword: string): string | null => {
-  const users = loadUsers();
-  const idx = users.findIndex(u => u.username.toLowerCase() === username.toLowerCase());
-  if (idx === -1) return 'User tidak ditemukan.';
-  if (newPassword.length < 4) return 'Password minimal 4 karakter.';
-  users[idx].passwordHash = hashPassword(newPassword);
-  saveUsers(users);
-  return null;
+/** Pulihkan sesi login yang masih valid (dipanggil sekali saat app dimuat). */
+export const restoreSession = async (): Promise<AppUser | null> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+
+  const { data } = await supabase.auth.getSession();
+  const user = data.session?.user;
+  if (!user) return null;
+  return mapSupabaseUser(user);
 };
 
-export const deleteUser = (targetUsername: string, operatorUsername?: string): string | null => {
-  const users = loadUsers();
-  if (users.length <= 1) return 'Tidak boleh menghapus user terakhir.';
+export const logoutUser = async (): Promise<void> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) return;
+  await supabase.auth.signOut();
+};
 
-  const target = users.find(u => u.username.toLowerCase() === targetUsername.toLowerCase());
-  if (!target) return 'User tidak ditemukan.';
+// ---------------------------------------------------------------------------
+// Admin-only user management — didelegasikan ke /api/admin-users
+// (butuh service_role key yang hanya boleh ada di server, bukan di browser).
+// ---------------------------------------------------------------------------
 
-  if (target.username.toLowerCase() === 'admin') {
-    return 'Akun Admin Utama (admin) tidak dapat dihapus.';
+const callAdminUsersApi = async (method: string, body?: unknown): Promise<any> => {
+  const supabase = getSupabaseClient();
+  const { data } = (await supabase?.auth.getSession()) || {};
+  const token = data?.session?.access_token;
+  if (!token) throw new Error('Sesi tidak valid. Silakan login ulang.');
+
+  const res = await fetch('/api/admin-users', {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || 'Permintaan gagal.');
+  return json;
+};
+
+export const loadUsers = async (): Promise<AppUser[]> => {
+  const json = await callAdminUsersApi('GET');
+  return json.users || [];
+};
+
+export const addUser = async (
+  username: string,
+  password: string,
+  role: UserRole,
+  displayName: string,
+  stakeholder: Stakeholder | 'ALL' = 'ALL'
+): Promise<string | null> => {
+  try {
+    await callAdminUsersApi('POST', { username, password, role, displayName, stakeholder });
+    return null;
+  } catch (err: any) {
+    return err.message || 'Gagal menambah user.';
   }
+};
 
-  if (operatorUsername) {
-    const operator = users.find(u => u.username.toLowerCase() === operatorUsername.toLowerCase());
-    if (operator && operator.role !== 'SUPERADMIN' && target.role === 'SUPERADMIN') {
-      return 'Hanya Superadmin yang memiliki izin untuk menghapus akun Administrator!';
-    }
+export const changePassword = async (username: string, newPassword: string): Promise<string | null> => {
+  try {
+    await callAdminUsersApi('PATCH', { username, newPassword });
+    return null;
+  } catch (err: any) {
+    return err.message || 'Gagal mengubah password.';
   }
+};
 
-  const filtered = users.filter(u => u.username.toLowerCase() !== targetUsername.toLowerCase());
-  saveUsers(filtered);
-  return null;
+export const deleteUser = async (targetUsername: string): Promise<string | null> => {
+  try {
+    await callAdminUsersApi('DELETE', { username: targetUsername });
+    return null;
+  } catch (err: any) {
+    return err.message || 'Gagal menghapus user.';
+  }
 };

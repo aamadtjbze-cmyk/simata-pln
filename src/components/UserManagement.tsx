@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { UserPlus, KeyRound, Trash2, ShieldCheck, User, X, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, KeyRound, Trash2, ShieldCheck, User, X, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { AppUser, loadUsers, addUser, changePassword, deleteUser } from '../lib/userManager';
 
 import { Stakeholder, UserRole } from '../types';
@@ -18,7 +18,9 @@ type Mode = 'list' | 'add' | 'changePassword';
 
 export default function UserManagement({ currentUsername, triggerToast }: UserManagementProps) {
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('list');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Add user form
   const [newUsername, setNewUsername] = useState('');
@@ -32,7 +34,16 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
   const [newPw, setNewPw] = useState('');
   const [showPw, setShowPw] = useState(false);
 
-  const refresh = () => setUsers(loadUsers());
+  const refresh = async () => {
+    setIsLoading(true);
+    try {
+      setUsers(await loadUsers());
+    } catch (err: any) {
+      triggerToast(err.message || 'Gagal memuat daftar user.', 'danger');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => { refresh(); }, []);
 
@@ -43,25 +54,29 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
     setMode('list');
   };
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    const err = addUser(newUsername, newPassword, newRole, newDisplayName, newStakeholder);
+    setIsSaving(true);
+    const err = await addUser(newUsername, newPassword, newRole, newDisplayName, newStakeholder);
+    setIsSaving(false);
     if (err) { triggerToast(err, 'danger'); return; }
     triggerToast(`User "${newUsername}" (${newStakeholder}) berhasil ditambahkan.`, 'success');
-    refresh(); resetForms();
+    await refresh(); resetForms();
   };
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    const err = changePassword(targetUsername, newPw);
+    setIsSaving(true);
+    const err = await changePassword(targetUsername, newPw);
+    setIsSaving(false);
     if (err) { triggerToast(err, 'danger'); return; }
     triggerToast(`Password user "${targetUsername}" berhasil diubah.`, 'success');
-    refresh(); resetForms();
+    await refresh(); resetForms();
   };
 
   const currentUser = users.find(u => u.username.toLowerCase() === currentUsername.toLowerCase());
 
-  const handleDelete = (targetUser: AppUser) => {
+  const handleDelete = async (targetUser: AppUser) => {
     if (targetUser.username.toLowerCase() === currentUsername.toLowerCase()) {
       triggerToast('Tidak bisa menghapus akun yang sedang aktif.', 'danger');
       return;
@@ -75,10 +90,10 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
       return;
     }
     if (!confirm(`Hapus user "${targetUser.username}" (${targetUser.displayName})?`)) return;
-    const err = deleteUser(targetUser.username, currentUsername);
+    const err = await deleteUser(targetUser.username);
     if (err) { triggerToast(err, 'danger'); return; }
     triggerToast(`User "${targetUser.username}" berhasil dihapus.`, 'danger');
-    refresh();
+    await refresh();
   };
 
   const inputClass = 'w-full px-3 py-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-700 rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]';
@@ -119,6 +134,11 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
       {/* Daftar User */}
       {mode === 'list' && (
         <div className="border border-slate-200 dark:border-slate-700 overflow-hidden">
+          {isLoading ? (
+            <div className="p-6 flex items-center justify-center gap-2 text-xs font-bold text-slate-400">
+              <Loader2 size={16} className="animate-spin" /> Memuat daftar user...
+            </div>
+          ) : (
           <table className="w-full text-xs">
             <thead className="bg-[#005DA6] text-white">
               <tr>
@@ -134,7 +154,7 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
                 const isSelf = u.username.toLowerCase() === currentUsername.toLowerCase();
                 const isMainAdmin = u.username.toLowerCase() === 'admin';
                 const isDisabled = isSelf || isMainAdmin;
-                
+
                 let tooltip = "Hapus user";
                 if (isSelf) tooltip = "Tidak dapat menghapus akun Anda sendiri";
                 else if (isMainAdmin) tooltip = "Akun Admin Utama (admin) terlindungi";
@@ -158,7 +178,7 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
                 const badge = getRoleBadge(u.role);
 
                 return (
-                  <tr key={u.username} className={i % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800/50'}>
+                  <tr key={u.id} className={i % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800/50'}>
                     <td className="px-3 py-2.5 font-mono font-bold">
                       {u.username}
                       {isSelf && (
@@ -192,6 +212,7 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
               })}
             </tbody>
           </table>
+          )}
         </div>
       )}
 
@@ -214,7 +235,7 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>Password</label>
-              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min. 4 karakter" required className={inputClass} />
+              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min. 6 karakter" required className={inputClass} />
             </div>
             <div>
               <label className={labelClass}>Role / Pos</label>
@@ -236,8 +257,9 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
               </select>
             </div>
           </div>
-          <button type="submit" className="w-full py-2.5 bg-[#005DA6] hover:bg-[#004070] text-white font-black text-xs uppercase tracking-wider border-b-2 border-[#FFD500] cursor-pointer flex items-center justify-center gap-2">
-            <UserPlus size={14} /> Simpan User Baru
+          <button type="submit" disabled={isSaving} className="w-full py-2.5 bg-[#005DA6] hover:bg-[#004070] text-white font-black text-xs uppercase tracking-wider border-b-2 border-[#FFD500] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60">
+            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
+            {isSaving ? 'Menyimpan...' : 'Simpan User Baru'}
           </button>
         </form>
       )}
@@ -253,7 +275,7 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
             <select value={targetUsername} onChange={e => setTargetUsername(e.target.value)} required className={inputClass}>
               <option value="">-- Pilih user --</option>
               {users.map(u => (
-                <option key={u.username} value={u.username}>{u.username} ({u.displayName})</option>
+                <option key={u.id} value={u.username}>{u.username} ({u.displayName})</option>
               ))}
             </select>
           </div>
@@ -264,7 +286,7 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
                 type={showPw ? 'text' : 'password'}
                 value={newPw}
                 onChange={e => setNewPw(e.target.value)}
-                placeholder="Min. 4 karakter"
+                placeholder="Min. 6 karakter"
                 required
                 className={`${inputClass} pr-10`}
               />
@@ -273,8 +295,9 @@ export default function UserManagement({ currentUsername, triggerToast }: UserMa
               </button>
             </div>
           </div>
-          <button type="submit" className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 font-black text-xs uppercase tracking-wider border-b-2 border-slate-700 cursor-pointer flex items-center justify-center gap-2">
-            <KeyRound size={14} /> Simpan Password Baru
+          <button type="submit" disabled={isSaving} className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 font-black text-xs uppercase tracking-wider border-b-2 border-slate-700 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60">
+            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
+            {isSaving ? 'Menyimpan...' : 'Simpan Password Baru'}
           </button>
         </form>
       )}

@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Lock, User, KeyRound, ShieldAlert, LogIn, X } from 'lucide-react';
+import { Lock, User, KeyRound, ShieldAlert, LogIn, X, Loader2 } from 'lucide-react';
 import PLNLogo from './PLNLogo';
 import { AppUser, verifyUser } from '../lib/userManager';
 
@@ -19,13 +19,17 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setErrorMsg('');
-    const user = verifyUser(username, password);
+    setIsSubmitting(true);
+    const user = await verifyUser(username, password);
+    setIsSubmitting(false);
     if (user) {
       triggerToast(`Login Berhasil! Selamat datang, ${user.displayName}.`, 'success');
       onLoginSuccess(user.displayName, user.username, user);
@@ -120,10 +124,11 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
           <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
             <button
               type="submit"
-              className="w-full py-3 bg-[#005DA6] hover:bg-[#004070] text-white font-black text-xs uppercase tracking-wider border-b-2 border-r-2 border-[#FFD500] cursor-pointer shadow-md flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+              className="w-full py-3 bg-[#005DA6] hover:bg-[#004070] text-white font-black text-xs uppercase tracking-wider border-b-2 border-r-2 border-[#FFD500] cursor-pointer shadow-md flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <LogIn size={16} />
-              Masuk Sistem Admin SIMATA
+              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
+              {isSubmitting ? 'Memeriksa...' : 'Masuk Sistem Admin SIMATA'}
             </button>
           </div>
 
