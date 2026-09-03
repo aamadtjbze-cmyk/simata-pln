@@ -823,6 +823,16 @@ export default function VisitorTable({
                 </th>
 
                 <th
+                  onClick={() => handleSort('status')}
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-center min-w-[105px]"
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Status
+                    {sortField === 'status' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  </div>
+                </th>
+
+                <th
                   onClick={() => handleSort('schedule')}
                   className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[125px]"
                 >
@@ -885,25 +895,20 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('visitorName')}
-                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[140px]"
+                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[165px]"
                 >
-                  <div className="flex items-center gap-1">
-                    Visitor
-                    {sortField === 'visitorName' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  <div className="flex flex-col items-start leading-tight">
+                    <div className="flex items-center gap-1">
+                      <span>VISITOR</span>
+                      {sortField === 'visitorName' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                    </div>
+                    <span className="text-[9.5px] text-slate-400 dark:text-slate-500 font-normal tracking-tight">
+                      (Nama / Instansi)
+                    </span>
                   </div>
                 </th>
 
                 <th className="p-2.5 min-w-[110px]">Gate Pass</th>
-
-                <th
-                  onClick={() => handleSort('company')}
-                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[150px]"
-                >
-                  <div className="flex items-center gap-1">
-                    Company
-                    {sortField === 'company' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                  </div>
-                </th>
 
                 <th
                   onClick={() => handleSort('purpose')}
@@ -912,26 +917,6 @@ export default function VisitorTable({
                   <div className="flex items-center gap-1 text-slate-550">
                     Purpose
                     {sortField === 'purpose' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                  </div>
-                </th>
-
-                <th
-                  onClick={() => handleSort('visited')}
-                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[170px]"
-                >
-                  <div className="flex items-center gap-1">
-                    Visited
-                    {sortField === 'visited' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                  </div>
-                </th>
-
-                <th
-                  onClick={() => handleSort('status')}
-                  className="p-2.5 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all text-center min-w-[130px]"
-                >
-                  <div className="flex items-center justify-center gap-1">
-                    Status
-                    {sortField === 'status' && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
                   </div>
                 </th>
 
@@ -945,7 +930,8 @@ export default function VisitorTable({
                 <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
                 <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
                 <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-                
+                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
+
                 {/* Schedule date search input */}
                 <td className="p-1 px-2 border-r border-slate-100 dark:border-slate-800">
                   <div className="relative">
@@ -1014,9 +1000,6 @@ export default function VisitorTable({
                 <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
                 <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
                 <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
-                <td className="p-2 border-r border-slate-100 dark:border-slate-800"></td>
                 <td className="p-2 sticky right-0 bg-slate-50 dark:bg-slate-950 z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.06)]"></td>
               </tr>
             </thead>
@@ -1059,6 +1042,11 @@ export default function VisitorTable({
                             {item.visited}
                           </span>
                         </div>
+                      </td>
+
+                      {/* Status badge - Full visibility */}
+                      <td className="p-2.5 text-center min-w-[105px] whitespace-nowrap">
+                        {getStatusBadge(item.status)}
                       </td>
 
                       {/* Schedule */}
@@ -1219,8 +1207,8 @@ export default function VisitorTable({
                         )}
                       </td>
 
-                      {/* Visitor Name with Quick Action Menu Trigger */}
-                      <td className="p-2.5 text-slate-800 dark:text-slate-100 font-extrabold uppercase">
+                      {/* Visitor Name + Instansi (digabung agar tidak perlu kolom Company terpisah) */}
+                      <td className="p-2.5 text-slate-800 dark:text-slate-100 font-extrabold uppercase min-w-[165px]">
                         <button
                           onClick={() => setQuickActionVisitor(item)}
                           className="group flex items-center gap-1.5 text-[#005DA6] dark:text-[#FFD500] hover:underline font-black cursor-pointer text-left uppercase"
@@ -1229,6 +1217,12 @@ export default function VisitorTable({
                           <span>{item.visitorName}</span>
                           <ExternalLink size={12} className="opacity-60 group-hover:opacity-100 shrink-0" />
                         </button>
+                        <span
+                          className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase leading-tight whitespace-normal break-words mt-0.5"
+                          title={item.company}
+                        >
+                          {item.company}
+                        </span>
                       </td>
 
                       {/* Gate Passes */}
@@ -1245,24 +1239,9 @@ export default function VisitorTable({
                         </div>
                       </td>
 
-                      {/* Company - Full text, no truncate clipping */}
-                      <td className="p-2.5 text-slate-600 dark:text-slate-300 font-extrabold uppercase min-w-[150px] whitespace-normal break-words" title={item.company}>
-                        {item.company}
-                      </td>
-
                       {/* Purpose - Full text, no truncate clipping */}
                       <td className="p-2.5 text-slate-500 dark:text-slate-400 capitalize min-w-[130px] whitespace-normal break-words" title={item.purpose}>
                         {item.purpose}
-                      </td>
-
-                      {/* Visited employee/department - Full text, highlighted */}
-                      <td className="p-2.5 text-slate-800 dark:text-slate-200 font-bold uppercase min-w-[170px] whitespace-normal break-words" title={item.visited}>
-                        <span className="text-[#005DA6] dark:text-[#FFD500] font-black">{item.visited}</span>
-                      </td>
-
-                      {/* Status badge - Full visibility */}
-                      <td className="p-2.5 text-center min-w-[130px] whitespace-nowrap">
-                        {getStatusBadge(item.status)}
                       </td>
 
                       {/* Row action shortcuts - Sticky on the right */}
