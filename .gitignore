@@ -14,3 +14,5 @@ coverage/
 *SOP*
 flowchart_*.jpg
 flowchart_*.png
+.vercel
+supabase/.temp

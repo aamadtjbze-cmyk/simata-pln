@@ -67,6 +67,7 @@ import {
   prewarmGoogleScript,
   startPeriodicPrewarm,
 } from './lib/email';
+import { createNotification } from './lib/notificationHelper';
 
 // Web Audio API chime (zero network, zero external assets)
 const playNotificationChime = () => {

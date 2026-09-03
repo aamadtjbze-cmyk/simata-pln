@@ -933,7 +933,7 @@ export default function VisitorTable({
                   </div>
                 </th>
 
-                <th className="p-4 text-center min-w-[150px] sticky right-0 bg-slate-100 dark:bg-slate-950 z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.06)]">
+                <th className="p-4 text-center min-w-[220px] sticky right-0 bg-slate-100 dark:bg-slate-950 z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.06)]">
                   Aksi
                 </th>
               </tr>
@@ -1264,25 +1264,25 @@ export default function VisitorTable({
                       </td>
 
                       {/* Row action shortcuts - Sticky on the right */}
-                      <td className="p-4 text-center min-w-[150px] sticky right-0 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.06)] z-10">
-                        <div className="flex items-center justify-center gap-1">
-                          
+                      <td className="p-3 text-center min-w-[220px] sticky right-0 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.06)] z-10">
+                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
+
                           {/* View Barcode Pass */}
                           <button
                             onClick={() => onViewBadge(item)}
                             title="Buka Barcode QR Pass Tamu Digital"
-                            className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[#005DA6] dark:text-[#FFD500] rounded-none hover:border border-[#005DA6] dark:border-[#FFD500] transition-all cursor-pointer"
+                            className="p-2 bg-blue-50 dark:bg-blue-950/40 hover:bg-[#005DA6] hover:text-white text-[#005DA6] dark:text-[#FFD500] rounded-none border border-[#005DA6]/40 dark:border-[#FFD500]/40 transition-all cursor-pointer shadow-2xs"
                           >
-                            <QrCode size={15} />
+                            <QrCode size={18} />
                           </button>
 
                           {/* Print Pass */}
                           <button
                             onClick={() => onViewBadge(item)}
                             title="Cetak Pass Masuk Tamu"
-                            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-none transition-all cursor-pointer"
+                            className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-600 hover:text-white text-slate-600 dark:text-slate-300 rounded-none border border-slate-300 dark:border-slate-600 transition-all cursor-pointer shadow-2xs"
                           >
-                            <Printer size={15} />
+                            <Printer size={18} />
                           </button>
 
                           {/* Quick WhatsApp Pass Send (if phone available) */}
@@ -1292,9 +1292,9 @@ export default function VisitorTable({
                               target="_blank"
                               rel="noopener noreferrer"
                               title={`Kirim Barcode Pass ke WhatsApp (${item.phone})`}
-                              className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-none transition-all cursor-pointer inline-flex items-center"
+                              className="p-2 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-600 hover:text-white text-emerald-600 dark:text-emerald-400 rounded-none border border-emerald-400 dark:border-emerald-700 transition-all cursor-pointer inline-flex items-center shadow-2xs"
                             >
-                              <MessageSquare size={14} />
+                              <MessageSquare size={18} />
                             </a>
                           )}
 
@@ -1307,12 +1307,12 @@ export default function VisitorTable({
                               }}
                               disabled={isResendingEmail === item.id}
                               title={`Kirim Ulang Tiket Email (${item.email})`}
-                              className="p-1.5 hover:bg-sky-50 dark:hover:bg-sky-950/40 text-sky-600 dark:text-sky-400 rounded-none transition-all cursor-pointer inline-flex items-center disabled:opacity-50"
+                              className="p-2 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-600 hover:text-white text-sky-600 dark:text-sky-400 rounded-none border border-sky-400 dark:border-sky-700 transition-all cursor-pointer inline-flex items-center disabled:opacity-50 shadow-2xs"
                             >
                               {isResendingEmail === item.id ? (
-                                <Loader2 size={14} className="animate-spin text-sky-600" />
+                                <Loader2 size={18} className="animate-spin" />
                               ) : (
-                                <Mail size={14} />
+                                <Mail size={18} />
                               )}
                             </button>
                           )}
@@ -1321,18 +1321,18 @@ export default function VisitorTable({
                           <button
                             onClick={() => onEdit(item)}
                             title="Ubah Rincian"
-                            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-none transition-all cursor-pointer"
+                            className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-500 hover:text-white text-slate-500 dark:text-slate-400 rounded-none border border-slate-300 dark:border-slate-600 transition-all cursor-pointer shadow-2xs"
                           >
-                            <SlidersHorizontal size={14} />
+                            <SlidersHorizontal size={18} />
                           </button>
 
                           {/* Delete record */}
                           <button
                             onClick={() => onDelete(item.id)}
                             title="Hapus Data"
-                            className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-500 dark:text-[#FF3B30] rounded-none transition-all cursor-pointer"
+                            className="p-2 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-600 hover:text-white text-rose-500 dark:text-[#FF3B30] rounded-none border border-rose-400 dark:border-rose-800 transition-all cursor-pointer shadow-2xs"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={18} />
                           </button>
                         </div>
                       </td>
