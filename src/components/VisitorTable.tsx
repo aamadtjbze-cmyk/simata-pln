@@ -1157,6 +1157,19 @@ export default function VisitorTable({
                       {/* RECEPTIONIST (Lobby Kantor Unit) */}
                       <td className="p-2.5 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
                         {item.receptionistTime ? (
+                          // Setelah tamu check-out (DONE) jam lobby hanya ditampilkan, tidak bisa
+                          // diklik ulang — mengikuti pola kolom Pos 2 agar status tidak berbalik.
+                          item.status === 'DONE' || item.outTime ? (
+                            <div className="flex flex-col items-start gap-0.5 text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                              <div className="flex items-center gap-1">
+                                <Building size={11} className="text-slate-400" />
+                                <span>{item.receptionistTime?.split(' - ')[1] || item.receptionistTime}</span>
+                              </div>
+                              <span className="text-[8.5px] font-sans text-slate-400 dark:text-slate-500">
+                                {item.receptionistTime?.split(' - ')[0] || ''}
+                              </span>
+                            </div>
+                          ) : (
                           <button
                             onClick={() => onReceptionistCheckIn && onReceptionistCheckIn(item.id)}
                             className="px-2 py-1 bg-sky-700 hover:bg-sky-800 active:bg-sky-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex flex-col items-start gap-0.5 cursor-pointer font-mono"
@@ -1175,7 +1188,8 @@ export default function VisitorTable({
                               </span>
                             )}
                           </button>
-                        ) : (item.status === 'IN-PROGRESS' || item.inTime) ? (
+                          )
+                        ) : !item.outTime && item.status !== 'DONE' && (item.status === 'IN-PROGRESS' || item.inTime) ? (
                           <button
                             onClick={() => onReceptionistCheckIn && onReceptionistCheckIn(item.id)}
                             className="px-2 py-1 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-bold rounded-none text-[10px] border-b border-r border-sky-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer"

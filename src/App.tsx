@@ -748,6 +748,17 @@ export default function App() {
     }
   };
 
+  /**
+   * Status setelah scan checkpoint (Pos 1 / Pos 2 / Receptionist).
+   *
+   * Kunjungan yang sudah selesai (DONE, sudah check-out) TIDAK boleh diturunkan
+   * kembali menjadi IN-PROGRESS. Sebelumnya ketiga handler checkpoint menulis
+   * 'IN-PROGRESS' tanpa syarat, sehingga satu klik checkpoint pada tamu yang
+   * sudah keluar membuat statusnya berbalik walau jam OUT-nya tetap terisi.
+   */
+  const statusAfterCheckpoint = (current?: VisitorStatus): VisitorStatus =>
+    current === 'DONE' ? 'DONE' : 'IN-PROGRESS';
+
   // Konfirmasi Kedatangan Janji Temu (SCHEDULED/PENDING -> IN-PROGRESS)
   const handleCheckInAppointment = (visitorId: string) => {
     const today = new Date();
@@ -776,7 +787,7 @@ export default function App() {
     const assignedMainPass = original.mainGatePass || generateDailyPassNumber(visitors);
     const updatedVisitor: Visitor = {
       ...original,
-      status: 'IN-PROGRESS',
+      status: statusAfterCheckpoint(original.status),
       inTime: formattedInTime,
       mainGatePass: assignedMainPass,
       secondGateTime: original.secondGateTime || null,
@@ -820,7 +831,7 @@ export default function App() {
       secondGatePass: assignedPass,
       secondGateTime: formattedNow,
       notes: updatedNotes,
-      status: 'IN-PROGRESS',
+      status: statusAfterCheckpoint(original.status),
       // Pastikan inTime, receptionistTime, outTime tetap utuh tanpa tertimpa!
       inTime: original.inTime || null,
       receptionistTime: original.receptionistTime || null,
@@ -862,7 +873,7 @@ export default function App() {
       receptionistTime: formattedNow,
       receptionistBadge: assignedBadge,
       notes: updatedNotes,
-      status: 'IN-PROGRESS',
+      status: statusAfterCheckpoint(original.status),
       // Pastikan inTime, secondGateTime, outTime tetap utuh tanpa tertimpa!
       inTime: original.inTime || null,
       secondGateTime: original.secondGateTime || null,
