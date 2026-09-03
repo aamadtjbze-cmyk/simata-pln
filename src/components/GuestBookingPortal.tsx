@@ -4,9 +4,11 @@
  */
 
 import React, { useState } from 'react';
-import { Calendar, User, Building, Phone, Mail, UserCheck, Clock, FileText, Send, CheckCircle, ShieldCheck, Info, Share2, Copy, Check, ExternalLink, Lock, Loader2 } from 'lucide-react';
+import { Calendar, User, Building, Phone, Mail, UserCheck, Clock, FileText, Send, CheckCircle, ShieldCheck, Info, Share2, Copy, Check, ExternalLink, Lock, Loader2, Camera, X as XIcon } from 'lucide-react';
 import PLNLogo from './PLNLogo';
 import { Visitor, VisitorStatus, Stakeholder } from '../types';
+import { compressImageToJpeg } from '../utils/imageCompression';
+import { uploadKtpPhoto } from '../lib/supabase';
 
 interface GuestBookingPortalProps {
   onSaveVisitor: (visitor: Visitor) => void;
@@ -103,8 +105,40 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
   const [submittedVisitor, setSubmittedVisitor] = useState<Visitor | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  const [ktpPhotoBlob, setKtpPhotoBlob] = useState<Blob | null>(null);
+  const [ktpPhotoPreview, setKtpPhotoPreview] = useState('');
+  const [ktpPhotoSizeKb, setKtpPhotoSizeKb] = useState(0);
+  const [isCompressingPhoto, setIsCompressingPhoto] = useState(false);
+
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleKtpPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setIsCompressingPhoto(true);
+    try {
+      const compressed = await compressImageToJpeg(file);
+      if (ktpPhotoPreview) URL.revokeObjectURL(ktpPhotoPreview);
+      setKtpPhotoBlob(compressed);
+      setKtpPhotoPreview(URL.createObjectURL(compressed));
+      setKtpPhotoSizeKb(Math.round(compressed.size / 1024));
+      if (errors.identifyNo) setErrors({ ...errors, identifyNo: '' });
+    } catch (err) {
+      triggerToast('Gagal memproses foto KTP. Coba unggah ulang.', 'danger');
+    } finally {
+      setIsCompressingPhoto(false);
+    }
+  };
+
+  const handleRemoveKtpPhoto = () => {
+    if (ktpPhotoPreview) URL.revokeObjectURL(ktpPhotoPreview);
+    setKtpPhotoBlob(null);
+    setKtpPhotoPreview('');
+    setKtpPhotoSizeKb(0);
+  };
 
   // Generate unique Form ID e.g. TJB-VST-005010
   const generateNewFormId = () => {
@@ -113,7 +147,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     return `TJB-VST-${String(nextNum).padStart(6, '0')}`;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
 
@@ -122,7 +156,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     const finalVisited = visitedOption === 'Lainnya' ? visitedCustomText : visitedOption;
 
     if (!visitorName.trim()) newErrors.visitorName = 'Nama lengkap tamu wajib diisi';
-    if (!identifyNo.trim()) newErrors.identifyNo = 'Nomor KTP/NIK wajib diisi';
+    if (!identifyNo.trim() && !ktpPhotoBlob) newErrors.identifyNo = 'Isi salah satu: Nomor KTP/NIK atau unggah Foto KTP';
     if (!company.trim()) newErrors.company = 'Instansi/Perusahaan wajib diisi';
     if (!phone.trim()) newErrors.phone = 'Nomor Telepon/WA wajib diisi';
     if (!finalVisited.trim()) newErrors.visited = 'Pegawai/Divisi tujuan wajib dipilih';
@@ -169,8 +203,21 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
       expiryDate.setDate(expiryDate.getDate() + 7);
     }
     const formattedExpiry = `${expiryDate.getDate()} ${monthNames[expiryDate.getMonth()]} ${expiryDate.getFullYear()} - 23.59`;
+    expiryDate.setHours(23, 59, 0, 0);
+    const validUntilTs = expiryDate.toISOString();
 
     const newFormId = generateNewFormId();
+
+    let ktpPhotoPath: string | undefined;
+    if (ktpPhotoBlob) {
+      ktpPhotoPath = (await uploadKtpPhoto(ktpPhotoBlob, `${newFormId}.jpg`)) || undefined;
+      if (!ktpPhotoPath && !identifyNo.trim()) {
+        setIsSubmitting(false);
+        triggerToast('Gagal mengunggah foto KTP. Periksa koneksi internet Anda dan coba lagi.', 'danger');
+        return;
+      }
+    }
+
     const newVisitor: Visitor = {
       id: newFormId,
       schedule: formattedSchedule,
@@ -192,7 +239,9 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
       gender: 'Laki-laki',
       notes,
       validUntil: formattedExpiry,
+      validUntilTs,
       validityOption,
+      ktpPhotoPath,
     };
 
     onSaveVisitor(newVisitor);
@@ -214,6 +263,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     setPurpose('');
     setNotes('');
     setErrors({});
+    handleRemoveKtpPhoto();
   };
 
   if (submittedVisitor) {
@@ -421,7 +471,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
                 <label className="block text-xs font-semibold mb-1">
-                  Nomor KTP / NIK <span className="text-rose-500">*</span>
+                  Nomor KTP / NIK
                 </label>
                 <input
                   type="text"
@@ -434,7 +484,6 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                   placeholder="Masukkan 16 digit NIK sesuai KTP"
                   className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.identifyNo ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
                 />
-                {errors.identifyNo && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.identifyNo}</span>}
               </div>
 
               <div>
@@ -453,6 +502,44 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                 />
                 {errors.phone && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.phone}</span>}
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1">
+                Foto KTP
+              </label>
+              {ktpPhotoPreview ? (
+                <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800">
+                  <img src={ktpPhotoPreview} alt="Preview Foto KTP" className="h-16 w-24 object-cover border border-slate-300 dark:border-slate-700 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">Foto siap diunggah (~{ktpPhotoSizeKb}KB)</p>
+                    <p className="text-[10px] text-slate-400">Foto sudah dikompres otomatis.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveKtpPhoto}
+                    className="p-1.5 text-slate-400 hover:text-rose-500 cursor-pointer shrink-0"
+                    title="Hapus foto"
+                  >
+                    <XIcon size={16} />
+                  </button>
+                </div>
+              ) : (
+                <label className={`flex items-center justify-center gap-2 w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border border-dashed ${errors.identifyNo ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'} rounded-none text-xs font-semibold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900`}>
+                  {isCompressingPhoto ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                  <span>{isCompressingPhoto ? 'Memproses foto...' : 'Ambil / Unggah Foto KTP'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleKtpPhotoChange}
+                    disabled={isCompressingPhoto}
+                    className="hidden"
+                  />
+                </label>
+              )}
+              <p className="text-[10px] text-slate-400 mt-1">Isi salah satu: Nomor KTP/NIK di atas, atau unggah foto KTP.</p>
+              {errors.identifyNo && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.identifyNo}</span>}
             </div>
 
             <div>

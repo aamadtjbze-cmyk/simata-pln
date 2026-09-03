@@ -37,7 +37,9 @@ export interface Visitor {
   gender?: 'Laki-laki' | 'Perempuan';
   notes?: string;
   validUntil?: string; // Expiration date string e.g. "24 July 2026 - 23.59"
+  validUntilTs?: string; // ISO timestamp mirror of validUntil, used for automated retention cleanup
   validityOption?: 'SAME_DAY' | '1_DAY' | '3_DAYS' | '1_WEEK' | 'CUSTOM';
+  ktpPhotoPath?: string; // Path tersimpan di Supabase Storage bucket 'ktp-photos'
 }
 
 export interface VisitorFilter {

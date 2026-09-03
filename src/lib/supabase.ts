@@ -97,7 +97,9 @@ export const visitorToRow = (v: Visitor) => {
     main_gate_pass: v.mainGatePass || '',
     second_gate_pass: v.secondGatePass || '',
     valid_until: v.validUntil || '',
+    valid_until_ts: v.validUntilTs || null,
     validity_option: v.validityOption || 'SAME_DAY',
+    ktp_photo_path: v.ktpPhotoPath || null,
     notes: mergedNotes,
     updated_at: new Date().toISOString(),
   };
@@ -160,7 +162,9 @@ export const rowToVisitor = (row: any): Visitor => {
     mainGatePass: row.main_gate_pass,
     secondGatePass: row.second_gate_pass,
     validUntil: row.valid_until || undefined,
+    validUntilTs: row.valid_until_ts || undefined,
     validityOption: row.validity_option || undefined,
+    ktpPhotoPath: row.ktp_photo_path || undefined,
     notes: row.notes || undefined,
   };
 };
@@ -207,7 +211,7 @@ export const saveVisitorToSupabase = async (visitor: Visitor): Promise<boolean> 
 
     if (error) {
       console.warn('Supabase upsert with extended columns failed, retrying with core columns:', error.message);
-      const { second_gate_time, receptionist_time, receptionist_badge, stakeholder, ...fallbackRow } = row;
+      const { second_gate_time, receptionist_time, receptionist_badge, stakeholder, valid_until_ts, ktp_photo_path, ...fallbackRow } = row;
       const fallbackResult = await supabase.from('visitors').upsert(fallbackRow);
       if (fallbackResult.error) {
         console.error('Supabase fallback upsert error:', fallbackResult.error.message);
@@ -291,5 +295,71 @@ export const ensureSecondGateTimeColumn = async (): Promise<void> => {
     });
   } catch {
     // Silent fail — sistem tetap berjalan dengan fallback notes-tag
+  }
+};
+
+/**
+ * Storage bucket untuk foto KTP tamu. Dibuat/dikonfigurasi lewat SQL migration
+ * (lihat supabase_schema.sql), bukan lewat client — anon key tidak punya privilege bikin bucket.
+ */
+const KTP_PHOTO_BUCKET = 'ktp-photos';
+
+/**
+ * Upload foto KTP (sudah dikompres di browser) ke Supabase Storage.
+ * `fileName` idealnya pakai Form ID tamu (mis. "TJB-VST-005010.jpg") supaya
+ * upload ulang otomatis menimpa foto lama milik tamu yang sama.
+ */
+export const uploadKtpPhoto = async (blob: Blob, fileName: string): Promise<string | null> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+
+  try {
+    const { error } = await supabase.storage.from(KTP_PHOTO_BUCKET).upload(fileName, blob, {
+      contentType: 'image/jpeg',
+      upsert: true,
+    });
+    if (error) {
+      console.warn('Upload foto KTP gagal:', error.message);
+      return null;
+    }
+    return fileName;
+  } catch (err) {
+    console.error('Upload foto KTP error:', err);
+    return null;
+  }
+};
+
+/**
+ * Buat signed URL sementara untuk menampilkan foto KTP (bucket bersifat private).
+ */
+export const getKtpPhotoSignedUrl = async (path: string, expiresInSeconds = 300): Promise<string | null> => {
+  const supabase = getSupabaseClient();
+  if (!supabase || !path) return null;
+
+  try {
+    const { data, error } = await supabase.storage.from(KTP_PHOTO_BUCKET).createSignedUrl(path, expiresInSeconds);
+    if (error) {
+      console.warn('Gagal membuat signed URL foto KTP:', error.message);
+      return null;
+    }
+    return data?.signedUrl || null;
+  } catch (err) {
+    console.error('Signed URL foto KTP error:', err);
+    return null;
+  }
+};
+
+/**
+ * Hapus foto KTP dari storage (dipakai saat mengganti foto lama pada mode edit).
+ */
+export const deleteKtpPhoto = async (path: string): Promise<boolean> => {
+  const supabase = getSupabaseClient();
+  if (!supabase || !path) return false;
+
+  try {
+    const { error } = await supabase.storage.from(KTP_PHOTO_BUCKET).remove([path]);
+    return !error;
+  } catch {
+    return false;
   }
 };

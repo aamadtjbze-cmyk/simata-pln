@@ -4,10 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, User, Briefcase, FileText, Lock, Users2, Calendar, Phone, ShieldCheck } from 'lucide-react';
+import { X, Save, User, Briefcase, FileText, Lock, Users2, Calendar, Phone, ShieldCheck, Camera, Loader2 } from 'lucide-react';
 import { Visitor, VisitorStatus, Stakeholder } from '../types';
 import { COMMON_PURPOSES, PLN_DIVISIONS, KPJB_DIVISIONS, TJBPS_DIVISIONS, AGP_DIVISIONS } from '../data/mockData';
 import { generateDailyPassNumber } from '../utils/passGenerator';
+import { compressImageToJpeg } from '../utils/imageCompression';
+import { uploadKtpPhoto, getKtpPhotoSignedUrl } from '../lib/supabase';
 
 interface CheckInModalProps {
   visitorToEdit?: Visitor | null;
@@ -42,9 +44,55 @@ export default function CheckInModal({
   const [registrationMode, setRegistrationMode] = useState<'WALK_IN' | 'PRE_BOOKING'>('WALK_IN');
   const [validityOption, setValidityOption] = useState<'SAME_DAY' | '1_DAY' | '3_DAYS' | '1_WEEK' | 'CUSTOM'>('SAME_DAY');
   const [validUntil, setValidUntil] = useState('');
+  const [validUntilTs, setValidUntilTs] = useState('');
   const [email, setEmail] = useState('');
 
+  const [ktpPhotoBlob, setKtpPhotoBlob] = useState<Blob | null>(null);
+  const [ktpPhotoPreview, setKtpPhotoPreview] = useState('');
+  const [ktpPhotoSizeKb, setKtpPhotoSizeKb] = useState(0);
+  const [existingKtpPhotoPath, setExistingKtpPhotoPath] = useState('');
+  const [isCompressingPhoto, setIsCompressingPhoto] = useState(false);
+  const [isSavingPhoto, setIsSavingPhoto] = useState(false);
+
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const handleKtpPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setIsCompressingPhoto(true);
+    try {
+      const compressed = await compressImageToJpeg(file);
+      if (ktpPhotoPreview) URL.revokeObjectURL(ktpPhotoPreview);
+      setKtpPhotoBlob(compressed);
+      setKtpPhotoPreview(URL.createObjectURL(compressed));
+      setKtpPhotoSizeKb(Math.round(compressed.size / 1024));
+      if (errors.identifyNo) setErrors({ ...errors, identifyNo: '' });
+    } catch {
+      setErrors({ ...errors, identifyNo: 'Gagal memproses foto KTP. Coba unggah ulang.' });
+    } finally {
+      setIsCompressingPhoto(false);
+    }
+  };
+
+  const handleRemoveKtpPhoto = () => {
+    if (ktpPhotoPreview) URL.revokeObjectURL(ktpPhotoPreview);
+    setKtpPhotoBlob(null);
+    setKtpPhotoPreview('');
+    setKtpPhotoSizeKb(0);
+  };
+
+  useEffect(() => {
+    if (visitorToEdit?.ktpPhotoPath) {
+      setExistingKtpPhotoPath(visitorToEdit.ktpPhotoPath);
+      getKtpPhotoSignedUrl(visitorToEdit.ktpPhotoPath).then((url) => {
+        if (url) setKtpPhotoPreview(url);
+      });
+    } else {
+      setExistingKtpPhotoPath('');
+    }
+  }, [visitorToEdit]);
 
   useEffect(() => {
     if (visitorToEdit) {
@@ -63,6 +111,7 @@ export default function CheckInModal({
       setSchedule(visitorToEdit.schedule);
       setStatus(visitorToEdit.status);
       setValidUntil(visitorToEdit.validUntil || '');
+      setValidUntilTs(visitorToEdit.validUntilTs || '');
       setValidityOption(visitorToEdit.validityOption || 'SAME_DAY');
       if (visitorToEdit.status === 'SCHEDULED' || visitorToEdit.status === 'PENDING') {
         setRegistrationMode('PRE_BOOKING');
@@ -82,12 +131,15 @@ export default function CheckInModal({
       
       setSchedule(`${day} ${monthName} ${year} - ${hours}.${mins}`);
       setValidUntil(`${day} ${monthName} ${year} - 23.59`);
+      const sameDayExpiry = new Date(today);
+      sameDayExpiry.setHours(23, 59, 0, 0);
+      setValidUntilTs(sameDayExpiry.toISOString());
       setValidityOption('SAME_DAY');
       setStatus('IN-PROGRESS');
     }
   }, [visitorToEdit]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
 
@@ -95,6 +147,9 @@ export default function CheckInModal({
     if (!company.trim()) newErrors.company = 'Nama instansi/perusahaan harus diisi';
     if (!purpose.trim()) newErrors.purpose = 'Tujuan kunjungan harus dipilih/diisi';
     if (!visited.trim()) newErrors.visited = 'Divisi/Pegawai yang dikunjungi harus dipilih/diisi';
+    if (!identifyNo.trim() && !ktpPhotoBlob && !existingKtpPhotoPath) {
+      newErrors.identifyNo = 'Isi salah satu: Nomor KTP/SIM/ID atau unggah Foto KTP';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -107,6 +162,18 @@ export default function CheckInModal({
       const match = lastFormId.match(/(\d+)$/);
       const nextNum = match ? parseInt(match[1]) + 1 : 5009;
       formId = `TJB-VST-${String(nextNum).padStart(6, '0')}`;
+    }
+
+    let ktpPhotoPath = existingKtpPhotoPath || undefined;
+    if (ktpPhotoBlob) {
+      setIsSavingPhoto(true);
+      const uploadedPath = await uploadKtpPhoto(ktpPhotoBlob, `${formId}.jpg`);
+      setIsSavingPhoto(false);
+      if (!uploadedPath && !identifyNo.trim()) {
+        setErrors({ identifyNo: 'Gagal mengunggah foto KTP. Periksa koneksi internet dan coba lagi.' });
+        return;
+      }
+      ktpPhotoPath = uploadedPath || ktpPhotoPath;
     }
 
     const todayDate = new Date();
@@ -147,7 +214,9 @@ export default function CheckInModal({
       gender,
       notes,
       validUntil: validUntil || `${day} ${month} ${year} - 23.59`,
+      validUntilTs: validUntilTs || undefined,
       validityOption,
+      ktpPhotoPath,
     };
 
     onSave(visitorData);
@@ -255,10 +324,42 @@ export default function CheckInModal({
                 <input
                   type="text"
                   value={identifyNo}
-                  onChange={(e) => setIdentifyNo(e.target.value)}
+                  onChange={(e) => {
+                    setIdentifyNo(e.target.value);
+                    if (errors.identifyNo) setErrors({ ...errors, identifyNo: '' });
+                  }}
                   placeholder="Masukkan 16 digit NIK atau KTP"
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+                  className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.identifyNo ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Foto KTP
+                </label>
+                {ktpPhotoPreview ? (
+                  <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800">
+                    <img src={ktpPhotoPreview} alt="Preview Foto KTP" className="h-16 w-24 object-cover border border-slate-300 dark:border-slate-700 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        {ktpPhotoBlob ? `Foto siap disimpan (~${ktpPhotoSizeKb}KB)` : 'Foto KTP tersimpan'}
+                      </p>
+                      <p className="text-[10px] text-slate-400">{ktpPhotoBlob ? 'Foto sudah dikompres otomatis.' : 'Klik Ganti untuk mengunggah foto baru.'}</p>
+                    </div>
+                    <label className="p-1.5 text-slate-400 hover:text-[#005DA6] cursor-pointer shrink-0 text-[10px] font-bold uppercase">
+                      Ganti
+                      <input type="file" accept="image/*" capture="environment" onChange={handleKtpPhotoChange} disabled={isCompressingPhoto} className="hidden" />
+                    </label>
+                  </div>
+                ) : (
+                  <label className={`flex items-center justify-center gap-2 w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border border-dashed ${errors.identifyNo ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'} rounded-none text-xs font-semibold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900`}>
+                    {isCompressingPhoto ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                    <span>{isCompressingPhoto ? 'Memproses foto...' : 'Ambil / Unggah Foto KTP'}</span>
+                    <input type="file" accept="image/*" capture="environment" onChange={handleKtpPhotoChange} disabled={isCompressingPhoto} className="hidden" />
+                  </label>
+                )}
+                <p className="text-[10px] text-slate-400 mt-1">Isi salah satu: Nomor KTP di atas, atau unggah foto KTP.</p>
+                {errors.identifyNo && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.identifyNo}</span>}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -538,6 +639,12 @@ export default function CheckInModal({
                         targetDate.setDate(today.getDate() + 7);
                         setValidUntil(`${targetDate.getDate()} ${monthNames[targetDate.getMonth()]} ${targetDate.getFullYear()} - 23.59`);
                       }
+                      if (opt === 'CUSTOM') {
+                        setValidUntilTs('');
+                      } else {
+                        targetDate.setHours(23, 59, 0, 0);
+                        setValidUntilTs(targetDate.toISOString());
+                      }
                     }}
                     className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
                   >
@@ -590,10 +697,11 @@ export default function CheckInModal({
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-[#005DA6] hover:bg-[#004070] active:bg-[#003056] text-white rounded-none border-b-2 border-r-2 border-[#FFD500] text-sm font-bold flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+                disabled={isSavingPhoto}
+                className="px-5 py-2.5 bg-[#005DA6] hover:bg-[#004070] active:bg-[#003056] text-white rounded-none border-b-2 border-r-2 border-[#FFD500] text-sm font-bold flex items-center gap-2 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
               >
-                <Save size={16} />
-                Simpan & Check-In
+                {isSavingPhoto ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                {isSavingPhoto ? 'Menyimpan Foto...' : 'Simpan & Check-In'}
               </button>
             </div>
           </div>

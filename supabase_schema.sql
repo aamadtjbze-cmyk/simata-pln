@@ -70,3 +70,80 @@ USING (true);
 
 -- 5. Enable Realtime Replication for Visitors Table
 ALTER PUBLICATION supabase_realtime ADD TABLE public.visitors;
+
+-- ==============================================================================
+-- FOTO KTP TAMU - Kolom, Storage Bucket, RLS, dan Auto-Delete Retensi 7 Hari
+-- ==============================================================================
+
+-- 6. Kolom untuk path foto KTP & timestamp kadaluarsa mesin-terbaca (pendamping valid_until)
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS ktp_photo_path TEXT;
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS valid_until_ts TIMESTAMPTZ;
+
+-- 7. Storage bucket privat untuk foto KTP (foto tidak bisa diakses via URL publik langsung)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('ktp-photos', 'ktp-photos', false)
+ON CONFLICT (id) DO NOTHING;
+
+-- 8. RLS Storage: mengikuti trust model yang sama dengan tabel visitors (anon key, akses penuh)
+DROP POLICY IF EXISTS "Allow public upload ktp photos" ON storage.objects;
+CREATE POLICY "Allow public upload ktp photos"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'ktp-photos');
+
+DROP POLICY IF EXISTS "Allow public read ktp photos" ON storage.objects;
+CREATE POLICY "Allow public read ktp photos"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'ktp-photos');
+
+DROP POLICY IF EXISTS "Allow public update ktp photos" ON storage.objects;
+CREATE POLICY "Allow public update ktp photos"
+ON storage.objects FOR UPDATE
+USING (bucket_id = 'ktp-photos')
+WITH CHECK (bucket_id = 'ktp-photos');
+
+DROP POLICY IF EXISTS "Allow public delete ktp photos" ON storage.objects;
+CREATE POLICY "Allow public delete ktp photos"
+ON storage.objects FOR DELETE
+USING (bucket_id = 'ktp-photos');
+
+-- 9. Auto-delete: hapus foto KTP 7 hari setelah pas/barcode kadaluarsa (valid_until_ts)
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+CREATE OR REPLACE FUNCTION public.cleanup_expired_ktp_photos()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- Hapus file fisik dari storage bucket
+  DELETE FROM storage.objects
+  WHERE bucket_id = 'ktp-photos'
+    AND name IN (
+      SELECT ktp_photo_path FROM public.visitors
+      WHERE ktp_photo_path IS NOT NULL
+        AND valid_until_ts IS NOT NULL
+        AND valid_until_ts + INTERVAL '7 days' < now()
+    );
+
+  -- Kosongkan referensi path di tabel visitors
+  UPDATE public.visitors
+  SET ktp_photo_path = NULL
+  WHERE ktp_photo_path IS NOT NULL
+    AND valid_until_ts IS NOT NULL
+    AND valid_until_ts + INTERVAL '7 days' < now();
+END;
+$$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'cleanup-expired-ktp-photos-daily') THEN
+    PERFORM cron.unschedule('cleanup-expired-ktp-photos-daily');
+  END IF;
+END $$;
+
+-- Jadwal harian jam 03:00 UTC (~10:00 WIB)
+SELECT cron.schedule(
+  'cleanup-expired-ktp-photos-daily',
+  '0 3 * * *',
+  $$ SELECT public.cleanup_expired_ktp_photos(); $$
+);
