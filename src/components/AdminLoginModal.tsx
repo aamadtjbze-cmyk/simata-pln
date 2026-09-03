@@ -116,24 +116,6 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
             </div>
           </div>
 
-
-          {/* Panduan Akun Multi-Stakeholder */}
-          <div className="p-2.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[10px] space-y-1">
-            <p className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-              Kredensial Login Multi-Stakeholder:
-            </p>
-            <div className="grid grid-cols-2 gap-1 text-[9px] text-slate-600 dark:text-slate-400 font-mono">
-              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">admin</span> : admintjb123 (Superadmin)</div>
-              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">sec.maingate</span> : maingate123 (Main Gate)</div>
-              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">sec.kpjb</span> : kpjbgate123 (Gate KPJB)</div>
-              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">sec.total8</span> : total8gate123 (Pos Total 8)</div>
-              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">recep.kpjb</span> : kpjblobby123 (Lobby)</div>
-              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">recep.pln</span> : plnlobby123 (Lobby)</div>
-              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">recep.tjbps</span> : tjbpslobby123 (Lobby)</div>
-              <div><span className="font-bold text-[#005DA6] dark:text-[#FFD500]">recep.agp</span> : agplobby123 (Lobby)</div>
-            </div>
-          </div>
-
           {/* Form Actions */}
           <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
             <button
