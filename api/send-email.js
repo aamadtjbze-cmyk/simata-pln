@@ -6,6 +6,38 @@
  * Runs safely on Vercel Serverless Functions to keep API keys hidden from public client.
  */
 
+// Module-scope counter — persists across warm invocations in the same serverless
+// instance, cukup untuk meratakan beban antar akun Brevo (bergantian / round-robin).
+let brevoRotation = 0;
+
+function getBrevoAccounts() {
+  const accounts = [];
+  if (process.env.BREVO_API_KEY) {
+    accounts.push({ apiKey: process.env.BREVO_API_KEY, sender: process.env.BREVO_SENDER || 'aamadtjbze@gmail.com' });
+  }
+  if (process.env.BREVO_API_KEY_2) {
+    accounts.push({
+      apiKey: process.env.BREVO_API_KEY_2,
+      sender: process.env.BREVO_SENDER_2 || process.env.BREVO_SENDER || 'aamadtjbze@gmail.com',
+    });
+  }
+  return accounts;
+}
+
+async function sendViaBrevoAccount(account, payloadBase) {
+  const payload = { ...payloadBase, sender: { name: 'SIMATA PLN UIK TJB', email: account.sender } };
+  const brevoResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': account.apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  const result = await brevoResponse.json().catch(() => ({}));
+  return { ok: brevoResponse.ok, status: brevoResponse.status, result };
+}
+
 export default async function handler(req, res) {
   // CORS & method guard
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -32,11 +64,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Visitor email is required' });
     }
 
-    // Resolve API key from Vercel Environment Variables or custom request
-    const apiKey = customKey || process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY;
-    const senderEmail = customSender || process.env.BREVO_SENDER || 'aamadtjbze@gmail.com';
+    // Resolve akun Brevo yang dipakai. Jika client mengirim custom key (override dari
+    // Admin Settings), pakai itu saja tanpa rotasi. Kalau tidak, pakai daftar akun dari
+    // Environment Variables Vercel dan bergantian antar akun (round-robin + auto-failover
+    // ke akun berikutnya kalau satu akun gagal/kena limit harian).
+    const accounts = customKey
+      ? [{ apiKey: customKey, sender: customSender || process.env.BREVO_SENDER || 'aamadtjbze@gmail.com' }]
+      : getBrevoAccounts();
 
-    if (!apiKey) {
+    if (accounts.length === 0) {
       return res.status(500).json({
         error: 'Brevo API Key is not configured on server. Please set BREVO_API_KEY in Vercel Environment Variables.',
       });
@@ -59,30 +95,35 @@ export default async function handler(req, res) {
       </div>
     `;
 
-    const payload = {
-      sender: { name: 'SIMATA PLN UIK TJB', email: senderEmail },
+    const payloadBase = {
       to: [{ email: visitor.email, name: visitor.visitorName || 'Tamu PLN' }],
       subject: `[SIMATA PLN] Persetujuan Janji Temu & QR Pass - ${visitor.visitorName || ''}`,
       htmlContent: htmlContent || defaultHtml,
     };
 
-    const brevoResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+    // Mulai dari akun berikutnya sesuai giliran (round-robin), lalu coba akun sisanya
+    // secara berurutan jika gagal (mis. kuota harian akun tersebut habis / error lain).
+    const startIdx = accounts.length > 1 ? brevoRotation++ % accounts.length : 0;
+    let lastError = null;
+    let lastStatus = 500;
 
-    const result = await brevoResponse.json();
+    for (let i = 0; i < accounts.length; i++) {
+      const account = accounts[(startIdx + i) % accounts.length];
+      const { ok, status, result } = await sendViaBrevoAccount(account, payloadBase);
 
-    if (!brevoResponse.ok) {
-      console.error('[Brevo Serverless Error]:', result);
-      return res.status(brevoResponse.status).json({ error: result.message || 'Failed to send email via Brevo', details: result });
+      if (ok) {
+        return res.status(200).json({ success: true, messageId: result.messageId, senderUsed: account.sender });
+      }
+
+      console.warn(`[Brevo Serverless] Gagal kirim via ${account.sender} (status ${status}):`, result);
+      lastError = result;
+      lastStatus = status;
     }
 
-    return res.status(200).json({ success: true, messageId: result.messageId });
+    return res.status(lastStatus).json({
+      error: lastError?.message || 'Semua akun Brevo gagal mengirim email',
+      details: lastError,
+    });
   } catch (error) {
     console.error('[Serverless Handler Error]:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });

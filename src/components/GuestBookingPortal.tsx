@@ -89,6 +89,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
   const [companyPlaceholder] = useState(() => RANDOM_COMPANY_PLACEHOLDERS[Math.floor(Math.random() * RANDOM_COMPANY_PLACEHOLDERS.length)]);
   const [stakeholder, setStakeholder] = useState<Stakeholder>('PLN');
   const [visitorName, setVisitorName] = useState('');
+  const [identifyNo, setIdentifyNo] = useState('');
   const [company, setCompany] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -121,6 +122,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     const finalVisited = visitedOption === 'Lainnya' ? visitedCustomText : visitedOption;
 
     if (!visitorName.trim()) newErrors.visitorName = 'Nama lengkap tamu wajib diisi';
+    if (!identifyNo.trim()) newErrors.identifyNo = 'Nomor KTP/NIK wajib diisi';
     if (!company.trim()) newErrors.company = 'Instansi/Perusahaan wajib diisi';
     if (!phone.trim()) newErrors.phone = 'Nomor Telepon/WA wajib diisi';
     if (!finalVisited.trim()) newErrors.visited = 'Pegawai/Divisi tujuan wajib dipilih';
@@ -178,6 +180,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
       receptionistTime: null,
       stakeholder: stakeholder,
       visitorName: visitorName.toUpperCase(),
+      identifyNo: identifyNo.trim(),
       mainGatePass: '',
       secondGatePass: '',
       company: company.toUpperCase(),
@@ -202,6 +205,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     setIsSubmitting(false);
     setSubmittedVisitor(null);
     setVisitorName('');
+    setIdentifyNo('');
     setCompany('');
     setPhone('');
     setEmail('');
@@ -417,6 +421,24 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
                 <label className="block text-xs font-semibold mb-1">
+                  Nomor KTP / NIK <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={identifyNo}
+                  onChange={(e) => {
+                    setIdentifyNo(e.target.value);
+                    if (errors.identifyNo) setErrors({ ...errors, identifyNo: '' });
+                  }}
+                  placeholder="Masukkan 16 digit NIK sesuai KTP"
+                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.identifyNo ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
+                />
+                {errors.identifyNo && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.identifyNo}</span>}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold mb-1">
                   Nomor HP / WhatsApp Active <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -431,19 +453,19 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                 />
                 {errors.phone && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.phone}</span>}
               </div>
+            </div>
 
-              <div>
-                <label className="block text-xs font-semibold mb-1">
-                  Email Tamu (Untuk Penerimaan Pass Digital)
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tamu@perusahaan.com"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1">
+                Email Tamu (Untuk Penerimaan Pass Digital)
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tamu@perusahaan.com"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+              />
             </div>
           </div>
 
