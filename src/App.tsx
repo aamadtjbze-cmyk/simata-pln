@@ -48,7 +48,8 @@ import { generateDailyPassNumber, generateSecondGatePassNumber } from './utils/p
 import { Visitor, VisitorStatus, SystemNotification, Stakeholder, UserRole } from './types';
 import { AppUser } from './lib/userManager';
 import { INITIAL_VISITORS } from './data/mockData';
-import { decodePassToken, encodePassToken } from './utils/security';
+import { decodePassToken, encodePassToken, getProductionPassUrl } from './utils/security';
+import { sendApprovalEmail } from './lib/email';
 import {
   isSupabaseConfigured,
   getSupabaseClient,
@@ -671,6 +672,44 @@ export default function App() {
     const notif = createNotification(updatedVisitor, original.status);
     saveAndSyncNotifications([notif, ...notifications]);
     saveAndSync(updated, updatedVisitor);
+  };
+
+  // Kirim Ulang Tiket Email (Resend Email)
+  const handleResendEmail = async (visitor: Visitor): Promise<boolean> => {
+    if (!visitor.email) {
+      triggerToast(`Gagal kirim: Tamu ${visitor.visitorName} belum memiliki alamat email.`, 'danger');
+      return false;
+    }
+
+    let targetVisitor = visitor;
+    // Jika masih PENDING, sekaligus alokasikan pass & set SCHEDULED agar QR pass aktif
+    if (visitor.status === 'PENDING') {
+      const assignedPass = visitor.mainGatePass || generateDailyPassNumber(visitors);
+      targetVisitor = {
+        ...visitor,
+        status: 'SCHEDULED',
+        mainGatePass: assignedPass,
+      };
+      const updated = visitors.map((v) => (v.id === visitor.id ? targetVisitor : v));
+      saveAndSync(updated, targetVisitor);
+    }
+
+    const passUrl = getProductionPassUrl(targetVisitor.id);
+    triggerToast(`Mengirim ulang tiket email ke ${targetVisitor.email}...`, 'info');
+    try {
+      const ok = await sendApprovalEmail(targetVisitor, passUrl);
+      if (ok) {
+        triggerToast(`✅ Tiket Barcode QR berhasil dikirim ulang ke ${targetVisitor.email}!`, 'success');
+        return true;
+      } else {
+        triggerToast(`⚠️ Pengiriman email ke ${targetVisitor.email} gagal atau tertunda. Silakan gunakan link WhatsApp.`, 'danger');
+        return false;
+      }
+    } catch (err) {
+      console.error('Resend email error:', err);
+      triggerToast(`Terjadi kesalahan saat mengirim email. Coba lagi beberapa saat.`, 'danger');
+      return false;
+    }
   };
 
   // Konfirmasi Kedatangan Janji Temu (SCHEDULED/PENDING -> IN-PROGRESS)
@@ -1427,6 +1466,7 @@ export default function App() {
                 onCheckInAppointment={handleCheckInAppointment}
                 onSecondGateCheckIn={handleSecondGateCheckIn}
                 onReceptionistCheckIn={handleReceptionistCheckIn}
+                onResendEmail={handleResendEmail}
                 currentUserRole={activeUserRole}
                 activeStakeholder={activeStakeholder}
               />
@@ -1478,6 +1518,7 @@ export default function App() {
                 onCheckInAppointment={handleCheckInAppointment}
                 onSecondGateCheckIn={handleSecondGateCheckIn}
                 onReceptionistCheckIn={handleReceptionistCheckIn}
+                onResendEmail={handleResendEmail}
                 currentUserRole={activeUserRole}
                 activeStakeholder={activeStakeholder}
               />
@@ -1584,6 +1625,7 @@ export default function App() {
           onCheckInAppointment={handleCheckInAppointment}
           onSecondGateCheckIn={handleSecondGateCheckIn}
           onCheckOut={handleCheckOut}
+          onResendEmail={handleResendEmail}
           onApproveBooking={userRole === 'ADMIN' ? handleApproveBooking : undefined}
           onBookAppointment={() => {
             setVisitorForBadge(null);

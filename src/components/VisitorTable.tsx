@@ -29,7 +29,9 @@ import {
   LayoutGrid,
   Building,
   Clock,
-  Shield
+  Shield,
+  Mail,
+  Loader2
 } from 'lucide-react';
 import { Visitor, VisitorStatus, Stakeholder, UserRole } from '../types';
 import { generateWhatsAppPassUrl } from '../lib/email';
@@ -48,6 +50,7 @@ interface VisitorTableProps {
   onCheckInAppointment?: (visitorId: string) => void;
   onSecondGateCheckIn?: (visitorId: string, customPass?: string) => void;
   onReceptionistCheckIn?: (visitorId: string, badgeNumber?: string) => void;
+  onResendEmail?: (visitor: Visitor) => Promise<boolean>;
   currentUserRole?: UserRole;
   activeStakeholder?: Stakeholder | 'ALL';
 }
@@ -67,6 +70,7 @@ export default function VisitorTable({
   onCheckInAppointment,
   onSecondGateCheckIn,
   onReceptionistCheckIn,
+  onResendEmail,
   currentUserRole = 'SUPERADMIN',
   activeStakeholder = 'ALL',
 }: VisitorTableProps) {
@@ -95,6 +99,7 @@ export default function VisitorTable({
   const [quickActionVisitor, setQuickActionVisitor] = useState<Visitor | null>(null);
   const [isRejecting, setIsRejecting] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [isResendingEmail, setIsResendingEmail] = useState<string | null>(null);
 
   // Sorting states
   const [sortField, setSortField] = useState<SortField>('id');
@@ -695,6 +700,24 @@ export default function VisitorTable({
                           <MessageSquare size={12} /> WA
                         </a>
                       )}
+                      {item.email && onResendEmail && (
+                        <button
+                          onClick={() => {
+                            setIsResendingEmail(item.id);
+                            onResendEmail(item).finally(() => setIsResendingEmail(null));
+                          }}
+                          disabled={isResendingEmail === item.id}
+                          title={`Kirim Ulang Tiket Email (${item.email})`}
+                          className="flex items-center gap-1 px-2 py-1 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-600 hover:text-white text-sky-600 dark:text-sky-400 border border-sky-500 text-[10px] font-bold uppercase transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          {isResendingEmail === item.id ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Mail size={12} />
+                          )}
+                          Email
+                        </button>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-1">
@@ -1233,6 +1256,25 @@ export default function VisitorTable({
                             </a>
                           )}
 
+                          {/* Quick Resend Email Pass (if email available) */}
+                          {item.email && onResendEmail && (
+                            <button
+                              onClick={() => {
+                                setIsResendingEmail(item.id);
+                                onResendEmail(item).finally(() => setIsResendingEmail(null));
+                              }}
+                              disabled={isResendingEmail === item.id}
+                              title={`Kirim Ulang Tiket Email (${item.email})`}
+                              className="p-1.5 hover:bg-sky-50 dark:hover:bg-sky-950/40 text-sky-600 dark:text-sky-400 rounded-none transition-all cursor-pointer inline-flex items-center disabled:opacity-50"
+                            >
+                              {isResendingEmail === item.id ? (
+                                <Loader2 size={14} className="animate-spin text-sky-600" />
+                              ) : (
+                                <Mail size={14} />
+                              )}
+                            </button>
+                          )}
+
                           {/* Edit details */}
                           <button
                             onClick={() => onEdit(item)}
@@ -1486,6 +1528,58 @@ export default function VisitorTable({
                     </div>
                     <ChevronRight size={16} className="text-emerald-200 group-hover:translate-x-0.5 transition-transform" />
                   </a>
+                )}
+
+                {/* Resend Email Pass Button */}
+                {quickActionVisitor.email ? (
+                  <button
+                    onClick={async () => {
+                      if (onResendEmail) {
+                        setIsResendingEmail(quickActionVisitor.id);
+                        await onResendEmail(quickActionVisitor);
+                        setIsResendingEmail(null);
+                      }
+                    }}
+                    disabled={isResendingEmail === quickActionVisitor.id}
+                    className="w-full p-3 bg-[#005DA6] hover:bg-[#004070] disabled:bg-slate-400 text-white rounded-none text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 bg-blue-500/20 text-white">
+                        {isResendingEmail === quickActionVisitor.id ? (
+                          <Loader2 size={15} className="animate-spin" />
+                        ) : (
+                          <Mail size={15} />
+                        )}
+                      </div>
+                      <div className="text-left">
+                        <span className="block font-black uppercase">
+                          {isResendingEmail === quickActionVisitor.id
+                            ? 'Sedang Mengirim Ulang Email...'
+                            : `Kirim Ulang Tiket Email (${quickActionVisitor.email})`}
+                        </span>
+                        <span className="text-[10px] text-blue-100 font-normal">
+                          Kirim ulang barcode pass digital & surat konfirmasi ke email tamu
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-blue-200 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                ) : (
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Mail size={15} className="text-slate-400 shrink-0" />
+                      <span>Email tamu belum terisi</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        onEdit(quickActionVisitor);
+                        setQuickActionVisitor(null);
+                      }}
+                      className="text-[#005DA6] dark:text-[#FFD500] font-bold text-[10px] hover:underline uppercase cursor-pointer"
+                    >
+                      + Tambah Email
+                    </button>
+                  </div>
                 )}
 
                 {/* Action 3: Reject / Decline Appointment */}

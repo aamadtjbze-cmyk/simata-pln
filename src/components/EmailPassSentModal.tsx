@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Mail, CheckCircle, ExternalLink, QrCode, Send, ShieldCheck, Copy, Check, X, AlertTriangle, Loader2, MessageSquare, Zap } from 'lucide-react';
+import { Mail, CheckCircle, ExternalLink, QrCode, Send, ShieldCheck, Copy, Check, X, AlertTriangle, Loader2, MessageSquare, Zap, RotateCcw } from 'lucide-react';
 import { Visitor } from '../types';
 import { getProductionPassUrl } from '../utils/security';
 import { sendApprovalEmail, isEmailConfigured, generateWhatsAppPassUrl, getEmailConfig } from '../lib/email';
@@ -59,8 +59,20 @@ export default function EmailPassSentModal({ visitor, onClose, onOpenPass }: Ema
     if (sendStatus === 'sent') return (
       <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 p-3 rounded-none flex items-start gap-2.5">
         <ShieldCheck size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-        <div>
-          <p className="font-bold text-emerald-900 dark:text-emerald-200 text-xs">Email & Barcode Berhasil Diterbitkan!</p>
+        <div className="flex-1">
+          <div className="flex items-center justify-between">
+            <p className="font-bold text-emerald-900 dark:text-emerald-200 text-xs">Email & Barcode Berhasil Diterbitkan!</p>
+            <button
+              onClick={() => {
+                setSendStatus('sending');
+                sendApprovalEmail(visitor, passUrl).then((ok) => setSendStatus(ok ? 'sent' : 'failed'));
+              }}
+              className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[9.5px] rounded-none uppercase flex items-center gap-1 cursor-pointer"
+              title="Kirim Ulang Tiket Email"
+            >
+              <RotateCcw size={10} /> Kirim Ulang
+            </button>
+          </div>
           <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
             Pass QR dikirim ke <strong>{targetEmail}</strong>. Tamu dapat langsung menunjukkan link pass untuk check-in.
           </p>
@@ -70,10 +82,21 @@ export default function EmailPassSentModal({ visitor, onClose, onOpenPass }: Ema
     if (sendStatus === 'failed') return (
       <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 p-3 rounded-none flex items-start gap-2.5">
         <AlertTriangle size={18} className="text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
-        <div>
-          <p className="font-bold text-red-900 dark:text-red-200 text-xs">Pengiriman Email Tertunda</p>
+        <div className="flex-1">
+          <div className="flex items-center justify-between">
+            <p className="font-bold text-red-900 dark:text-red-200 text-xs">Pengiriman Email Tertunda / Belum Diterima</p>
+            <button
+              onClick={() => {
+                setSendStatus('sending');
+                sendApprovalEmail(visitor, passUrl).then((ok) => setSendStatus(ok ? 'sent' : 'failed'));
+              }}
+              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] rounded-none uppercase flex items-center gap-1 cursor-pointer"
+            >
+              <RotateCcw size={11} /> Coba Kirim Ulang
+            </button>
+          </div>
           <p className="text-[11px] text-red-700 dark:text-red-400 mt-0.5">
-            Gunakan tombol <strong>Kirim via WhatsApp</strong> atau <strong>Salin Link Pass</strong> di bawah untuk membagikan barcode ke tamu seketika.
+            Gunakan tombol <strong>Kirim via WhatsApp</strong> di bawah atau klik <strong>Coba Kirim Ulang</strong>.
           </p>
         </div>
       </div>
@@ -150,14 +173,30 @@ export default function EmailPassSentModal({ visitor, onClose, onOpenPass }: Ema
                 <Mail size={14} className="text-[#005DA6] dark:text-[#FFD500]" />
                 <span>Notifikasi Email Tamu</span>
               </div>
-              <span className={`px-2 py-0.5 text-[9px] font-mono font-bold uppercase ${
-                sendStatus === 'sent' ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300' :
-                sendStatus === 'sending' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' :
-                sendStatus === 'failed' ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300' :
-                'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300'
-              }`}>
-                {sendStatus === 'sent' ? 'DELIVERED' : sendStatus === 'sending' ? 'SENDING...' : sendStatus === 'failed' ? 'RETRY' : 'NOT SENT'}
-              </span>
+              <div className="flex items-center gap-2">
+                {targetEmail && (
+                  <button
+                    onClick={() => {
+                      setSendStatus('sending');
+                      sendApprovalEmail(visitor, passUrl).then((ok) => setSendStatus(ok ? 'sent' : 'failed'));
+                    }}
+                    disabled={sendStatus === 'sending'}
+                    className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-[#005DA6] dark:text-[#FFD500] text-[9.5px] font-bold border border-blue-200 dark:border-blue-800 flex items-center gap-1 cursor-pointer disabled:opacity-50 transition-all"
+                    title="Kirim Ulang Email Sekarang"
+                  >
+                    <RotateCcw size={10} className={sendStatus === 'sending' ? 'animate-spin' : ''} />
+                    <span>{sendStatus === 'sending' ? 'Mengirim...' : 'Kirim Ulang'}</span>
+                  </button>
+                )}
+                <span className={`px-2 py-0.5 text-[9px] font-mono font-bold uppercase ${
+                  sendStatus === 'sent' ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300' :
+                  sendStatus === 'sending' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' :
+                  sendStatus === 'failed' ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300' :
+                  'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300'
+                }`}>
+                  {sendStatus === 'sent' ? 'DELIVERED' : sendStatus === 'sending' ? 'SENDING...' : sendStatus === 'failed' ? 'RETRY' : 'NOT SENT'}
+                </span>
+              </div>
             </div>
 
             <div className="space-y-1 text-[11px]">

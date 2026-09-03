@@ -4,7 +4,7 @@
  */
 
 import React, { useRef, useState } from 'react';
-import { X, Printer, Shield, Eye, Flame, CheckCircle, Smartphone, Copy, ExternalLink, QrCode, Check, AlertTriangle, XCircle, Calendar, Lock, Clock, CheckSquare } from 'lucide-react';
+import { X, Printer, Shield, Eye, Flame, CheckCircle, Smartphone, Copy, ExternalLink, QrCode, Check, AlertTriangle, XCircle, Calendar, Lock, Clock, CheckSquare, Mail, Loader2 } from 'lucide-react';
 import { Visitor } from '../types';
 import PLNLogo from './PLNLogo';
 import { encodePassToken, checkPassExpiration, getProductionPassUrl } from '../utils/security';
@@ -17,6 +17,7 @@ interface BadgeModalProps {
   onSecondGateCheckIn?: (visitorId: string, customPass?: string) => void;
   onCheckOut?: (visitorId: string) => void;
   onApproveBooking?: (visitorId: string) => void;
+  onResendEmail?: (visitor: Visitor) => Promise<boolean>;
 }
 
 export default function BadgeModal({
@@ -27,8 +28,10 @@ export default function BadgeModal({
   onSecondGateCheckIn,
   onCheckOut,
   onApproveBooking,
+  onResendEmail,
 }: BadgeModalProps) {
   const [copied, setCopied] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   if (!visitor) return null;
 
   const passExpiration = checkPassExpiration(visitor);
@@ -496,6 +499,21 @@ export default function BadgeModal({
               >
                 <Printer size={15} />
                 Cetak Pas Masuk
+              </button>
+            )}
+            {visitor.email && onResendEmail && (
+              <button
+                onClick={async () => {
+                  setIsResending(true);
+                  await onResendEmail(visitor);
+                  setIsResending(false);
+                }}
+                disabled={isResending}
+                className="py-2.5 px-3 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white rounded-none font-bold flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider border-b-2 border-r-2 border-sky-900 cursor-pointer disabled:opacity-50 transition-all"
+                title={`Kirim Ulang Tiket Email (${visitor.email})`}
+              >
+                {isResending ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
+                <span>Email</span>
               </button>
             )}
             <button
