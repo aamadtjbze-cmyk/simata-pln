@@ -807,11 +807,16 @@ export default function VisitorTable({
 
                 <th
                   onClick={() => handleSort('stakeholder' as any)}
-                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[95px]"
+                  className="p-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all min-w-[150px]"
                 >
-                  <div className="flex items-center gap-1">
-                    <span>Entitas</span>
-                    {sortField === ('stakeholder' as any) && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                  <div className="flex flex-col items-start leading-tight">
+                    <div className="flex items-center gap-1">
+                      <span>ENTITAS & AREA</span>
+                      {sortField === ('stakeholder' as any) && (sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                    </div>
+                    <span className="text-[9.5px] text-slate-400 dark:text-slate-500 font-normal tracking-tight">
+                      (Unit / Bidang Tujuan)
+                    </span>
                   </div>
                 </th>
 
@@ -1044,9 +1049,14 @@ export default function VisitorTable({
                         {item.id}
                       </td>
 
-                      {/* Stakeholder / Entitas */}
-                      <td className="p-4 whitespace-nowrap">
-                        {getStakeholderBadge(item.stakeholder)}
+                      {/* Stakeholder / Entitas & Tempat Area */}
+                      <td className="p-4">
+                        <div className="flex flex-col items-start gap-1">
+                          {getStakeholderBadge(item.stakeholder)}
+                          <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 uppercase leading-tight line-clamp-2 max-w-[170px]" title={item.visited}>
+                            {item.visited}
+                          </span>
+                        </div>
                       </td>
 
                       {/* Schedule */}
@@ -1057,18 +1067,15 @@ export default function VisitorTable({
                       {/* IN Timestamp & Action Button */}
                       <td className="p-4 text-slate-700 dark:text-slate-300 font-mono whitespace-nowrap">
                         {item.inTime ? (
-                          item.status === 'IN-PROGRESS' ? (
-                            <button
-                              onClick={() => onCheckInAppointment && onCheckInAppointment(item.id)}
-                              className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-extrabold rounded-none text-[10px] border-b border-r border-emerald-300 shadow-sm transition-all flex items-center justify-center gap-1.5 inline-block cursor-pointer font-mono"
-                              title="Klik untuk memperbarui jam Check-In Pos 1 Maingate"
-                            >
-                              <UserCheck2 size={11} className="text-[#FFD500]" />
-                              <span>{item.inTime}</span>
-                            </button>
-                          ) : (
-                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{item.inTime}</span>
-                          )
+                          <div className="flex flex-col items-start gap-0.5">
+                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-700 rounded-none text-[10px] font-black flex items-center gap-1 font-mono shadow-2xs">
+                              <Check size={11} className="text-emerald-600 dark:text-emerald-400" />
+                              <span>{item.inTime.split(' - ')[1] ? `⏰ ${item.inTime.split(' - ')[1]} WIB` : item.inTime}</span>
+                            </span>
+                            <span className="text-[8.5px] text-slate-400 dark:text-slate-500 font-sans truncate">
+                              {item.inTime.split(' - ')[0] || ''}
+                            </span>
+                          </div>
                         ) : (
                           item.status === 'SCHEDULED' ? (
                             <button
@@ -1129,9 +1136,14 @@ export default function VisitorTable({
                             <span className="text-slate-400 font-sans italic">-</span>
                           )
                         ) : (
-                          <span className="text-[9.5px] font-sans font-medium text-slate-400 dark:text-slate-600 italic">
-                            Tanpa Pos 2
-                          </span>
+                          <div className="flex flex-col items-start leading-tight">
+                            <span className="text-[9.5px] font-sans font-semibold text-slate-500 dark:text-slate-400">
+                              Langsung / Direct
+                            </span>
+                            <span className="text-[8px] font-sans text-slate-400 dark:text-slate-500 italic">
+                              (Lobby Kantor {item.stakeholder || 'PLN'})
+                            </span>
+                          </div>
                         )}
                       </td>
 

@@ -1566,7 +1566,7 @@ export default function App() {
               </div>
 
               <VisitorTable
-                visitors={visitors.filter((v) => v.status === 'PENDING' || v.status === 'SCHEDULED' || v.status === 'REJECTED')}
+                visitors={visitors.filter((v) => v.status === 'PENDING' || v.status === 'SCHEDULED' || v.status === 'IN-PROGRESS' || v.status === 'REJECTED')}
                 onCheckOut={handleCheckOut}
                 onCheckOutBatch={handleCheckOutBatch}
                 onEdit={(visitor) => {
