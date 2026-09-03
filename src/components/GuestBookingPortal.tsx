@@ -25,11 +25,12 @@ const PLN_DIVISIONS = [
 ];
 
 const KPJB_DIVISIONS = [
-  'MANAGEMENT & DIREKSI KPJB',
-  'OPERATION DIVISION (UNIT 1-2)',
-  'MAINTENANCE DIVISION',
-  'HSE & SECURITY KPJB',
-  'COMMERCIAL & FINANCE',
+  'Operation Division',
+  'Engineering Division',
+  'Maintenance Division',
+  'Jetty & Material Division',
+  'HSSE Division',
+  'Finance & GA Division',
 ];
 
 const TJBPS_DIVISIONS = [

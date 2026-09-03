@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, User, Briefcase, FileText, Lock, Users2, Calendar, Phone, ShieldCheck } from 'lucide-react';
 import { Visitor, VisitorStatus, Stakeholder } from '../types';
-import { COMMON_PURPOSES, PLN_DIVISIONS } from '../data/mockData';
+import { COMMON_PURPOSES, PLN_DIVISIONS, KPJB_DIVISIONS, TJBPS_DIVISIONS, AGP_DIVISIONS } from '../data/mockData';
 import { generateDailyPassNumber } from '../utils/passGenerator';
 
 interface CheckInModalProps {
@@ -357,38 +357,52 @@ export default function CheckInModal({
                   Divisi / Pegawai yang Dikunjungi <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
-                  <select
-                    value={PLN_DIVISIONS.includes(visited) ? visited : (visited ? 'Lainnya' : '')}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === 'Lainnya') {
-                        setVisited(' ');
-                      } else {
-                        setVisited(val);
-                      }
-                      if (errors.visited) setErrors({ ...errors, visited: '' });
-                    }}
-                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-semibold focus:outline-none mb-2 focus:ring-2 focus:ring-[#005DA6]"
-                  >
-                    <option value="">-- Pilih Pegawai/Divisi Tujuan --</option>
-                    {PLN_DIVISIONS.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                    <option value="Lainnya">Lainnya (Tulis Manual)</option>
-                  </select>
+                  {(() => {
+                    const currentDivisions = stakeholder === 'KPJB' 
+                      ? KPJB_DIVISIONS 
+                      : stakeholder === 'TJBPS' 
+                      ? TJBPS_DIVISIONS 
+                      : stakeholder === 'AGP' 
+                      ? AGP_DIVISIONS 
+                      : PLN_DIVISIONS;
 
-                  {(!PLN_DIVISIONS.includes(visited) && visited !== '') && (
-                    <input
-                      type="text"
-                      value={visited.trim()}
-                      onChange={(e) => {
-                        setVisited(e.target.value);
-                        if (errors.visited) setErrors({ ...errors, visited: '' });
-                      }}
-                      placeholder="Nama Pegawai / Divisi khusus..."
-                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
-                    />
-                  )}
+                    return (
+                      <>
+                        <select
+                          value={currentDivisions.includes(visited) ? visited : (visited ? 'Lainnya' : '')}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === 'Lainnya') {
+                              setVisited(' ');
+                            } else {
+                              setVisited(val);
+                            }
+                            if (errors.visited) setErrors({ ...errors, visited: '' });
+                          }}
+                          className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-semibold focus:outline-none mb-2 focus:ring-2 focus:ring-[#005DA6]"
+                        >
+                          <option value="">-- Pilih Pegawai/Divisi Tujuan ({stakeholder}) --</option>
+                          {currentDivisions.map((d) => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                          <option value="Lainnya">Lainnya (Tulis Manual)</option>
+                        </select>
+
+                        {(!currentDivisions.includes(visited) && visited !== '') && (
+                          <input
+                            type="text"
+                            value={visited.trim()}
+                            onChange={(e) => {
+                              setVisited(e.target.value);
+                              if (errors.visited) setErrors({ ...errors, visited: '' });
+                            }}
+                            placeholder="Nama Pegawai / Divisi khusus..."
+                            className="w-full px-4 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-slate-800 dark:text-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+                          />
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
                 {errors.visited && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.visited}</span>}
               </div>

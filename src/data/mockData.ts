@@ -19,7 +19,7 @@ export const INITIAL_VISITORS: Visitor[] = [
     secondGatePass: '024 k',
     company: 'PT KEIVAN BERSAUDARA',
     purpose: 'meeting',
-    visited: 'MANAGEMENT & DIREKSI KPJB',
+    visited: 'Engineering Division',
     status: 'DONE',
     phone: '081234567801',
     identifyNo: '3273011906950003',
@@ -303,4 +303,28 @@ export const PLN_DIVISIONS = [
   'BIDANG ENERGI PRIMER',
   'BIDANG K3L & KEAMANAN',
   'TEKNOLOGI INFORMASI (IT)',
+];
+
+export const KPJB_DIVISIONS = [
+  'Operation Division',
+  'Engineering Division',
+  'Maintenance Division',
+  'Jetty & Material Division',
+  'HSSE Division',
+  'Finance & GA Division',
+];
+
+export const TJBPS_DIVISIONS = [
+  'Plant Operation',
+  'Plant Maintenance',
+  'Logistics & Warehouse',
+  'Safety & Environment',
+  'Administration & Finance',
+];
+
+export const AGP_DIVISIONS = [
+  'Operasional Bongkar Muat Batubara',
+  'Logistik & Jetty',
+  'K3L & Keamanan AGP',
+  'Administrasi & Keuangan AGP',
 ];
