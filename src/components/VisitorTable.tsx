@@ -920,7 +920,7 @@ export default function VisitorTable({
                   </div>
                 </th>
 
-                <th className="p-2.5 text-center min-w-[225px] sticky right-0 bg-slate-100 dark:bg-slate-950 z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.06)]">
+                <th className="p-2.5 text-center min-w-[110px] sticky right-0 bg-slate-100 dark:bg-slate-950 z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.06)]">
                   Aksi
                 </th>
               </tr>
@@ -1258,7 +1258,7 @@ export default function VisitorTable({
                       </td>
 
                       {/* Row action shortcuts - Sticky on the right */}
-                      <td className="p-2 text-center min-w-[225px] sticky right-0 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.06)] z-10">
+                      <td className="p-2 text-center min-w-[110px] sticky right-0 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.06)] z-10">
                         <div className="flex items-center justify-center gap-1 flex-wrap">
 
                           {/* View Barcode Pass */}
@@ -1267,7 +1267,7 @@ export default function VisitorTable({
                             title="Buka Barcode QR Pass Tamu Digital"
                             className="p-1.5 bg-blue-50 dark:bg-blue-950/40 hover:bg-[#005DA6] hover:text-white text-[#005DA6] dark:text-[#FFD500] rounded-none border border-[#005DA6]/40 dark:border-[#FFD500]/40 transition-all cursor-pointer shadow-2xs"
                           >
-                            <QrCode size={15} />
+                            <QrCode size={13.5} />
                           </button>
 
                           {/* Print Pass */}
@@ -1276,7 +1276,7 @@ export default function VisitorTable({
                             title="Cetak Pass Masuk Tamu"
                             className="p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-600 hover:text-white text-slate-600 dark:text-slate-300 rounded-none border border-slate-300 dark:border-slate-600 transition-all cursor-pointer shadow-2xs"
                           >
-                            <Printer size={15} />
+                            <Printer size={13.5} />
                           </button>
 
                           {/* Quick WhatsApp Pass Send (if phone available) */}
@@ -1288,7 +1288,7 @@ export default function VisitorTable({
                               title={`Kirim Barcode Pass ke WhatsApp (${item.phone})`}
                               className="p-1.5 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-600 hover:text-white text-emerald-600 dark:text-emerald-400 rounded-none border border-emerald-400 dark:border-emerald-700 transition-all cursor-pointer inline-flex items-center shadow-2xs"
                             >
-                              <MessageSquare size={15} />
+                              <MessageSquare size={13.5} />
                             </a>
                           )}
 
@@ -1304,9 +1304,9 @@ export default function VisitorTable({
                               className="p-1.5 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-600 hover:text-white text-sky-600 dark:text-sky-400 rounded-none border border-sky-400 dark:border-sky-700 transition-all cursor-pointer inline-flex items-center disabled:opacity-50 shadow-2xs"
                             >
                               {isResendingEmail === item.id ? (
-                                <Loader2 size={15} className="animate-spin" />
+                                <Loader2 size={13.5} className="animate-spin" />
                               ) : (
-                                <Mail size={15} />
+                                <Mail size={13.5} />
                               )}
                             </button>
                           )}
@@ -1317,7 +1317,7 @@ export default function VisitorTable({
                             title="Ubah Rincian"
                             className="p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-500 hover:text-white text-slate-500 dark:text-slate-400 rounded-none border border-slate-300 dark:border-slate-600 transition-all cursor-pointer shadow-2xs"
                           >
-                            <SlidersHorizontal size={15} />
+                            <SlidersHorizontal size={13.5} />
                           </button>
 
                           {/* Delete record - Superadmin only */}
@@ -1327,7 +1327,7 @@ export default function VisitorTable({
                               title="Hapus Data"
                               className="p-1.5 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-600 hover:text-white text-rose-500 dark:text-[#FF3B30] rounded-none border border-rose-400 dark:border-rose-800 transition-all cursor-pointer shadow-2xs"
                             >
-                              <Trash2 size={15} />
+                              <Trash2 size={13.5} />
                             </button>
                           )}
                         </div>
