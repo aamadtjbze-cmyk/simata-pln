@@ -756,13 +756,15 @@ export default function VisitorTable({
                       >
                         <SlidersHorizontal size={13} />
                       </button>
-                      <button
-                        onClick={() => onDelete(item.id)}
-                        title="Hapus Data"
-                        className="p-1 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-500 border border-rose-200 dark:border-rose-900 transition-all cursor-pointer"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      {currentUserRole === 'SUPERADMIN' && (
+                        <button
+                          onClick={() => onDelete(item.id)}
+                          title="Hapus Data"
+                          className="p-1 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-500 border border-rose-200 dark:border-rose-900 transition-all cursor-pointer"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1326,14 +1328,16 @@ export default function VisitorTable({
                             <SlidersHorizontal size={18} />
                           </button>
 
-                          {/* Delete record */}
-                          <button
-                            onClick={() => onDelete(item.id)}
-                            title="Hapus Data"
-                            className="p-2 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-600 hover:text-white text-rose-500 dark:text-[#FF3B30] rounded-none border border-rose-400 dark:border-rose-800 transition-all cursor-pointer shadow-2xs"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          {/* Delete record - Superadmin only */}
+                          {currentUserRole === 'SUPERADMIN' && (
+                            <button
+                              onClick={() => onDelete(item.id)}
+                              title="Hapus Data"
+                              className="p-2 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-600 hover:text-white text-rose-500 dark:text-[#FF3B30] rounded-none border border-rose-400 dark:border-rose-800 transition-all cursor-pointer shadow-2xs"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
