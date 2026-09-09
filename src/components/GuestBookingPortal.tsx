@@ -92,11 +92,12 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
   const [stakeholder, setStakeholder] = useState<Stakeholder>('PLN');
   const [visitorName, setVisitorName] = useState('');
   const [identifyNo, setIdentifyNo] = useState('');
+  const [gender, setGender] = useState<'Laki-laki' | 'Perempuan'>('Laki-laki');
   const [company, setCompany] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [visitedOption, setVisitedOption] = useState('');
-  const [visitedCustomText, setVisitedCustomText] = useState('');
+  const [visitedPerson, setVisitedPerson] = useState('');
   const [purpose, setPurpose] = useState('');
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('09.00');
@@ -158,19 +159,37 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
 
     const newErrors: { [key: string]: string } = {};
 
-    const finalVisited = visitedOption === 'Lainnya' ? visitedCustomText : visitedOption;
+    let finalVisited = '';
+    if (!visitedOption) {
+      newErrors.visitedOption = 'Silakan pilih bidang tujuan atau pilih Lainnya';
+    } else if (visitedOption === 'Lainnya') {
+      if (!visitedPerson.trim()) {
+        newErrors.visitedPerson = 'Nama pegawai / pihak yang dituju wajib diisi';
+      } else {
+        finalVisited = visitedPerson.trim().toUpperCase();
+      }
+    } else {
+      if (!visitedPerson.trim()) {
+        newErrors.visitedPerson = `Nama pegawai / pejabat di ${visitedOption} wajib diisi`;
+      } else {
+        finalVisited = `${visitedPerson.trim().toUpperCase()} - ${visitedOption}`;
+      }
+    }
 
     if (!visitorName.trim()) newErrors.visitorName = 'Nama lengkap tamu wajib diisi';
     if (!ktpPhotoBlob) newErrors.ktpPhoto = 'Foto KTP wajib diunggah untuk verifikasi identitas di Pos Keamanan';
     if (!company.trim()) newErrors.company = 'Instansi/Perusahaan wajib diisi';
     if (!phone.trim()) newErrors.phone = 'Nomor Telepon/WA wajib diisi';
-    if (!finalVisited.trim()) newErrors.visited = 'Pegawai/Divisi tujuan wajib dipilih';
     if (!purpose.trim()) newErrors.purpose = 'Tujuan / Keperluan kunjungan wajib diisi';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       if (!ktpPhotoBlob) {
         triggerToast('Foto KTP wajib diunggah! Silakan ambil atau unggah foto KTP.', 'danger');
+      } else if (newErrors.visitedPerson) {
+        triggerToast(newErrors.visitedPerson, 'danger');
+      } else if (newErrors.visitedOption) {
+        triggerToast(newErrors.visitedOption, 'danger');
       } else {
         triggerToast('Mohon lengkapi seluruh kolom wajib pengajuan janji temu.', 'danger');
       }
@@ -236,16 +255,16 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
       receptionistTime: null,
       stakeholder: stakeholder,
       visitorName: visitorName.toUpperCase(),
-      identifyNo: identifyNo.trim(),
+      identifyNo: identifyNo.trim() || undefined,
+      gender: gender,
       mainGatePass: '',
       secondGatePass: '',
       company: company.toUpperCase(),
       purpose: purpose.trim(),
-      visited: finalVisited.toUpperCase(),
+      visited: finalVisited,
       status: 'PENDING',
       phone,
       email: email ? email.toLowerCase() : `${visitorName.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
-      gender: 'Laki-laki',
       notes,
       validUntil: formattedExpiry,
       validUntilTs,
@@ -264,11 +283,12 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     setSubmittedVisitor(null);
     setVisitorName('');
     setIdentifyNo('');
+    setGender('Laki-laki');
     setCompany('');
     setPhone('');
     setEmail('');
     setVisitedOption('');
-    setVisitedCustomText('');
+    setVisitedPerson('');
     setPurpose('');
     setNotes('');
     setErrors({});
@@ -332,10 +352,14 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
               <div>
                 <span className="text-[9px] uppercase font-bold text-slate-400">Nomor KTP / NIK:</span>
                 <p className="font-mono font-bold text-slate-800 dark:text-slate-200">{submittedVisitor.identifyNo || '-'}</p>
+              </div>
+              <div>
+                <span className="text-[9px] uppercase font-bold text-slate-400">Jenis Kelamin:</span>
+                <p className="font-bold text-slate-800 dark:text-slate-200">{submittedVisitor.gender || 'Laki-laki'}</p>
               </div>
               <div>
                 <span className="text-[9px] uppercase font-bold text-slate-400">Foto KTP Pemohon:</span>
@@ -490,7 +514,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               <div>
                 <label className="block text-xs font-semibold mb-1">
                   Nomor KTP / NIK
@@ -503,9 +527,23 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                     setIdentifyNo(e.target.value);
                     if (errors.identifyNo) setErrors({ ...errors, identifyNo: '' });
                   }}
-                  placeholder="Masukkan 16 digit NIK sesuai KTP"
+                  placeholder="16 digit NIK KTP"
                   className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.identifyNo ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold mb-1">
+                  Jenis Kelamin <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value as 'Laki-laki' | 'Perempuan')}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+                >
+                  <option value="Laki-laki">Laki-laki</option>
+                  <option value="Perempuan">Perempuan</option>
+                </select>
               </div>
 
               <div>
@@ -607,7 +645,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                 onChange={(e) => {
                   setStakeholder(e.target.value as Stakeholder);
                   setVisitedOption('');
-                  setVisitedCustomText('');
+                  setVisitedPerson('');
                 }}
                 className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border border-[#005DA6] dark:border-[#FFD500] rounded-none text-xs font-black text-[#005DA6] dark:text-[#FFD500] focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
               >
@@ -641,11 +679,11 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                   value={visitedOption}
                   onChange={(e) => {
                     setVisitedOption(e.target.value);
-                    if (errors.visited) setErrors({ ...errors, visited: '' });
+                    if (errors.visitedOption) setErrors({ ...errors, visitedOption: '' });
                   }}
-                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.visited ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
+                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.visitedOption ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
                 >
-                  <option value="">-- Pilih Divisi / Kontak Tujuan --</option>
+                  <option value="">-- Pilih Bidang / Divisi Tujuan --</option>
                   {stakeholder === 'PLN' && PLN_DIVISIONS.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
@@ -658,22 +696,38 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                   {stakeholder === 'AGP' && AGP_DIVISIONS.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
-                  <option value="Lainnya">Lainnya (Ketik Nama Kontak / Divisi Manual)</option>
+                  <option value="Lainnya">Lainnya (Ketik Nama Langsung / Tanpa Bidang)</option>
                 </select>
+                {errors.visitedOption && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.visitedOption}</span>}
 
-                {visitedOption === 'Lainnya' && (
-                  <input
-                    type="text"
-                    value={visitedCustomText}
-                    onChange={(e) => {
-                      setVisitedCustomText(e.target.value);
-                      if (errors.visited) setErrors({ ...errors, visited: '' });
-                    }}
-                    placeholder="Ketik nama pegawai atau divisi tujuan spesifik..."
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-xs font-semibold mt-1.5 focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
-                  />
+                {/* Kolom Penambahan Nama Pegawai yang Dituju */}
+                {visitedOption && (
+                  <div className="mt-2.5">
+                    <label className="block text-xs font-semibold mb-1">
+                      {visitedOption === 'Lainnya'
+                        ? 'Nama Pegawai / Pihak yang Dituju (Tanpa Bidang)'
+                        : `Nama Pegawai / Pejabat di ${visitedOption}`}{' '}
+                      <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={visitedPerson}
+                      onChange={(e) => {
+                        setVisitedPerson(e.target.value);
+                        if (errors.visitedPerson) setErrors({ ...errors, visitedPerson: '' });
+                      }}
+                      placeholder={
+                        visitedOption === 'Lainnya'
+                          ? 'Ketik nama pegawai atau pihak yang dituju...'
+                          : `Ketik nama pejabat / pegawai di ${visitedOption}...`
+                      }
+                      className={`w-full px-3.5 py-2 bg-slate-50 dark:bg-[#152033] border ${errors.visitedPerson ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
+                    />
+                    {errors.visitedPerson && (
+                      <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.visitedPerson}</span>
+                    )}
+                  </div>
                 )}
-                {errors.visited && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.visited}</span>}
               </div>
 
               <div>
