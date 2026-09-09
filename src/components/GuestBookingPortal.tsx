@@ -125,7 +125,12 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
       setKtpPhotoBlob(compressed);
       setKtpPhotoPreview(URL.createObjectURL(compressed));
       setKtpPhotoSizeKb(Math.round(compressed.size / 1024));
-      if (errors.identifyNo) setErrors({ ...errors, identifyNo: '' });
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.identifyNo;
+        delete next.ktpPhoto;
+        return next;
+      });
     } catch (err) {
       triggerToast('Gagal memproses foto KTP. Coba unggah ulang.', 'danger');
     } finally {
@@ -156,7 +161,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     const finalVisited = visitedOption === 'Lainnya' ? visitedCustomText : visitedOption;
 
     if (!visitorName.trim()) newErrors.visitorName = 'Nama lengkap tamu wajib diisi';
-    if (!identifyNo.trim() && !ktpPhotoBlob) newErrors.identifyNo = 'Isi salah satu: Nomor KTP/NIK atau unggah Foto KTP';
+    if (!ktpPhotoBlob) newErrors.ktpPhoto = 'Foto KTP wajib diunggah untuk verifikasi identitas di Pos Keamanan';
     if (!company.trim()) newErrors.company = 'Instansi/Perusahaan wajib diisi';
     if (!phone.trim()) newErrors.phone = 'Nomor Telepon/WA wajib diisi';
     if (!finalVisited.trim()) newErrors.visited = 'Pegawai/Divisi tujuan wajib dipilih';
@@ -164,7 +169,11 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      triggerToast('Mohon lengkapi seluruh kolom wajib pengajuan janji temu.', 'danger');
+      if (!ktpPhotoBlob) {
+        triggerToast('Foto KTP wajib diunggah! Silakan ambil atau unggah foto KTP.', 'danger');
+      } else {
+        triggerToast('Mohon lengkapi seluruh kolom wajib pengajuan janji temu.', 'danger');
+      }
       return;
     }
 
@@ -211,7 +220,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     let ktpPhotoPath: string | undefined;
     if (ktpPhotoBlob) {
       ktpPhotoPath = (await uploadKtpPhoto(ktpPhotoBlob, `${newFormId}.jpg`)) || undefined;
-      if (!ktpPhotoPath && !identifyNo.trim()) {
+      if (!ktpPhotoPath) {
         setIsSubmitting(false);
         triggerToast('Gagal mengunggah foto KTP. Periksa koneksi internet Anda dan coba lagi.', 'danger');
         return;
@@ -320,6 +329,19 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
               <div>
                 <span className="text-[9px] uppercase font-bold text-slate-400">Instansi / Perusahaan:</span>
                 <p className="font-bold text-slate-800 dark:text-slate-200 uppercase">{submittedVisitor.company}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+              <div>
+                <span className="text-[9px] uppercase font-bold text-slate-400">Nomor KTP / NIK:</span>
+                <p className="font-mono font-bold text-slate-800 dark:text-slate-200">{submittedVisitor.identifyNo || '-'}</p>
+              </div>
+              <div>
+                <span className="text-[9px] uppercase font-bold text-slate-400">Foto KTP Pemohon:</span>
+                <p className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  {submittedVisitor.ktpPhotoPath ? '✅ Terlampir & Terunggah' : '✅ Terlampir'}
+                </p>
               </div>
             </div>
 
@@ -505,29 +527,36 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
             </div>
 
             <div>
-              <label className="block text-xs font-semibold mb-1">
-                Foto KTP
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold">
+                  Foto KTP <span className="text-rose-500">*</span>
+                </label>
+                <span className="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 border border-rose-200 dark:border-rose-900">
+                  Wajib Diunggah
+                </span>
+              </div>
               {ktpPhotoPreview ? (
-                <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800">
-                  <img src={ktpPhotoPreview} alt="Preview Foto KTP" className="h-16 w-24 object-cover border border-slate-300 dark:border-slate-700 shrink-0" />
+                <div className="flex items-center gap-3 p-2.5 bg-slate-50 dark:bg-[#152033] border border-emerald-300 dark:border-emerald-800">
+                  <img src={ktpPhotoPreview} alt="Preview Foto KTP" className="h-16 w-24 object-cover border border-emerald-400 dark:border-emerald-600 shrink-0 shadow-2xs" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">Foto siap diunggah (~{ktpPhotoSizeKb}KB)</p>
-                    <p className="text-[10px] text-slate-400">Foto sudah dikompres otomatis.</p>
+                    <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                      ✅ Foto KTP Siap Diunggah (~{ktpPhotoSizeKb}KB)
+                    </p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Foto sudah dikompres otomatis & siap diverifikasi petugas.</p>
                   </div>
                   <button
                     type="button"
                     onClick={handleRemoveKtpPhoto}
-                    className="p-1.5 text-slate-400 hover:text-rose-500 cursor-pointer shrink-0"
+                    className="p-1.5 text-slate-400 hover:text-rose-500 cursor-pointer shrink-0 transition-colors"
                     title="Hapus foto"
                   >
                     <XIcon size={16} />
                   </button>
                 </div>
               ) : (
-                <label className={`flex items-center justify-center gap-2 w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border border-dashed ${errors.identifyNo ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'} rounded-none text-xs font-semibold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900`}>
-                  {isCompressingPhoto ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-                  <span>{isCompressingPhoto ? 'Memproses foto...' : 'Ambil / Unggah Foto KTP'}</span>
+                <label className={`flex items-center justify-center gap-2 w-full px-3.5 py-3 bg-slate-50 dark:bg-[#152033] border border-dashed ${errors.ktpPhoto ? 'border-rose-500 bg-rose-50/20 dark:bg-rose-950/20' : 'border-slate-300 dark:border-slate-700 hover:border-[#005DA6] dark:hover:border-[#FFD500]'} rounded-none text-xs font-semibold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors`}>
+                  {isCompressingPhoto ? <Loader2 size={15} className="animate-spin text-[#005DA6] dark:text-[#FFD500]" /> : <Camera size={15} className="text-[#005DA6] dark:text-[#FFD500]" />}
+                  <span className="font-bold text-[#005DA6] dark:text-[#FFD500]">{isCompressingPhoto ? 'Memproses foto...' : 'Ambil / Unggah Foto KTP'}</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -538,8 +567,13 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                   />
                 </label>
               )}
-              <p className="text-[10px] text-slate-400 mt-1">Isi salah satu: Nomor KTP/NIK di atas, atau unggah foto KTP.</p>
-              {errors.identifyNo && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.identifyNo}</span>}
+              {errors.ktpPhoto ? (
+                <span className="text-rose-500 text-[10.5px] font-bold mt-1.5 flex items-center gap-1">
+                  ⚠️ {errors.ktpPhoto}
+                </span>
+              ) : (
+                <p className="text-[10px] text-slate-400 mt-1">Format: JPG, PNG, WEBP (otomatis dikompresi aman & ringan).</p>
+              )}
             </div>
 
             <div>

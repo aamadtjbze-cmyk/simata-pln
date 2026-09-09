@@ -37,6 +37,7 @@ import {
 import { Visitor, VisitorStatus, Stakeholder, UserRole } from '../types';
 import { generateWhatsAppPassUrl } from '../lib/email';
 import { getProductionPassUrl } from '../utils/security';
+import { getKtpPhotoSignedUrl } from '../lib/supabase';
 
 interface VisitorTableProps {
   visitors: Visitor[];
@@ -101,6 +102,8 @@ export default function VisitorTable({
   const [isRejecting, setIsRejecting] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [isResendingEmail, setIsResendingEmail] = useState<string | null>(null);
+  const [viewingKtpUrl, setViewingKtpUrl] = useState<string | null>(null);
+  const [viewingKtpName, setViewingKtpName] = useState<string>('');
 
   // Sorting states
   const [sortField, setSortField] = useState<SortField>('id');
@@ -1514,6 +1517,31 @@ export default function VisitorTable({
                   <span className="text-[9px] uppercase font-bold text-slate-400 block">Pegawai / Divisi Dituju</span>
                   <span className="font-bold text-[#005DA6] dark:text-[#FFD500] uppercase">{quickActionVisitor.visited}</span>
                 </div>
+                <div>
+                  <span className="text-[9px] uppercase font-bold text-slate-400 block">Nomor KTP / NIK</span>
+                  <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{quickActionVisitor.identifyNo || '-'}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] uppercase font-bold text-slate-400 block">Foto KTP Pemohon</span>
+                  {quickActionVisitor.ktpPhotoPath ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const url = await getKtpPhotoSignedUrl(quickActionVisitor.ktpPhotoPath!);
+                        if (url) {
+                          setViewingKtpUrl(url);
+                          setViewingKtpName(quickActionVisitor.visitorName);
+                        }
+                      }}
+                      className="mt-0.5 px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 text-[10.5px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                    >
+                      <Eye size={11} />
+                      Lihat Foto KTP
+                    </button>
+                  ) : (
+                    <span className="text-[10.5px] text-slate-400 italic">Belum Terlampir</span>
+                  )}
+                </div>
                 <div className="col-span-2 pt-1 border-t border-slate-200 dark:border-slate-800">
                   <span className="text-[9px] uppercase font-bold text-slate-400 block">Jadwal / Waktu Pertemuan</span>
                   <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{quickActionVisitor.schedule}</span>
@@ -1854,6 +1882,48 @@ export default function VisitorTable({
                   <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Modal for Viewing KTP Photo (via Signed URL) */}
+      {viewingKtpUrl && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-60 flex items-center justify-center p-3 sm:p-4 animate-fade-in font-sans">
+          <div className="bg-white dark:bg-slate-900 max-w-lg w-full border-2 border-[#005DA6] dark:border-[#FFD500] shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
+            <div className="bg-[#005DA6] text-white px-4 py-3 flex items-center justify-between border-b-2 border-[#FFD500] shrink-0">
+              <div className="flex items-center gap-2 min-w-0 pr-2">
+                <Shield size={16} className="text-[#FFD500] shrink-0" />
+                <span className="text-xs font-black uppercase tracking-wider truncate">
+                  Foto KTP: {viewingKtpName}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingKtpUrl(null)}
+                className="p-1 hover:bg-white/20 text-white cursor-pointer transition-colors shrink-0"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-4 flex flex-col items-center gap-3 bg-slate-100 dark:bg-slate-950 overflow-y-auto">
+              <img
+                src={viewingKtpUrl}
+                alt={`KTP ${viewingKtpName}`}
+                className="w-full max-h-[55vh] object-contain border border-slate-300 dark:border-slate-700 shadow-md bg-white dark:bg-slate-900"
+              />
+              <span className="text-[10px] text-slate-400 font-mono">
+                🔒 Tautan terenkripsi aman Supabase Storage (Privat & Sementara)
+              </span>
+            </div>
+            <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setViewingKtpUrl(null)}
+                className="px-4 py-1.5 bg-[#005DA6] hover:bg-[#004070] text-white text-xs font-bold uppercase tracking-wider cursor-pointer"
+              >
+                Tutup
+              </button>
             </div>
           </div>
         </div>
