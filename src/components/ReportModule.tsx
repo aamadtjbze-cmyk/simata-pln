@@ -251,7 +251,7 @@ export default function ReportModule({ visitors, activeStakeholder = 'ALL' }: Re
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `SIMATA_Laporan_Tamu_${monthNames[selectedMonth]}_${selectedYear}.csv`);
+    link.setAttribute('download', `SAMBUT_Laporan_Tamu_${monthNames[selectedMonth]}_${selectedYear}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
