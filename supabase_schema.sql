@@ -119,44 +119,15 @@ CREATE POLICY "Allow public delete ktp photos"
 ON storage.objects FOR DELETE
 USING (bucket_id = 'ktp-photos');
 
--- 9. Auto-delete: hapus foto KTP 7 hari setelah pas/barcode kadaluarsa (valid_until_ts)
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-
-CREATE OR REPLACE FUNCTION public.cleanup_expired_ktp_photos()
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  -- Hapus file fisik dari storage bucket
-  DELETE FROM storage.objects
-  WHERE bucket_id = 'ktp-photos'
-    AND name IN (
-      SELECT ktp_photo_path FROM public.visitors
-      WHERE ktp_photo_path IS NOT NULL
-        AND valid_until_ts IS NOT NULL
-        AND valid_until_ts + INTERVAL '7 days' < now()
-    );
-
-  -- Kosongkan referensi path di tabel visitors
-  UPDATE public.visitors
-  SET ktp_photo_path = NULL
-  WHERE ktp_photo_path IS NOT NULL
-    AND valid_until_ts IS NOT NULL
-    AND valid_until_ts + INTERVAL '7 days' < now();
-END;
-$$;
-
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'cleanup-expired-ktp-photos-daily') THEN
-    PERFORM cron.unschedule('cleanup-expired-ktp-photos-daily');
-  END IF;
-END $$;
-
--- Jadwal harian jam 03:00 UTC (~10:00 WIB)
-SELECT cron.schedule(
-  'cleanup-expired-ktp-photos-daily',
-  '0 3 * * *',
-  $$ SELECT public.cleanup_expired_ktp_photos(); $$
-);
+-- 9. Pembersihan foto KTP: TIDAK lagi dilakukan dari database.
+--
+-- Pendekatan lama memakai pg_cron + DELETE FROM storage.objects, dan gagal
+-- setiap hari: Supabase memasang pemicu storage.protect_delete() yang menolak
+-- penghapusan file langsung dari tabel storage ("Use the Storage API instead").
+-- Jadwal dan fungsinya sudah dihapus agar tidak menyisakan error harian.
+--
+-- Penggantinya: api/cleanup-ktp.js, dijalankan Vercel Cron sekali sehari
+-- (03:00 UTC / 10:00 WIB) memakai Storage API resmi. Aturannya:
+--   1. Retensi  - hapus foto 45 hari setelah valid_until_ts terlampaui.
+--   2. Pengaman - bila isi bucket melewati 800 MB, hapus yang terlama
+--                 sampai turun sekitar 100 MB (batas paket Free: 1 GB).
