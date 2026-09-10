@@ -178,6 +178,11 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
 
     if (!visitorName.trim()) newErrors.visitorName = 'Nama lengkap tamu wajib diisi';
     if (!identifyNo.trim()) newErrors.identifyNo = 'Nomor KTP/NIK wajib diisi';
+    if (!email.trim()) {
+      newErrors.email = 'Email wajib diisi — barcode QR pass dikirim ke alamat ini';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      newErrors.email = 'Format email tidak valid';
+    }
     if (!ktpPhotoBlob) newErrors.ktpPhoto = 'Foto KTP wajib diunggah untuk verifikasi identitas di Pos Keamanan';
     if (!company.trim()) newErrors.company = 'Instansi/Perusahaan wajib diisi';
     if (!phone.trim()) newErrors.phone = 'Nomor Telepon/WA wajib diisi';
@@ -265,7 +270,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
       visited: finalVisited,
       status: 'PENDING',
       phone,
-      email: email ? email.toLowerCase() : `${visitorName.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
+      email: email.trim().toLowerCase(),
       notes,
       validUntil: formattedExpiry,
       validUntilTs,
@@ -470,7 +475,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 text-slate-800 dark:text-slate-200 text-xs">
+        <form noValidate onSubmit={handleSubmit} className="p-6 space-y-5 text-slate-800 dark:text-slate-200 text-xs">
           
           {/* Identity Section */}
           <div className="space-y-3">
@@ -618,15 +623,19 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
 
             <div>
               <label className="block text-xs font-semibold mb-1">
-                Email Tamu (Untuk Penerimaan Pass Digital)
+                Email Tamu (Untuk Penerimaan Pass Digital) <span className="text-rose-500">*</span>
               </label>
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors({ ...errors, email: '' });
+                }}
                 placeholder="tamu@perusahaan.com"
-                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border border-slate-200 dark:border-slate-800 rounded-none text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#005DA6]"
+                className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.email ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
               />
+              {errors.email && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.email}</span>}
             </div>
           </div>
 
