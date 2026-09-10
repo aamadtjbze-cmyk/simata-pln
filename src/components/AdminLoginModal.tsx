@@ -50,7 +50,7 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
             <PLNLogo showText={false} size="sm" className="shrink-0" />
             <div>
               <span className="text-[10px] font-mono font-bold text-[#FFD500] uppercase tracking-widest block">
-                SAMBUT v2 PLN UIK TANJUNG JATI B
+                SAMBUT PLN UIK TANJUNG JATI B
               </span>
               <h3 className="text-sm sm:text-base font-black uppercase tracking-tight font-display text-white">
                 Portal Otentikasi Admin & Security

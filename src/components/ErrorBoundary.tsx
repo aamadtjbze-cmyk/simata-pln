@@ -56,7 +56,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               <PLNLogo showText={false} size="sm" />
               <div>
                 <span className="text-[10px] font-mono font-bold text-[#FFD500] uppercase tracking-widest block">
-                  SAMBUT v2 PLN UIK TJB
+                  SAMBUT PLN UIK TJB
                 </span>
                 <h3 className="text-base font-black text-white uppercase">
                   Pemulihan Sistem Otomatis
