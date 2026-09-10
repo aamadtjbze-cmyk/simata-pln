@@ -13,9 +13,9 @@ interface PLNLogoProps {
 
 export default function PLNLogo({ className = '', size = 'md', showText = true }: PLNLogoProps) {
   const dimensions = {
-    sm: { svg: 'h-7 w-7', mainText: 'text-base', subText: 'text-[9px]' },
-    md: { svg: 'h-10 w-10', mainText: 'text-2xl', subText: 'text-[11px]' },
-    lg: { svg: 'h-13 w-13', mainText: 'text-3xl', subText: 'text-[13px]' },
+    sm: { svg: 'h-7 w-7', mainText: 'text-base', unitText: 'text-[9px]', subText: 'text-[8px]' },
+    md: { svg: 'h-10 w-10', mainText: 'text-2xl', unitText: 'text-[11px]', subText: 'text-[9.5px]' },
+    lg: { svg: 'h-13 w-13', mainText: 'text-3xl', unitText: 'text-[13px]', subText: 'text-[11px]' },
   }[size];
 
   return (
@@ -70,7 +70,12 @@ export default function PLNLogo({ className = '', size = 'md', showText = true }
               PERSERO
             </span>
           </div>
-          <span className={`font-sans font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1 ${dimensions.subText}`}>
+          {/* Identitas unit — hierarki dibedakan lewat tebal & warna, bukan ukuran,
+              agar blok teks tidak bertambah tinggi melebihi emblem */}
+          <span className={`font-sans font-bold text-slate-700 dark:text-slate-200 leading-tight mt-1 ${dimensions.unitText}`}>
+            PT. PLN (Persero) Unit Induk Pembangkitan Tanjung Jati B
+          </span>
+          <span className={`font-sans font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider leading-tight mt-0.5 ${dimensions.subText}`}>
             Sistem Administrasi Manajemen Buku Tamu
           </span>
         </div>
