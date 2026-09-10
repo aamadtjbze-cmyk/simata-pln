@@ -184,7 +184,16 @@ export default function App() {
     const savedNotifs = localStorage.getItem('simata_notifications');
     if (savedNotifs) {
       try {
-        setNotifications(JSON.parse(savedNotifs));
+        const parsed = JSON.parse(savedNotifs);
+        // Notifikasi menyimpan teks pesannya apa adanya saat dibuat, sehingga yang
+        // dibuat sebelum penggantian nama masih berbunyi "SIMATA". Ganti sekali di
+        // sini agar riwayat lama ikut seragam di browser tiap petugas.
+        const perluGanti = savedNotifs.includes('SIMATA');
+        const bersih = perluGanti
+          ? JSON.parse(savedNotifs.replace(/SIMATA/g, 'SAMBUT').replace(/Simata/g, 'Sambut'))
+          : parsed;
+        setNotifications(bersih);
+        if (perluGanti) localStorage.setItem('simata_notifications', JSON.stringify(bersih));
       } catch (e) {
         setNotifications([]);
       }
