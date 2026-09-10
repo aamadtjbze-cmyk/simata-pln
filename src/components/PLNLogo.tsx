@@ -73,7 +73,7 @@ export default function PLNLogo({ className = '', size = 'md', showText = true }
           {/* Identitas unit — hierarki dibedakan lewat tebal & warna, bukan ukuran,
               agar blok teks tidak bertambah tinggi melebihi emblem */}
           <span className={`font-sans font-bold text-slate-700 dark:text-slate-200 leading-tight mt-1 ${dimensions.unitText}`}>
-            Unit Induk Pembangkitan Tanjung Jati B
+            UIK Tanjung Jati B
           </span>
           <span className={`font-sans font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider leading-tight mt-0.5 ${dimensions.subText}`}>
             Sistem Administrasi Manajemen Buku Tamu
