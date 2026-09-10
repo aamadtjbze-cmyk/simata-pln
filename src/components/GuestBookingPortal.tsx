@@ -177,6 +177,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     }
 
     if (!visitorName.trim()) newErrors.visitorName = 'Nama lengkap tamu wajib diisi';
+    if (!identifyNo.trim()) newErrors.identifyNo = 'Nomor KTP/NIK wajib diisi';
     if (!ktpPhotoBlob) newErrors.ktpPhoto = 'Foto KTP wajib diunggah untuk verifikasi identitas di Pos Keamanan';
     if (!company.trim()) newErrors.company = 'Instansi/Perusahaan wajib diisi';
     if (!phone.trim()) newErrors.phone = 'Nomor Telepon/WA wajib diisi';
@@ -517,7 +518,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               <div>
                 <label className="block text-xs font-semibold mb-1">
-                  Nomor KTP / NIK
+                  Nomor KTP / NIK <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -530,6 +531,7 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
                   placeholder="16 digit NIK KTP"
                   className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#152033] border ${errors.identifyNo ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-none text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#005DA6]`}
                 />
+                {errors.identifyNo && <span className="text-rose-500 text-[10px] font-semibold mt-1 block">{errors.identifyNo}</span>}
               </div>
 
               <div>
