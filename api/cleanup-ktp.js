@@ -21,6 +21,13 @@ const RETENSI_HARI = 45;
 const AMBANG_BYTE = 800 * 1024 * 1024;   // mulai bersih-bersih di atas ini
 const TARGET_BEBAS_BYTE = 100 * 1024 * 1024;
 const HALAMAN = 1000;                    // batas satu kali list Storage API
+const HAPUS_PER_BATCH = 100;             // pecah remove() agar tiap panggilan ringan
+const MAKS_HAPUS_PER_JALAN = 1000;       // batasi kerja sekali jalan; sisanya besok
+
+// ponytail: menelusuri seluruh isi bucket tiap hari itu O(n) — pada ~4.500 file
+// (ambang 800 MB) masih ~5 panggilan list dan aman di bawah batas waktu Vercel.
+// Bila kelak pindah ke paket berbayar dengan kuota jauh lebih besar, ganti
+// penelusuran penuh ini dengan kolom ukuran yang diakumulasi di database.
 
 function getAdminClient() {
   const url = process.env.VITE_SUPABASE_URL;
@@ -39,10 +46,19 @@ async function kosongkanPath(sb, namaFile) {
 
 async function hapusFile(sb, namaFile) {
   if (!namaFile.length) return { terhapus: 0, error: null };
-  const { error } = await sb.storage.from(BUCKET).remove(namaFile);
-  if (error) return { terhapus: 0, error: error.message };
-  await kosongkanPath(sb, namaFile);
-  return { terhapus: namaFile.length, error: null };
+
+  const daftar = namaFile.slice(0, MAKS_HAPUS_PER_JALAN);
+  const tertunda = namaFile.length - daftar.length;
+  let terhapus = 0;
+
+  for (let i = 0; i < daftar.length; i += HAPUS_PER_BATCH) {
+    const batch = daftar.slice(i, i + HAPUS_PER_BATCH);
+    const { error } = await sb.storage.from(BUCKET).remove(batch);
+    if (error) return { terhapus, tertunda, error: error.message };
+    await kosongkanPath(sb, batch);
+    terhapus += batch.length;
+  }
+  return { terhapus, tertunda, error: null };
 }
 
 /** Tahap 1 — retensi berdasarkan waktu. */
