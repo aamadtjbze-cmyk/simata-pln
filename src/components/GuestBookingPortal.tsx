@@ -178,7 +178,13 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
 
     if (!visitorName.trim()) newErrors.visitorName = 'Nama lengkap tamu wajib diisi';
     if (!identifyNo.trim()) newErrors.identifyNo = 'Nomor KTP/NIK wajib diisi';
-    if (!email.trim()) newErrors.email = 'Email wajib diisi — barcode QR pass dikirim ke alamat ini';
+    if (!email.trim()) {
+      newErrors.email = 'Email wajib diisi — barcode QR pass dikirim ke alamat ini';
+    } else if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      // Pemeriksaan susunan paling longgar: ada nama, @, domain, dan titik.
+      // Sengaja tidak ketat agar alamat yang tidak lazim tetap bisa masuk.
+      newErrors.email = 'Susunan email belum benar — contoh: nama@perusahaan.com';
+    }
     if (!ktpPhotoBlob) newErrors.ktpPhoto = 'Foto KTP wajib diunggah untuk verifikasi identitas di Pos Keamanan';
     if (!company.trim()) newErrors.company = 'Instansi/Perusahaan wajib diisi';
     if (!phone.trim()) newErrors.phone = 'Nomor Telepon/WA wajib diisi';
