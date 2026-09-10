@@ -977,7 +977,7 @@ export default function App() {
 
   // Reset database back to rich defaults
   const handleResetDatabase = () => {
-    if (confirm('Apakah Anda ingin mereset seluruh data kembali ke setelan bawaan SIMATA PLN? Semua penambahan tamu baru akan terhapus.')) {
+    if (confirm('Apakah Anda ingin mereset seluruh data kembali ke setelan bawaan SAMBUT PLN? Semua penambahan tamu baru akan terhapus.')) {
       saveAndSync(INITIAL_VISITORS);
       setNotifications([]);
       localStorage.removeItem('simata_notifications');
@@ -1364,7 +1364,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Navigation Tabs (SIMATA Workspace Deck) */}
+        {/* Navigation Tabs (SAMBUT Workspace Deck) */}
         <div className="mb-3 border-b-2 border-slate-200 dark:border-slate-800 flex items-center justify-start gap-1 select-none flex-shrink-0 overflow-x-auto pb-0.5">
           {/* Form Pengajuan Tamu - Always Accessible for Guests & Admin */}
           <button
@@ -1637,7 +1637,7 @@ export default function App() {
       <footer className="bg-white dark:bg-[#111c30]/80 border-t border-slate-250 dark:border-slate-850 py-2.5 text-center text-[10px] text-slate-400 font-sans flex-shrink-0 select-none transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <p className="font-semibold text-slate-500 dark:text-slate-400">
-            &copy; 2026 PT PLN (Persero). SIMATA — Sistem Informasi Manajemen Tamu. All rights reserved.
+            &copy; 2026 PT PLN (Persero). SAMBUT — Sistem Administrasi Manajemen Buku Tamu. All rights reserved.
           </p>
           <div className="flex gap-4 font-mono text-[9px]">
             <span>Version 3.0.12 (Stable)</span>
@@ -1745,7 +1745,7 @@ export default function App() {
                   1. Verifikasi Identitas Utama
                 </h5>
                 <p className="leading-relaxed pl-2.5">
-                  Tamu wajib menyerahkan kartu identitas resmi (KTP atau SIM) di pos penjagaan utama. Petugas berkewajiban mencocokkan wajah tamu dengan foto yang tertera pada kartu identitas sebelum mendaftarkan data ke sistem SIMATA.
+                  Tamu wajib menyerahkan kartu identitas resmi (KTP atau SIM) di pos penjagaan utama. Petugas berkewajiban mencocokkan wajah tamu dengan foto yang tertera pada kartu identitas sebelum mendaftarkan data ke sistem SAMBUT.
                 </p>
               </div>
               
@@ -1765,7 +1765,7 @@ export default function App() {
                   3. Proses Check-Out & Pengembalian
                 </h5>
                 <p className="leading-relaxed pl-2.5">
-                  Ketika kunjungan selesai, tamu harus diarahkan untuk menyerahkan kembali Gate Pass kepada petugas resepsionis. Petugas wajib menekan tombol <strong>Check-Out</strong> di baris nama tamu dalam sistem SIMATA untuk mendokumentasikan jam kepulangan secara akurat.
+                  Ketika kunjungan selesai, tamu harus diarahkan untuk menyerahkan kembali Gate Pass kepada petugas resepsionis. Petugas wajib menekan tombol <strong>Check-Out</strong> di baris nama tamu dalam sistem SAMBUT untuk mendokumentasikan jam kepulangan secara akurat.
                 </p>
               </div>
             </div>

@@ -150,7 +150,7 @@ export default function NotificationCenter({
                   Belum Ada Log Kiriman Notifikasi
                 </p>
                 <p className="text-[10px] text-slate-400 mt-1 max-w-sm mx-auto leading-relaxedNormal">
-                  Sistem SIMATA akan mengirimkan notifikasi otomatis ke nomor WhatsApp/Email karyawan ketika status tamu diubah ke "IN-PROGRESS" (Check-In) atau saat informasi janji temu diperbarui.
+                  Sistem SAMBUT akan mengirimkan notifikasi otomatis ke nomor WhatsApp/Email karyawan ketika status tamu diubah ke "IN-PROGRESS" (Check-In) atau saat informasi janji temu diperbarui.
                 </p>
               </div>
             )}
@@ -160,7 +160,7 @@ export default function NotificationCenter({
         <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-400 font-semibold select-none">
           <span className="flex items-center gap-1 text-emerald-500 uppercase tracking-wider">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-none"></span>
-            SIMATA PLN Auto-Push Active
+            SAMBUT PLN Auto-Push Active
           </span>
           <span>Security Token: SMT-MESSENGER-3.0</span>
         </div>
@@ -292,7 +292,7 @@ export default function NotificationCenter({
 
                   <div className="bg-white dark:bg-[#111c30] p-4 border-l border-r border-b border-slate-250 dark:border-slate-800/80 text-[11px] text-slate-800 dark:text-slate-250 flex-1 space-y-3 font-sans leading-relaxed text-slate-700 dark:text-slate-350">
                     <div className="flex justify-between items-center text-[10px] border-b pb-2 text-slate-400 font-bold border-slate-100 dark:border-slate-800">
-                      <span>FROM: simata-notify@pln.co.id</span>
+                      <span>FROM: sambut-notify@pln.co.id</span>
                       <span>TO: {selectedNotif.employeeName.trim().toLowerCase() || 'divisi'}@pln.co.id</span>
                     </div>
 

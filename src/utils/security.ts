@@ -4,13 +4,13 @@
  */
 
 /**
- * Security token helper for SIMATA PLN Pass verification
+ * Security token helper for SAMBUT PLN Pass verification
  * Encrypts/obfuscates visitor ID into a secure token to prevent manual guessing/cloning
  */
 import { Visitor } from '../types';
 
 /**
- * Keystream secret cipher key for SIMATA PLN Pass verification
+ * Keystream secret cipher key for SAMBUT PLN Pass verification
  * Scrambles and obfuscates visitor IDs into an unguessable cryptographic token
  */
 const SECRET_KEY = 'PLN_TJB_CIPHER_2026_x89q!#GateAuth';
@@ -115,7 +115,7 @@ export function decodePassToken(token: string): string | null {
 }
 
 /**
- * URL Link Barcode Pass resmi SIMATA PLN yang siap dibuka di HP / Browser tamu
+ * URL Link Barcode Pass resmi SAMBUT PLN yang siap dibuka di HP / Browser tamu
  * Menggunakan token acak terenkripsi sehingga nomor urut ID tamu tidak dapat ditebak.
  */
 export function getProductionPassUrl(passId: string): string {

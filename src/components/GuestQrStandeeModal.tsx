@@ -74,7 +74,7 @@ export default function GuestQrStandeeModal({ isOpen, onClose, triggerToast }: G
             </div>
             <div>
               <span className="text-[10px] font-mono font-bold text-[#FFD500] uppercase tracking-widest block">
-                SIMATA PLN UIK TANJUNG JATI B
+                SAMBUT PLN UIK TANJUNG JATI B
               </span>
               <h3 className="text-sm font-black uppercase tracking-tight font-display text-white">
                 QR Code Standee Registrasi Tamu
@@ -115,7 +115,7 @@ export default function GuestQrStandeeModal({ isOpen, onClose, triggerToast }: G
               <div className="p-3 bg-white border-3 border-[#005DA6] shadow-sm inline-block">
                 <img
                   src={qrImageUrl}
-                  alt="QR Code Registrasi Tamu SIMATA"
+                  alt="QR Code Registrasi Tamu SAMBUT"
                   className="w-56 h-56 sm:w-64 sm:h-64 object-contain mx-auto"
                 />
               </div>
@@ -169,7 +169,7 @@ export default function GuestQrStandeeModal({ isOpen, onClose, triggerToast }: G
 
             <a
               href={qrImageUrl}
-              download="QR-Standee-SIMATA-PLN.png"
+              download="QR-Standee-SAMBUT-PLN.png"
               target="_blank"
               rel="noopener noreferrer"
               className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 cursor-pointer rounded-none transition-all"

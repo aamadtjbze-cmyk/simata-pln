@@ -286,7 +286,7 @@ export default function VisitorTable({
       return 0;
     }
 
-    // Default Sorting (Urutan Cerdas SIMATA):
+    // Default Sorting (Urutan Cerdas SAMBUT):
     // 1. Prioritaskan status PENDING di baris teratas (agar approval admin tidak terlewat)
     // 2. Kemudian status SCHEDULED (tamu terjadwal)
     // 3. Kemudian status IN-PROGRESS (sedang di gedung)

@@ -66,7 +66,7 @@ Tujuan Pertemuan: ${visitor.purpose}
 Mohon segera menyambut tamu di lobi resepsionis utama atau mempersiapkan ruang pertemuan yang bersangkutan.
 
 Salam hangat,
-SIMATA PT PLN (Persero)`;
+SAMBUT PT PLN (Persero)`;
   } else {
     const oldLabel = oldStatus ? getStatusLabel(oldStatus) : 'Prapendaftaran';
     const newLabel = getStatusLabel(visitor.status);
@@ -84,7 +84,7 @@ Informasi kunjungan atas janji temu Anda telah diperbarui:
 Rincian Catatan: ${visitor.notes || 'Tidak ada catatan tambahan.'}
 
 Salam hangat,
-SIMATA PT PLN (Persero)`;
+SAMBUT PT PLN (Persero)`;
   }
 
   return {

@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * Daily Sequential Pass Number Generator for SIMATA PLN
+ * Daily Sequential Pass Number Generator for SAMBUT PLN
  * Automatically computes the next available sequence for the current day.
  */
 

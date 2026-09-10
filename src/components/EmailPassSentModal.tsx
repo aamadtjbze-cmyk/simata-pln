@@ -52,7 +52,7 @@ export default function EmailPassSentModal({ visitor, onClose, onOpenPass }: Ema
         <Loader2 size={18} className="text-blue-600 dark:text-blue-400 shrink-0 animate-spin" />
         <div>
           <p className="font-bold text-blue-900 dark:text-blue-200 text-xs">Mengirim Barcode Pass ke <span className="font-mono">{targetEmail}</span>…</p>
-          <p className="text-[10px] text-blue-700 dark:text-blue-300">Menembak via Multi-Channel Gateway SIMATA (Mode Prioritas Brevo / Fallback)</p>
+          <p className="text-[10px] text-blue-700 dark:text-blue-300">Menembak via Multi-Channel Gateway SAMBUT (Mode Prioritas Brevo / Fallback)</p>
         </div>
       </div>
     );
@@ -207,7 +207,7 @@ export default function EmailPassSentModal({ visitor, onClose, onOpenPass }: Ema
               <div className="grid grid-cols-4 gap-1">
                 <span className="text-slate-400 font-semibold">Subjek:</span>
                 <span className="col-span-3 font-bold text-[#005DA6] dark:text-[#FFD500]">
-                  [SIMATA PLN UIK TJB] Persetujuan Janji Temu &amp; Pass Digital - {visitor.visitorName}
+                  [SAMBUT PLN UIK TJB] Persetujuan Janji Temu &amp; Pass Digital - {visitor.visitorName}
                 </span>
               </div>
             </div>

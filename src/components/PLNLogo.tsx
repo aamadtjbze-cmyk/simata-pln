@@ -71,7 +71,7 @@ export default function PLNLogo({ className = '', size = 'md', showText = true }
             </span>
           </div>
           <span className={`font-sans font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1 ${dimensions.subText}`}>
-            Sistem Manajemen Tamu
+            Sistem Administrasi Manajemen Buku Tamu
           </span>
         </div>
       )}

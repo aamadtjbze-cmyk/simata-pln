@@ -1,5 +1,5 @@
 -- ==============================================================================
--- SIMATA PLN - Supabase Database Schema & RLS Setup
+-- SAMBUT PLN - Supabase Database Schema & RLS Setup
 -- Execute this script in your Supabase SQL Editor: (Dashboard > SQL Editor > New Query)
 -- ==============================================================================
 

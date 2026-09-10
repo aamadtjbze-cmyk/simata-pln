@@ -209,7 +209,7 @@ export const INITIAL_VISITORS: Visitor[] = [
     phone: '081200112233',
     identifyNo: '3175020404980004',
     gender: 'Laki-laki',
-    notes: 'Pemasangan server database SIMATA lokal'
+    notes: 'Pemasangan server database SAMBUT lokal'
   },
   {
     id: 'TJB-VST-005005',

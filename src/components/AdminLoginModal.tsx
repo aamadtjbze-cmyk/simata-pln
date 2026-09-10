@@ -50,7 +50,7 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
             <PLNLogo showText={false} size="sm" className="shrink-0" />
             <div>
               <span className="text-[10px] font-mono font-bold text-[#FFD500] uppercase tracking-widest block">
-                SIMATA v2 PLN UIK TANJUNG JATI B
+                SAMBUT v2 PLN UIK TANJUNG JATI B
               </span>
               <h3 className="text-sm sm:text-base font-black uppercase tracking-tight font-display text-white">
                 Portal Otentikasi Admin & Security
@@ -128,7 +128,7 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, trigg
               className="w-full py-3 bg-[#005DA6] hover:bg-[#004070] text-white font-black text-xs uppercase tracking-wider border-b-2 border-r-2 border-[#FFD500] cursor-pointer shadow-md flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
-              {isSubmitting ? 'Memeriksa...' : 'Masuk Sistem Admin SIMATA'}
+              {isSubmitting ? 'Memeriksa...' : 'Masuk Sistem Admin SAMBUT'}
             </button>
           </div>
 

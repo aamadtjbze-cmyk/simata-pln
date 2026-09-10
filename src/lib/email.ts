@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * SIMATA PLN Email & WhatsApp Gateway:
+ * SAMBUT PLN Email & WhatsApp Gateway:
  * 1. Google Apps Script Webhook (Direct Gmail, 500-2000 email/hari)
  * 2. Brevo API (Sendinblue, 300 email/hari gratis, tanpa wajib custom domain)
  * 3. EmailJS SDK (Gmail, Outlook PLN, Custom SMTP)
@@ -82,12 +82,12 @@ export const buildPassEmailHtml = (visitor: Visitor, passUrl: string, qrImageUrl
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Persetujuan Janji Temu SIMATA PLN</title>
+    <title>Persetujuan Janji Temu SAMBUT PLN</title>
   </head>
   <body style="font-family: Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b;">
     <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 2px solid #005DA6;">
       <div style="background-color: #005DA6; border-bottom: 3px solid #FFD500; padding: 20px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 20px; text-transform: uppercase;">SIMATA PLN UIK TANJUNG JATI B</h1>
+        <h1 style="color: #ffffff; margin: 0; font-size: 20px; text-transform: uppercase;">SAMBUT PLN UIK TANJUNG JATI B</h1>
         <p style="color: #FFD500; margin: 5px 0 0 0; font-size: 11px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;">Surat Izin Masuk & Kartu Digital Tamu</p>
       </div>
       <div style="padding: 24px;">
@@ -120,7 +120,7 @@ export const buildPassEmailHtml = (visitor: Visitor, passUrl: string, qrImageUrl
         </p>
       </div>
       <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 12px 20px; text-align: center; font-size: 10px; color: #94a3b8;">
-        © 2026 PT PLN (Persero) UIK Tanjung Jati B. Sistem Informasi Manajemen Akses & Tamu (SIMATA).
+        © 2026 PT PLN (Persero) UIK Tanjung Jati B. Sistem Administrasi Manajemen Buku Tamu (SAMBUT).
       </div>
     </div>
   </body>
@@ -143,7 +143,7 @@ export const sendViaGoogleScript = async (visitor: Visitor, passUrl: string, scr
     purpose: visitor.purpose,
     pass_url: passUrl,
     qr_image_url: qrImageUrl,
-    from_name: 'SIMATA PLN UIK TJB',
+    from_name: 'SAMBUT PLN UIK TJB',
   };
 
   try {
@@ -201,9 +201,9 @@ export const sendViaBrevo = async (visitor: Visitor, passUrl: string, apiKey?: s
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          sender: { name: 'SIMATA PLN UIK TJB', email: senderEmail || 'aamadtjbze@gmail.com' },
+          sender: { name: 'SAMBUT PLN UIK TJB', email: senderEmail || 'aamadtjbze@gmail.com' },
           to: [{ email: visitor.email, name: visitor.visitorName }],
-          subject: `[SIMATA PLN] Persetujuan Janji Temu & QR Pass - ${visitor.visitorName}`,
+          subject: `[SAMBUT PLN] Persetujuan Janji Temu & QR Pass - ${visitor.visitorName}`,
           htmlContent: htmlContent,
         }),
       });
@@ -237,7 +237,7 @@ export const sendViaEmailJs = async (visitor: Visitor, passUrl: string, cfg: Ema
         purpose: visitor.purpose,
         pass_url: passUrl,
         qr_image_url: qrImageUrl,
-        from_name: 'SIMATA PLN UIK TJB',
+        from_name: 'SAMBUT PLN UIK TJB',
       },
       cfg.publicKey
     );
@@ -260,8 +260,8 @@ export const generateWhatsAppPassUrl = (visitor: Visitor, passUrl: string): stri
   }
 
   const message = 
-`⚡ *SIMATA PLN UIK TANJUNG JATI B*
-_Sistem Informasi Manajemen Akses & Tamu_
+`⚡ *SAMBUT PLN UIK TANJUNG JATI B*
+_Sistem Administrasi Manajemen Buku Tamu_
 
 Halo Bapak/Ibu *${visitor.visitorName}* (${visitor.company || '-'}),
 

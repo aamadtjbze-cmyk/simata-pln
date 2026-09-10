@@ -27,7 +27,7 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[SIMATA PLN Uncaught Error]:', error, errorInfo);
+    console.error('[SAMBUT PLN Uncaught Error]:', error, errorInfo);
     this.setState({ errorInfo });
   }
 
@@ -56,7 +56,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               <PLNLogo showText={false} size="sm" />
               <div>
                 <span className="text-[10px] font-mono font-bold text-[#FFD500] uppercase tracking-widest block">
-                  SIMATA v2 PLN UIK TJB
+                  SAMBUT v2 PLN UIK TJB
                 </span>
                 <h3 className="text-base font-black text-white uppercase">
                   Pemulihan Sistem Otomatis
