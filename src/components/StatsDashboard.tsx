@@ -110,7 +110,7 @@ export default function StatsDashboard({ visitors, scopeLabel }: StatsDashboardP
           <LogOut size={22} />
         </div>
         <div>
-          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Selesai Berkeluar</span>
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Selesai Berkunjung</span>
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">{done}</p>
           <span className="text-[10px] text-slate-400 dark:text-slate-500">Sudah check-out</span>
         </div>
