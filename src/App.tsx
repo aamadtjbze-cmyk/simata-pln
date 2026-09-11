@@ -93,6 +93,16 @@ const playNotificationChime = () => {
   } catch (e) {}
 };
 
+const CHECKPOINTS = [
+  ['inTime', 'Check-In Main Gate'],
+  ['secondGateTime', 'Masuk Pos 2'],
+  ['receptionistTime', 'Diterima Lobby'],
+  ['outTime', 'Check-Out'],
+] as const;
+
+const mergeVisitor = (list: Visitor[], v: Visitor): Visitor[] =>
+  list.some((p) => p.id === v.id) ? list.map((p) => (p.id === v.id ? v : p)) : [v, ...list];
+
 // Browser Desktop Push Notification (0 Vercel compute)
 const sendDesktopNotification = (title: string, body: string) => {
   try {
@@ -137,6 +147,42 @@ export default function App() {
   
   // UI Toast alert state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'danger' } | null>(null);
+
+  // Data tamu selalu dibaca dari daftar yang diperbarui realtime. visitorForBadge
+  // hanyalah salinan saat pass dibuka; bila dipakai langsung, pass tamu tetap
+  // "Belum In" dan tombol checkpoint menimpa jam dari pos lain dengan nilai lama.
+  const findVisitor = (id: string): Visitor | undefined =>
+    visitors.find((v) => v.id === id) ?? (visitorForBadge?.id === id ? visitorForBadge : undefined);
+  const liveBadge = visitorForBadge ? findVisitor(visitorForBadge.id) ?? visitorForBadge : null;
+
+  // Petugas entitas (receptionist / pos 2) hanya melihat & menghitung tamu entitasnya.
+  // Admin dan security main gate (entitas 'ALL') melihat total seluruh kawasan.
+  const inScope = (stk?: Stakeholder) => activeStakeholder === 'ALL' || (stk || 'PLN') === activeStakeholder;
+  const scopedVisitors = visitors.filter((v) => inScope(v.stakeholder));
+  const scopedNotifications = notifications.filter((n) =>
+    inScope(n.stakeholder ?? visitors.find((v) => v.id === n.guestId)?.stakeholder));
+
+  // Kanal realtime dipasang sekali saat mount; ref ini memberinya nilai terkini.
+  const visitorsRef = React.useRef(visitors);
+  visitorsRef.current = visitors;
+  const sessionRef = React.useRef({ isAdmin: false, inScope });
+  sessionRef.current = { isAdmin: userRole === 'ADMIN', inScope };
+
+  // HP tamu: realtime terputus saat layar mati / tab di latar, dan perubahan selama
+  // itu tidak dikirim ulang. Ambil ulang data pass setiap halaman kembali terlihat.
+  const badgeId = visitorForBadge?.id;
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    if (!badgeId || !supabase) return;
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      supabase.from('visitors').select('*').eq('id', badgeId).maybeSingle().then(({ data }) => {
+        if (data) setVisitors((prev) => mergeVisitor(prev, rowToVisitor(data)));
+      });
+    };
+    document.addEventListener('visibilitychange', refresh);
+    return () => document.removeEventListener('visibilitychange', refresh);
+  }, [badgeId]);
 
   // Initialize data on component mount
   useEffect(() => {
@@ -385,25 +431,50 @@ export default function App() {
           const updates = new Map(pendingUpdates);
           pendingUpdates.clear();
 
+          // Notifikasi untuk petugas yang sedang login, sesuai entitasnya. Dibandingkan
+          // dengan data lokal: perangkat yang menekan tombol sudah memperbarui datanya
+          // sendiri (dan membuat notifikasinya), jadi gema realtime-nya tidak dobel.
+          const { isAdmin, inScope: isMine } = sessionRef.current;
+          const incoming: SystemNotification[] = [];
+          updates.forEach(({ type, payload }) => {
+            if (!isAdmin || (type !== 'INSERT' && type !== 'UPDATE')) return;
+            const v = rowToVisitor(payload.new);
+            const before = visitorsRef.current.find((p) => p.id === v.id);
+            if (!isMine(v.stakeholder)) return;
+
+            if (type === 'INSERT' && v.status === 'PENDING') {
+              playNotificationChime();
+              sendDesktopNotification(
+                `🔔 Pengajuan Janji Temu Masuk: ${v.visitorName}`,
+                `Instansi: ${v.company || '-'} | Bertemu: ${v.visited} (${v.schedule})`
+              );
+              triggerToast(`Pengajuan Janji Temu Masuk: ${v.visitorName} (${v.company})`, 'info');
+            }
+
+            const changed = CHECKPOINTS.filter(([key]) => v[key] && v[key] !== before?.[key]);
+            if (changed.length === 0) return;
+            const [key, label] = changed[changed.length - 1];
+            incoming.push({ ...createNotification(v, before?.status), id: `NTF-${v.id}-${key}-${v[key]}` });
+            playNotificationChime();
+            triggerToast(`${label} ${v.stakeholder || 'PLN'}: ${v.visitorName} — ${v[key]}`, 'info');
+          });
+          if (incoming.length > 0) {
+            setNotifications((prev) => {
+              const next = [...incoming.filter((n) => !prev.some((p) => p.id === n.id)), ...prev];
+              localStorage.setItem('simata_notifications', JSON.stringify(next));
+              return next;
+            });
+          }
+
           setVisitors((prev) => {
             let next = [...prev];
             updates.forEach(({ type, payload }) => {
               if (type === 'INSERT') {
                 const newV = rowToVisitor(payload.new);
                 next = [newV, ...next.filter((v) => v.id !== newV.id)];
-
-                // Jika pengajuan baru (PENDING), bunyikan notifikasi audio & push notification
-                if (newV.status === 'PENDING') {
-                  playNotificationChime();
-                  sendDesktopNotification(
-                    `🔔 Pengajuan Janji Temu Masuk: ${newV.visitorName}`,
-                    `Instansi: ${newV.company || '-'} | Bertemu: ${newV.visited} (${newV.schedule})`
-                  );
-                  triggerToast(`Pengajuan Janji Temu Masuk: ${newV.visitorName} (${newV.company})`, 'info');
-                }
               } else if (type === 'UPDATE') {
-                const updatedV = rowToVisitor(payload.new);
-                next = next.map((v) => (v.id === updatedV.id ? updatedV : v));
+                // Tambahkan bila belum ada: pass yang dibuka tamu bisa berada di luar daftar awal
+                next = mergeVisitor(next, rowToVisitor(payload.new));
               } else if (type === 'DELETE' && payload.old) {
                 next = next.filter((v) => v.id !== payload.old.id);
               }
@@ -766,9 +837,7 @@ export default function App() {
     const mins = pad(today.getMinutes());
     const formattedInTime = `${day} ${monthName} ${year} - ${hours}.${mins}`;
 
-    const original = (visitorForBadge && visitorForBadge.id === visitorId)
-      ? { ...visitors.find((v) => v.id === visitorId), ...visitorForBadge }
-      : visitors.find((v) => v.id === visitorId);
+    const original = findVisitor(visitorId);
     if (!original) return;
 
     // ponytail: guard – konfirmasi sebelum menimpa jam masuk yang sudah tercatat
@@ -806,9 +875,7 @@ export default function App() {
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const formattedNow = `${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()} - ${pad(today.getHours())}.${pad(today.getMinutes())}`;
 
-    const original = (visitorForBadge && visitorForBadge.id === visitorId)
-      ? { ...visitors.find((v) => v.id === visitorId), ...visitorForBadge }
-      : visitors.find((v) => v.id === visitorId);
+    const original = findVisitor(visitorId);
     if (!original) return;
 
     const stk = original.stakeholder || 'PLN';
@@ -849,9 +916,7 @@ export default function App() {
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const formattedNow = `${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()} - ${pad(today.getHours())}.${pad(today.getMinutes())}`;
 
-    const original = (visitorForBadge && visitorForBadge.id === visitorId)
-      ? { ...visitors.find((v) => v.id === visitorId), ...visitorForBadge }
-      : visitors.find((v) => v.id === visitorId);
+    const original = findVisitor(visitorId);
     if (!original) return;
 
     const stk = original.stakeholder || 'PLN';
@@ -896,9 +961,7 @@ export default function App() {
     const mins = pad(today.getMinutes());
     const formattedOutTime = `${day} ${monthName} ${year} - ${hours}.${mins}`;
 
-    const original = (visitorForBadge && visitorForBadge.id === visitorId)
-      ? { ...visitors.find((v) => v.id === visitorId), ...visitorForBadge }
-      : visitors.find((v) => v.id === visitorId);
+    const original = findVisitor(visitorId);
     if (!original) return;
 
     const updatedVisitor: Visitor = {
@@ -1357,7 +1420,10 @@ export default function App() {
         {/* Dynamic Statistics KPIs Row (Only visible for Admin Mode) */}
         {userRole === 'ADMIN' && (
           <div className="flex-shrink-0">
-            <StatsDashboard visitors={visitors} />
+            <StatsDashboard
+              visitors={scopedVisitors}
+              scopeLabel={activeStakeholder === 'ALL' ? 'Total seluruh entitas' : `Entitas ${activeStakeholder}`}
+            />
           </div>
         )}
 
@@ -1415,13 +1481,13 @@ export default function App() {
             Janji Temu Tamu {userRole !== 'ADMIN' && '🔒'}
             {userRole === 'ADMIN' && (
               <>
-                {visitors.filter((v) => v.status === 'PENDING').length > 0 ? (
+                {scopedVisitors.filter((v) => v.status === 'PENDING').length > 0 ? (
                   <span className="ml-1.5 px-1.5 py-0.5 flex items-center justify-center bg-rose-600 text-white rounded-none text-[8.5px] font-black border border-white dark:border-[#111c30] leading-none animate-pulse shadow-sm">
-                    {visitors.filter((v) => v.status === 'PENDING').length} BARU
+                    {scopedVisitors.filter((v) => v.status === 'PENDING').length} BARU
                   </span>
-                ) : visitors.filter((v) => v.status === 'SCHEDULED').length > 0 ? (
+                ) : scopedVisitors.filter((v) => v.status === 'SCHEDULED').length > 0 ? (
                   <span className="ml-1.5 px-1.5 py-0.5 flex items-center justify-center bg-amber-500 text-slate-950 rounded-none text-[8.5px] font-black border border-white dark:border-[#111c30] leading-none">
-                    {visitors.filter((v) => v.status === 'SCHEDULED').length}
+                    {scopedVisitors.filter((v) => v.status === 'SCHEDULED').length}
                   </span>
                 ) : null}
               </>
@@ -1440,9 +1506,9 @@ export default function App() {
               >
                 <Bell size={13} />
                 Notifikasi Cerdas
-                {notifications.length > 0 && (
+                {scopedNotifications.length > 0 && (
                   <span className="ml-1.5 px-1.5 py-0.5 flex items-center justify-center bg-rose-500 text-white rounded-none text-[8.5px] font-black border border-white dark:border-[#111c30] leading-none">
-                    {notifications.length}
+                    {scopedNotifications.length}
                   </span>
                 )}
               </button>
@@ -1600,7 +1666,7 @@ export default function App() {
           {currentTab === 'notifikasi' && (
             <div className="w-full">
               <NotificationCenter
-                notifications={notifications}
+                notifications={scopedNotifications}
                 onClearAll={handleClearAllNotifications}
                 onResend={handleResendNotification}
               />
@@ -1674,9 +1740,9 @@ export default function App() {
       )}
 
       {/* Guest Card Pass / Printer Mockup Badge Modal */}
-      {visitorForBadge && (
+      {liveBadge && (
         <BadgeModal
-          visitor={visitorForBadge}
+          visitor={liveBadge}
           onClose={handleCloseBadgeModal}
           onCheckInAppointment={handleCheckInAppointment}
           onSecondGateCheckIn={handleSecondGateCheckIn}

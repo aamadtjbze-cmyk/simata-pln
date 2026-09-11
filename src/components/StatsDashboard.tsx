@@ -8,10 +8,11 @@ import { Users, Clock, LogIn, LogOut, CalendarCheck, HelpCircle } from 'lucide-r
 import { Visitor } from '../types';
 
 interface StatsDashboardProps {
-  visitors: Visitor[];
+  visitors: Visitor[]; // sudah disaring sesuai entitas petugas yang login
+  scopeLabel: string;
 }
 
-export default function StatsDashboard({ visitors }: StatsDashboardProps) {
+export default function StatsDashboard({ visitors, scopeLabel }: StatsDashboardProps) {
   const [time, setTime] = useState<Date>(() => new Date());
 
   useEffect(() => {
@@ -89,7 +90,7 @@ export default function StatsDashboard({ visitors }: StatsDashboardProps) {
         <div>
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Tamu</span>
           <p className="text-2xl font-black text-slate-900 dark:text-white font-mono">{total}</p>
-          <span className="text-[10px] text-slate-400 dark:text-slate-500">Kumulatif terdaftar</span>
+          <span className="text-[10px] text-slate-400 dark:text-slate-500">{scopeLabel}</span>
         </div>
       </div>
 

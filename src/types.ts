@@ -64,6 +64,7 @@ export interface SystemNotification {
   timestamp: string;
   guestId: string;
   guestName: string;
+  stakeholder?: Stakeholder; // entitas tamu, untuk menyaring notifikasi per petugas
   company: string;
   employeeName: string;
   type: 'CHECK_IN' | 'STATUS_UPDATE';

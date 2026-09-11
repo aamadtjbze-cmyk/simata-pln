@@ -51,6 +51,13 @@ export function createNotification(
   let title = '';
   let message = '';
 
+  // Jam checkpoint sama persis dengan yang tampil di pass digital tamu.
+  const hasPos2 = visitor.stakeholder === 'KPJB' || visitor.stakeholder === 'AGP';
+  const checkpoints = `Waktu Checkpoint (${visitor.stakeholder || 'PLN'}):
+• Masuk Main Gate: ${visitor.inTime || '-'}
+${hasPos2 ? `• Masuk ${visitor.stakeholder === 'AGP' ? 'Pos Total 8' : 'Second Gate KPJB'}: ${visitor.secondGateTime || '-'}\n` : ''}• Diterima Lobby: ${visitor.receptionistTime || '-'}
+• Keluar (Check-Out): ${visitor.outTime || '-'}`;
+
   if (isCheckIn) {
     title = `Kedatangan Tamu: ${visitor.visitorName}`;
     message = `Yth. Rekan PLN (${visitor.visited}),
@@ -58,10 +65,11 @@ export function createNotification(
 Diberitahukan bahwa tamu Anda telah tiba di lokasi:
 • Nama Tamu: ${visitor.visitorName}
 • Instansi/Perusahaan: ${visitor.company}
-• Jam Masuk: ${visitor.inTime || dateStr}
 • Nomor Pas Gerbang (Main Gate Pass): ${visitor.mainGatePass || '-'}
 ${visitor.secondGatePass ? `• Nomor Pas Gerbang 2: ${visitor.secondGatePass}\n` : ''}
 Tujuan Pertemuan: ${visitor.purpose}
+
+${checkpoints}
 
 Mohon segera menyambut tamu di lobi resepsionis utama atau mempersiapkan ruang pertemuan yang bersangkutan.
 
@@ -81,6 +89,8 @@ Informasi kunjungan atas janji temu Anda telah diperbarui:
 • Status Baru: [${newLabel}]
 • Waktu Perubahan: ${dateStr}
 
+${checkpoints}
+
 Rincian Catatan: ${visitor.notes || 'Tidak ada catatan tambahan.'}
 
 Salam hangat,
@@ -92,6 +102,7 @@ SAMBUT PT PLN (Persero)`;
     timestamp: dateStr,
     guestId: visitor.id,
     guestName: visitor.visitorName,
+    stakeholder: visitor.stakeholder,
     company: visitor.company,
     employeeName: visitor.visited,
     type,
