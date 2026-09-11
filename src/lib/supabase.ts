@@ -190,24 +190,37 @@ export const fetchVisitorsFromSupabase = async (): Promise<Visitor[] | null> => 
 };
 
 /**
- * Insert or Upsert a visitor record
+ * Ambil Form ID baru dari sequence database (lihat supabase_schema.sql bagian 10).
+ * Jangan menghitung ID dari daftar tamu di browser: daftar itu bisa basi, dan
+ * dua HP yang mengirim bersamaan akan mendapat nomor yang sama.
  */
-export const saveVisitorToSupabase = async (visitor: Visitor): Promise<boolean> => {
+export const getNextVisitorId = async (): Promise<string | null> => {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('next_visitor_id');
+  if (error || typeof data !== 'string') {
+    console.error('Gagal mengambil Form ID baru:', error?.message);
+    return null;
+  }
+  return data;
+};
+
+/**
+ * Simpan data tamu. Tamu baru (isNew) memakai INSERT, bukan upsert, agar ID yang
+ * sudah terpakai ditolak database alih-alih diam-diam menimpa tamu lain.
+ */
+export const saveVisitorToSupabase = async (visitor: Visitor, isNew = false): Promise<boolean> => {
   const supabase = getSupabaseClient();
   if (!supabase) return false;
 
   try {
     const row = visitorToRow(visitor);
-    const { error } = await supabase.from('visitors').upsert(row);
-
+    const { error } = isNew
+      ? await supabase.from('visitors').insert(row)
+      : await supabase.from('visitors').upsert(row);
     if (error) {
-      console.warn('Supabase upsert with extended columns failed, retrying with core columns:', error.message);
-      const { second_gate_time, receptionist_time, receptionist_badge, stakeholder, valid_until_ts, ktp_photo_path, ...fallbackRow } = row;
-      const fallbackResult = await supabase.from('visitors').upsert(fallbackRow);
-      if (fallbackResult.error) {
-        console.error('Supabase fallback upsert error:', fallbackResult.error.message);
-        return false;
-      }
+      console.error('Supabase save error:', error.message);
+      return false;
     }
     return true;
   } catch (err) {

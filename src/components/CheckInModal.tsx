@@ -9,14 +9,13 @@ import { Visitor, VisitorStatus, Stakeholder } from '../types';
 import { COMMON_PURPOSES, PLN_DIVISIONS, KPJB_DIVISIONS, TJBPS_DIVISIONS, AGP_DIVISIONS } from '../data/mockData';
 import { generateDailyPassNumber } from '../utils/passGenerator';
 import { compressImageToJpeg } from '../utils/imageCompression';
-import { uploadKtpPhoto, getKtpPhotoSignedUrl } from '../lib/supabase';
+import { uploadKtpPhoto, getKtpPhotoSignedUrl, getNextVisitorId } from '../lib/supabase';
 
 interface CheckInModalProps {
   visitorToEdit?: Visitor | null;
   onSave: (visitor: Visitor) => void;
   onClose: () => void;
   visitorsCount: number;
-  lastFormId: string;
   visitors?: Visitor[];
 }
 
@@ -25,7 +24,6 @@ export default function CheckInModal({
   onSave,
   onClose,
   visitorsCount,
-  lastFormId,
   visitors = [],
 }: CheckInModalProps) {
   const [visitorName, setVisitorName] = useState('');
@@ -156,12 +154,11 @@ export default function CheckInModal({
       return;
     }
 
-    // Auto generate ID if not editing
-    let formId = visitorToEdit?.id;
+    // Tamu baru: Form ID diambil dari sequence database agar tidak bentrok antar-perangkat
+    const formId = visitorToEdit?.id || (await getNextVisitorId());
     if (!formId) {
-      const match = lastFormId.match(/(\d+)$/);
-      const nextNum = match ? parseInt(match[1]) + 1 : 5009;
-      formId = `TJB-VST-${String(nextNum).padStart(6, '0')}`;
+      setErrors({ identifyNo: 'Gagal terhubung ke database untuk membuat Form ID. Periksa koneksi internet dan coba lagi.' });
+      return;
     }
 
     let ktpPhotoPath = existingKtpPhotoPath || undefined;

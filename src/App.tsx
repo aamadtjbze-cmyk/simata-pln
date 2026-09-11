@@ -56,6 +56,7 @@ import {
   checkSupabaseHealth,
   fetchVisitorsFromSupabase,
   saveVisitorToSupabase,
+  getNextVisitorId,
   deleteVisitorFromSupabase,
   rowToVisitor,
 } from './lib/supabase';
@@ -136,17 +137,6 @@ export default function App() {
   
   // UI Toast alert state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'danger' } | null>(null);
-
-  // Derive the last/maximum Form ID to prevent duplicate key assignment (numeric extraction)
-  const lastFormId = visitors && visitors.length > 0 
-    ? ([...visitors]
-        .filter((v) => v && typeof v.id === 'string')
-        .sort((a, b) => {
-          const numA = parseInt(a.id.replace(/\D/g, '') || '0', 10);
-          const numB = parseInt(b.id.replace(/\D/g, '') || '0', 10);
-          return numB - numA;
-        })[0]?.id || 'TJB-VST-005008')
-    : 'TJB-VST-005008';
 
   // Initialize data on component mount
   useEffect(() => {
@@ -557,7 +547,7 @@ export default function App() {
   // Ceiling: delay 300ms masih aman untuk UX realtime karena state React sudah diupdate.
   const lsWriteTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const saveAndSync = (newVisitors: Visitor[], singleUpdatedVisitor?: Visitor) => {
+  const saveAndSync = (newVisitors: Visitor[], singleUpdatedVisitor?: Visitor, isNew = false): Promise<boolean> => {
     setVisitors(newVisitors);
 
     // Debounce localStorage write: hanya tulis setelah 300ms idle
@@ -566,14 +556,13 @@ export default function App() {
       localStorage.setItem('simata_visitors', JSON.stringify(newVisitors));
     }, 300);
 
-    if (isSupabaseConfigured()) {
-      if (singleUpdatedVisitor) {
-        // Optimal: hanya upsert 1 record yang berubah
-        saveVisitorToSupabase(singleUpdatedVisitor);
-      }
-      // ponytail: tidak iterasi seluruh array tanpa singleUpdatedVisitor –
-      // mencegah N request sekaligus yang akan melanggar batas koneksi Supabase free tier (50 concurrent).
-    }
+    // ponytail: tidak iterasi seluruh array tanpa singleUpdatedVisitor –
+    // mencegah N request sekaligus yang akan melanggar batas koneksi Supabase free tier (50 concurrent).
+    if (!isSupabaseConfigured() || !singleUpdatedVisitor) return Promise.resolve(true);
+    return saveVisitorToSupabase(singleUpdatedVisitor, isNew).then((ok) => {
+      if (!ok) triggerToast(`Data ${singleUpdatedVisitor.visitorName} GAGAL tersimpan ke database. Periksa koneksi lalu ulangi.`, 'danger');
+      return ok;
+    });
   };
 
   // Toast feedback — clear timer lama sebelum set baru agar tidak leak
@@ -643,7 +632,7 @@ export default function App() {
       saveAndSyncNotifications(newNotifs);
     }
     
-    saveAndSync(updated, finalSavedVisitor);
+    saveAndSync(updated, finalSavedVisitor, !exists);
     setIsCheckInOpen(false);
     setVisitorToEdit(null);
   };
@@ -995,7 +984,7 @@ export default function App() {
   };
 
   // Generate random visitor entry for quickly testing simulation flow
-  const handleAddSampleVisitor = () => {
+  const handleAddSampleVisitor = async () => {
     const sampleNames = ['BUDI SANTOSO', 'ANI WIJAYA', 'CECEP PRIADI', 'DEWI LESTARI', 'EKO PRASETYO', 'HERMAN GUNA'];
     const sampleCompanies = ['PT ADHI KARYA', 'PT INDOSAT TBK', 'KEMENTERIAN BUMN', 'PT REKAYASA INDUSTRI', 'CV SINAR UTAMA'];
     const samplePurposes = ['Konsultasi Gardu Distribusi', 'Pengiriman suku cadang tiang', 'Presentasi tender kabel PLN', 'Rapat koordinasi AMDAL'];
@@ -1006,9 +995,8 @@ export default function App() {
     const randomPurp = samplePurposes[Math.floor(Math.random() * samplePurposes.length)];
     const randomVis = sampleVisited[Math.floor(Math.random() * sampleVisited.length)];
 
-    const match = lastFormId.match(/(\d+)$/);
-    const nextNum = match ? parseInt(match[1]) + 1 : 5009;
-    const newId = `TJB-VST-${String(nextNum).padStart(6, '0')}`;
+    const newId = await getNextVisitorId();
+    if (!newId) return triggerToast('Gagal mengambil Form ID baru dari database.', 'danger');
 
     const today = new Date();
     const pad = (num: number) => String(num).padStart(2, '0');
@@ -1033,7 +1021,7 @@ export default function App() {
       notes: ''
     };
 
-    saveAndSync([sampleGuest, ...visitors], sampleGuest);
+    saveAndSync([sampleGuest, ...visitors], sampleGuest, true);
     triggerToast(`Pendaftaran tamu ${randomName} berhasil ditambahkan.`, 'success');
 
     // Automatically trigger check-in notification for sample visitor!
@@ -1599,13 +1587,11 @@ export default function App() {
           {currentTab === 'pengajuan-tamu' && (
             <div className="w-full">
               <GuestBookingPortal
-                onSaveVisitor={(newVisitor) => {
-                  const updated = [newVisitor, ...visitors];
-                  saveAndSync(updated, newVisitor);
-                  const notif = createNotification(newVisitor, 'PENDING');
-                  saveAndSyncNotifications([notif, ...notifications]);
+                onSaveVisitor={async (newVisitor) => {
+                  const ok = await saveAndSync([newVisitor, ...visitors], newVisitor, true);
+                  if (ok) saveAndSyncNotifications([createNotification(newVisitor, 'PENDING'), ...notifications]);
+                  return ok;
                 }}
-                lastFormId={lastFormId}
                 triggerToast={triggerToast}
               />
             </div>
@@ -1683,7 +1669,6 @@ export default function App() {
             setVisitorToEdit(null);
           }}
           visitorsCount={visitors.length}
-          lastFormId={lastFormId}
           visitors={visitors}
         />
       )}

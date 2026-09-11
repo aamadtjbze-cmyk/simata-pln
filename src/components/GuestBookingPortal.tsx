@@ -8,11 +8,10 @@ import { Calendar, User, Building, Phone, Mail, UserCheck, Clock, FileText, Send
 import PLNLogo from './PLNLogo';
 import { Visitor, VisitorStatus, Stakeholder } from '../types';
 import { compressImageToJpeg } from '../utils/imageCompression';
-import { uploadKtpPhoto } from '../lib/supabase';
+import { uploadKtpPhoto, getNextVisitorId } from '../lib/supabase';
 
 interface GuestBookingPortalProps {
-  onSaveVisitor: (visitor: Visitor) => void;
-  lastFormId: string;
+  onSaveVisitor: (visitor: Visitor) => Promise<boolean>;
   triggerToast: (msg: string, type?: 'success' | 'info' | 'danger') => void;
 }
 
@@ -86,7 +85,7 @@ const RANDOM_COMPANY_PLACEHOLDERS = [
   'Contoh: PT REKAYASA INDUSTRI',
 ];
 
-export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerToast }: GuestBookingPortalProps) {
+export default function GuestBookingPortal({ onSaveVisitor, triggerToast }: GuestBookingPortalProps) {
   const [namePlaceholder] = useState(() => RANDOM_NAME_PLACEHOLDERS[Math.floor(Math.random() * RANDOM_NAME_PLACEHOLDERS.length)]);
   const [companyPlaceholder] = useState(() => RANDOM_COMPANY_PLACEHOLDERS[Math.floor(Math.random() * RANDOM_COMPANY_PLACEHOLDERS.length)]);
   const [stakeholder, setStakeholder] = useState<Stakeholder>('PLN');
@@ -144,13 +143,6 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     setKtpPhotoBlob(null);
     setKtpPhotoPreview('');
     setKtpPhotoSizeKb(0);
-  };
-
-  // Generate unique Form ID e.g. TJB-VST-005010
-  const generateNewFormId = () => {
-    const numericPart = parseInt(lastFormId.replace('TJB-VST-', ''), 10);
-    const nextNum = isNaN(numericPart) ? 5009 : numericPart + 1;
-    return `TJB-VST-${String(nextNum).padStart(6, '0')}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -242,7 +234,12 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
     expiryDate.setHours(23, 59, 0, 0);
     const validUntilTs = expiryDate.toISOString();
 
-    const newFormId = generateNewFormId();
+    const newFormId = await getNextVisitorId();
+    if (!newFormId) {
+      setIsSubmitting(false);
+      triggerToast('Gagal terhubung ke server. Periksa koneksi internet Anda dan coba lagi.', 'danger');
+      return;
+    }
 
     let ktpPhotoPath: string | undefined;
     if (ktpPhotoBlob) {
@@ -280,9 +277,10 @@ export default function GuestBookingPortal({ onSaveVisitor, lastFormId, triggerT
       ktpPhotoPath,
     };
 
-    onSaveVisitor(newVisitor);
-    setSubmittedVisitor(newVisitor);
+    const saved = await onSaveVisitor(newVisitor);
     setIsSubmitting(false);
+    if (!saved) return; // pesan gagal sudah ditampilkan; isian form tetap utuh untuk dikirim ulang
+    setSubmittedVisitor(newVisitor);
     triggerToast(`Pengajuan Janji Temu atas nama ${newVisitor.visitorName} (${stakeholder}) berhasil dikirim!`, 'success');
   };
 

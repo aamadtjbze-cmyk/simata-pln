@@ -131,3 +131,23 @@ USING (bucket_id = 'ktp-photos');
 --   1. Retensi  - hapus foto 45 hari setelah valid_until_ts terlampaui.
 --   2. Pengaman - bila isi bucket melewati 800 MB, hapus yang terlama
 --                 sampai turun sekitar 100 MB (batas paket Free: 1 GB).
+
+-- ==============================================================================
+-- 10. FORM ID TAMU DARI SEQUENCE DATABASE
+-- ==============================================================================
+-- Dulu Form ID dihitung di browser (ID terbesar di daftar + 1) lalu disimpan
+-- dengan upsert. Pada 11 Sep 2026, empat HP tamu yang mengirim hampir bersamaan
+-- sama-sama mendapat TJB-VST-005077 dan saling menimpa: tiga pengajuan hilang
+-- tanpa pesan error. Kini nomor diambil dari sequence (atomik, tidak mungkin
+-- kembar) dan tamu baru disimpan dengan INSERT sehingga bentrok ditolak.
+CREATE SEQUENCE IF NOT EXISTS public.visitor_id_seq;
+SELECT setval('public.visitor_id_seq', GREATEST(
+  (SELECT COALESCE(MAX(SUBSTRING(id FROM '[0-9]+$')::BIGINT), 5008) FROM public.visitors),
+  (SELECT last_value FROM public.visitor_id_seq)));
+
+CREATE OR REPLACE FUNCTION public.next_visitor_id() RETURNS TEXT
+LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = public AS $$
+  SELECT 'TJB-VST-' || LPAD(NEXTVAL('public.visitor_id_seq')::TEXT, 6, '0')
+$$;
+REVOKE ALL ON FUNCTION public.next_visitor_id() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.next_visitor_id() TO anon, authenticated;
