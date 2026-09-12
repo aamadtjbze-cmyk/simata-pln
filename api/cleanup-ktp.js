@@ -5,7 +5,8 @@
  * SAMBUT PLN - Pembersihan Foto KTP (Vercel Cron)
  *
  * Dijalankan sekali sehari. Dua tahap:
- *   1. Retensi  — hapus foto 45 hari setelah masa berlaku pass tamu habis.
+ *   1. Retensi  — hapus foto 7 hari setelah masa berlaku pass tamu habis
+ *               (data tamu tetap tersimpan; hanya file foto & path-nya).
  *   2. Pengaman — bila storage melewati 800 MB, hapus yang terlama sampai
  *                 turun sekitar 100 MB.
  *
@@ -17,7 +18,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const BUCKET = 'ktp-photos';
-const RETENSI_HARI = 45;
+const RETENSI_HARI = 7;
 const AMBANG_BYTE = 800 * 1024 * 1024;   // mulai bersih-bersih di atas ini
 const TARGET_BEBAS_BYTE = 100 * 1024 * 1024;
 const HALAMAN = 1000;                    // batas satu kali list Storage API

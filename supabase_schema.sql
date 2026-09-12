@@ -128,7 +128,7 @@ USING (bucket_id = 'ktp-photos');
 --
 -- Penggantinya: api/cleanup-ktp.js, dijalankan Vercel Cron sekali sehari
 -- (03:00 UTC / 10:00 WIB) memakai Storage API resmi. Aturannya:
---   1. Retensi  - hapus foto 45 hari setelah valid_until_ts terlampaui.
+--   1. Retensi  - hapus foto 7 hari setelah valid_until_ts terlampaui (data tamu tetap).
 --   2. Pengaman - bila isi bucket melewati 800 MB, hapus yang terlama
 --                 sampai turun sekitar 100 MB (batas paket Free: 1 GB).
 
