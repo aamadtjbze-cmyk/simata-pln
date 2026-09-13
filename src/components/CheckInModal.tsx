@@ -13,7 +13,7 @@ import { uploadKtpPhoto, getKtpPhotoSignedUrl, getNextVisitorId } from '../lib/s
 
 interface CheckInModalProps {
   visitorToEdit?: Visitor | null;
-  onSave: (visitor: Visitor) => void;
+  onSave: (visitor: Visitor) => void | Promise<void>;
   onClose: () => void;
   visitorsCount: number;
   visitors?: Visitor[];
@@ -139,6 +139,7 @@ export default function CheckInModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSavingPhoto) return; // cegah klik ganda selama unggah foto & simpan ke database
     const newErrors: { [key: string]: string } = {};
 
     if (!visitorName.trim()) newErrors.visitorName = 'Nama tamu harus diisi';
@@ -154,19 +155,20 @@ export default function CheckInModal({
       return;
     }
 
+    setIsSavingPhoto(true);
     // Tamu baru: Form ID diambil dari sequence database agar tidak bentrok antar-perangkat
     const formId = visitorToEdit?.id || (await getNextVisitorId());
     if (!formId) {
+      setIsSavingPhoto(false);
       setErrors({ identifyNo: 'Gagal terhubung ke database untuk membuat Form ID. Periksa koneksi internet dan coba lagi.' });
       return;
     }
 
     let ktpPhotoPath = existingKtpPhotoPath || undefined;
     if (ktpPhotoBlob) {
-      setIsSavingPhoto(true);
       const uploadedPath = await uploadKtpPhoto(ktpPhotoBlob, `${formId}.jpg`);
-      setIsSavingPhoto(false);
       if (!uploadedPath && !identifyNo.trim()) {
+        setIsSavingPhoto(false);
         setErrors({ identifyNo: 'Gagal mengunggah foto KTP. Periksa koneksi internet dan coba lagi.' });
         return;
       }
@@ -216,7 +218,8 @@ export default function CheckInModal({
       ktpPhotoPath,
     };
 
-    onSave(visitorData);
+    await onSave(visitorData); // berhasil: App menutup modal; gagal: isian tetap utuh untuk diulang
+    setIsSavingPhoto(false);
   };
 
   return (

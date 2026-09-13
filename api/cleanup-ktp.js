@@ -4,10 +4,11 @@
  *
  * SAMBUT PLN - Pembersihan Foto KTP (Vercel Cron)
  *
- * Dijalankan sekali sehari. Dua tahap:
+ * Dijalankan sekali sehari. Tiga tahap:
  *   1. Retensi  — hapus foto 7 hari setelah masa berlaku pass tamu habis
  *               (data tamu tetap tersimpan; hanya file foto & path-nya).
- *   2. Pengaman — bila storage melewati 800 MB, hapus yang terlama sampai
+ *   2. Yatim    — hapus foto tanpa data tamu (pengajuan gagal tersimpan).
+ *   3. Pengaman — bila storage melewati 800 MB, hapus yang terlama sampai
  *                 turun sekitar 100 MB.
  *
  * Penghapusan WAJIB lewat Storage API. Pendekatan sebelumnya memakai
@@ -65,12 +66,13 @@ async function hapusFile(sb, namaFile) {
 /** Tahap 1 — retensi berdasarkan waktu. */
 async function bersihkanKadaluarsa(sb) {
   const batas = new Date(Date.now() - RETENSI_HARI * 86400000).toISOString();
+  // Pass tanpa waktu kedaluwarsa terbaca mesin (masa berlaku "CUSTOM" berupa teks
+  // bebas, atau data lama) dihitung dari tanggal registrasi, agar fotonya tetap terhapus.
   const { data, error } = await sb
     .from('visitors')
     .select('ktp_photo_path')
     .not('ktp_photo_path', 'is', null)
-    .not('valid_until_ts', 'is', null)
-    .lt('valid_until_ts', batas);
+    .or(`valid_until_ts.lt.${batas},and(valid_until_ts.is.null,created_at.lt.${batas})`);
   if (error) throw new Error(`Gagal membaca data tamu: ${error.message}`);
 
   const nama = [...new Set(data.map((v) => v.ktp_photo_path).filter(Boolean))];
@@ -94,9 +96,37 @@ async function daftarFoto(sb) {
   return semua;
 }
 
-/** Tahap 2 — pengaman kapasitas. */
-async function bersihkanKapasitas(sb) {
-  const semua = await daftarFoto(sb);
+/**
+ * Tahap 2 — foto yatim: file yang tidak dirujuk tamu mana pun (unggahan dari
+ * pengajuan yang gagal tersimpan). Retensi tahap 1 tidak bisa menjangkaunya
+ * karena berangkat dari tabel visitors. Diberi jeda 1 hari agar foto yang baru
+ * diunggah sesaat sebelum barisnya tersimpan tidak ikut terhapus.
+ */
+async function bersihkanYatim(sb, semua) {
+  // Wajib lengkap: Supabase membatasi 1000 baris per query, dan daftar yang terpotong
+  // akan membuat foto tamu yang sah dianggap yatim lalu terhapus.
+  const dirujuk = new Set();
+  for (let dari = 0; ; dari += HALAMAN) {
+    const { data, error } = await sb
+      .from('visitors')
+      .select('ktp_photo_path')
+      .not('ktp_photo_path', 'is', null)
+      .order('id')
+      .range(dari, dari + HALAMAN - 1);
+    if (error) throw new Error(`Gagal membaca data tamu: ${error.message}`);
+    data.forEach((v) => dirujuk.add(v.ktp_photo_path));
+    if (data.length < HALAMAN) break;
+  }
+  const batas = Date.now() - 86400000;
+  const nama = semua
+    .filter((f) => !dirujuk.has(f.name) && new Date(f.created_at).getTime() < batas)
+    .map((f) => f.name);
+  const hasil = await hapusFile(sb, nama);
+  return { kandidat: nama.length, ...hasil };
+}
+
+/** Tahap 3 — pengaman kapasitas. */
+async function bersihkanKapasitas(sb, semua) {
   const ukuran = (f) => Number(f?.metadata?.size) || 0;
   const totalAwal = semua.reduce((jml, f) => jml + ukuran(f), 0);
 
@@ -129,10 +159,12 @@ export default async function handler(req, res) {
 
   try {
     const retensi = await bersihkanKadaluarsa(sb);
-    const kapasitas = await bersihkanKapasitas(sb);
+    const yatim = await bersihkanYatim(sb, await daftarFoto(sb));
+    const kapasitas = await bersihkanKapasitas(sb, await daftarFoto(sb));
     const ringkas = {
       waktu: new Date().toISOString(),
       retensi: { aturan: `${RETENSI_HARI} hari setelah pass kedaluwarsa`, ...retensi },
+      yatim,
       kapasitas: { ambangMB: AMBANG_BYTE / 1048576, ...kapasitas },
     };
     console.log('[cleanup-ktp]', JSON.stringify(ringkas));

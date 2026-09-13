@@ -57,6 +57,7 @@ import {
   fetchVisitorsFromSupabase,
   saveVisitorToSupabase,
   getNextVisitorId,
+  deleteKtpPhoto,
   deleteVisitorFromSupabase,
   rowToVisitor,
 } from './lib/supabase';
@@ -353,6 +354,8 @@ export default function App() {
                   if (data && data.length > 0 && !error) {
                     const fetchedVisitor = rowToVisitor(data[0]);
                     setVisitorForBadge(fetchedVisitor);
+                    // Masukkan ke daftar: pass & tombol checkpoint membaca daftar, jangan sampai cache lama menang
+                    setVisitors((prev) => mergeVisitor(prev, fetchedVisitor));
                     try {
                       window.history.replaceState({}, '', `/?pass=${encodePassToken(fetchedVisitor.id)}`);
                     } catch (e) {}
@@ -370,6 +373,8 @@ export default function App() {
                         const approvedFirst = fallbackData.find((r: any) => r.status === 'SCHEDULED' || r.status === 'IN-PROGRESS') || fallbackData[0];
                         const fetchedVisitor = rowToVisitor(approvedFirst);
                         setVisitorForBadge(fetchedVisitor);
+                        // Masukkan ke daftar: pass & tombol checkpoint membaca daftar, jangan sampai cache lama menang
+                        setVisitors((prev) => mergeVisitor(prev, fetchedVisitor));
                         try {
                           window.history.replaceState({}, '', `/?pass=${encodePassToken(fetchedVisitor.id)}`);
                         } catch (e) {}
@@ -458,13 +463,7 @@ export default function App() {
             playNotificationChime();
             triggerToast(`${label} ${v.stakeholder || 'PLN'}: ${v.visitorName} — ${v[key]}`, 'info');
           });
-          if (incoming.length > 0) {
-            setNotifications((prev) => {
-              const next = [...incoming.filter((n) => !prev.some((p) => p.id === n.id)), ...prev];
-              localStorage.setItem('simata_notifications', JSON.stringify(next));
-              return next;
-            });
-          }
+          if (incoming.length > 0) prependNotifications(incoming);
 
           setVisitors((prev) => {
             let next = [...prev];
@@ -618,21 +617,33 @@ export default function App() {
   // Ceiling: delay 300ms masih aman untuk UX realtime karena state React sudah diupdate.
   const lsWriteTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const saveAndSync = (newVisitors: Visitor[], singleUpdatedVisitor?: Visitor, isNew = false): Promise<boolean> => {
-    setVisitors(newVisitors);
-
-    // Debounce localStorage write: hanya tulis setelah 300ms idle
+  // Debounce localStorage write: hanya tulis setelah 300ms idle (ref = daftar terkini saat itu)
+  const scheduleVisitorsCacheWrite = () => {
     if (lsWriteTimer.current) clearTimeout(lsWriteTimer.current);
     lsWriteTimer.current = setTimeout(() => {
-      localStorage.setItem('simata_visitors', JSON.stringify(newVisitors));
+      localStorage.setItem('simata_visitors', JSON.stringify(visitorsRef.current));
     }, 300);
+  };
+
+  const saveAndSync = (newVisitors: Visitor[], singleUpdatedVisitor?: Visitor, isNew = false): Promise<boolean> => {
+    setVisitors(newVisitors);
+    scheduleVisitorsCacheWrite();
 
     // ponytail: tidak iterasi seluruh array tanpa singleUpdatedVisitor –
     // mencegah N request sekaligus yang akan melanggar batas koneksi Supabase free tier (50 concurrent).
     if (!isSupabaseConfigured() || !singleUpdatedVisitor) return Promise.resolve(true);
     return saveVisitorToSupabase(singleUpdatedVisitor, isNew).then((ok) => {
-      if (!ok) triggerToast(`Data ${singleUpdatedVisitor.visitorName} GAGAL tersimpan ke database. Periksa koneksi lalu ulangi.`, 'danger');
-      return ok;
+      if (ok) return true;
+      triggerToast(`Data ${singleUpdatedVisitor.visitorName} GAGAL tersimpan ke database. Periksa koneksi lalu ulangi.`, 'danger');
+      if (isNew) {
+        // Tamu baru yang tak tersimpan jangan tertinggal di layar seolah tercatat. Dibuang
+        // per objek (bukan per ID) agar baris sah ber-ID sama dari realtime tidak ikut hilang.
+        setVisitors((prev) => prev.filter((v) => v !== singleUpdatedVisitor));
+        scheduleVisitorsCacheWrite();
+        // Foto KTP terlanjur diunggah; tanpa baris tamu, retensi 7 hari tidak akan menghapusnya.
+        if (singleUpdatedVisitor.ktpPhotoPath) deleteKtpPhoto(singleUpdatedVisitor.ktpPhotoPath);
+      }
+      return false;
     });
   };
 
@@ -663,8 +674,18 @@ export default function App() {
     localStorage.setItem('simata_notifications', JSON.stringify(newNotifs));
   };
 
+  // Tambah di atas daftar terkini — aman dipakai setelah await / dari kanal realtime,
+  // tidak menimpa notifikasi yang masuk sementara itu.
+  const prependNotifications = (items: SystemNotification[]) => {
+    setNotifications((prev) => {
+      const next = [...items.filter((n) => !prev.some((p) => p.id === n.id)), ...prev];
+      localStorage.setItem('simata_notifications', JSON.stringify(next));
+      return next;
+    });
+  };
+
   // Add / Edit Visitor callback
-  const handleSaveVisitor = (savedVisitor: Visitor) => {
+  const handleSaveVisitor = async (savedVisitor: Visitor) => {
     // If mainGatePass is empty and status is active (IN-PROGRESS or SCHEDULED), auto-generate sequential daily pass
     let finalSavedVisitor = savedVisitor;
     if (!finalSavedVisitor.mainGatePass && (finalSavedVisitor.status === 'IN-PROGRESS' || finalSavedVisitor.status === 'SCHEDULED')) {
@@ -674,36 +695,27 @@ export default function App() {
       };
     }
 
-    const exists = visitors.some((v) => v.id === finalSavedVisitor.id);
-    let updated: Visitor[];
-    let newNotifs = [...notifications];
-    
-    if (exists) {
-      const original = visitors.find((v) => v.id === finalSavedVisitor.id);
-      const statusChanged = original && original.status !== finalSavedVisitor.status;
-      
-      // Update existing record
-      updated = visitors.map((v) => (v.id === finalSavedVisitor.id ? finalSavedVisitor : v));
-      triggerToast(`Data tamu ${finalSavedVisitor.visitorName} berhasil diubah.`, 'info');
-      
-      if (statusChanged) {
-        const notif = createNotification(finalSavedVisitor, original?.status);
-        newNotifs = [notif, ...newNotifs];
-        saveAndSyncNotifications(newNotifs);
-      }
-    } else {
-      // Insert new record at the top of the log
-      updated = [finalSavedVisitor, ...visitors];
-      triggerToast(`Registrasi ${finalSavedVisitor.visitorName} berhasil! Kartu masuk (${finalSavedVisitor.mainGatePass}) diterbitkan.`, 'success');
-      // Auto open badge after registration
-      setVisitorForBadge(finalSavedVisitor);
+    // Mode ubah ditentukan dari form, bukan dari isi daftar: baris yang dibuka dari pass
+    // bisa belum ada di daftar lokal dan tidak boleh diperlakukan sebagai INSERT baru.
+    const exists = !!visitorToEdit || visitors.some((v) => v.id === finalSavedVisitor.id);
 
-      const notif = createNotification(finalSavedVisitor);
-      newNotifs = [notif, ...newNotifs];
-      saveAndSyncNotifications(newNotifs);
+    if (exists) {
+      const original = findVisitor(finalSavedVisitor.id);
+      triggerToast(`Data tamu ${finalSavedVisitor.visitorName} berhasil diubah.`, 'info');
+      if (original && original.status !== finalSavedVisitor.status) {
+        saveAndSyncNotifications([createNotification(finalSavedVisitor, original.status), ...notifications]);
+      }
+      saveAndSync(mergeVisitor(visitors, finalSavedVisitor), finalSavedVisitor);
+    } else {
+      // Tamu baru: tunggu database dulu. Bila gagal, form tetap terbuka dengan isiannya
+      // dan kartu masuk TIDAK diterbitkan untuk tamu yang tidak tercatat.
+      const saved = await saveAndSync([finalSavedVisitor, ...visitors], finalSavedVisitor, true);
+      if (!saved) return;
+      triggerToast(`Registrasi ${finalSavedVisitor.visitorName} berhasil! Kartu masuk (${finalSavedVisitor.mainGatePass}) diterbitkan.`, 'success');
+      setVisitorForBadge(finalSavedVisitor);
+      prependNotifications([createNotification(finalSavedVisitor)]);
     }
-    
-    saveAndSync(updated, finalSavedVisitor, !exists);
+
     setIsCheckInOpen(false);
     setVisitorToEdit(null);
   };
@@ -1655,7 +1667,7 @@ export default function App() {
               <GuestBookingPortal
                 onSaveVisitor={async (newVisitor) => {
                   const ok = await saveAndSync([newVisitor, ...visitors], newVisitor, true);
-                  if (ok) saveAndSyncNotifications([createNotification(newVisitor, 'PENDING'), ...notifications]);
+                  if (ok) prependNotifications([createNotification(newVisitor, 'PENDING')]);
                   return ok;
                 }}
                 triggerToast={triggerToast}
