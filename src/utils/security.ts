@@ -122,7 +122,7 @@ export function getProductionPassUrl(passId: string): string {
   const secureToken = encodePassToken(passId);
   const baseUrl = typeof window !== 'undefined' && window.location.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')
     ? window.location.origin
-    : 'https://nawala-tjb.site';
+    : 'https://nawala-jati.site';
   return `${baseUrl}/?pass=${secureToken}`;
 }
 
