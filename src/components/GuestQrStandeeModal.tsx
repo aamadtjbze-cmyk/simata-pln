@@ -13,7 +13,7 @@ interface GuestQrStandeeModalProps {
   triggerToast?: (msg: string, type?: 'success' | 'info' | 'danger') => void;
 }
 
-export const GUEST_PORTAL_URL = 'https://simata-pln.vercel.app/?portal=tamu';
+export const GUEST_PORTAL_URL = 'https://nawala-tjb.site/?portal=tamu';
 
 export default function GuestQrStandeeModal({ isOpen, onClose, triggerToast }: GuestQrStandeeModalProps) {
   const [copied, setCopied] = useState(false);
