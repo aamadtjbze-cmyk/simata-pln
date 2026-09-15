@@ -251,7 +251,7 @@ export default function ReportModule({ visitors, activeStakeholder = 'ALL' }: Re
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `SAMBUT_Laporan_Tamu_${monthNames[selectedMonth]}_${selectedYear}.csv`);
+    link.setAttribute('download', `NAWALA_JATI_Laporan_Tamu_${monthNames[selectedMonth]}_${selectedYear}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -269,7 +269,7 @@ export default function ReportModule({ visitors, activeStakeholder = 'ALL' }: Re
           </div>
           <div>
             <h4 className="font-black text-slate-900 dark:text-white tracking-tight uppercase font-display text-sm">
-              SAMBUT Modul Pelaporan Tamu Komprehensif
+              NAWALA JATI Modul Pelaporan Tamu Komprehensif
             </h4>
             <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider font-semibold">
               Periode Laporan: {monthNames[selectedMonth]} {selectedYear}
@@ -663,7 +663,7 @@ export default function ReportModule({ visitors, activeStakeholder = 'ALL' }: Re
                       PT PLN (PERSERO)
                     </h2>
                     <h1 className="text-2xl font-black tracking-tight mt-0.5 text-slate-900 font-display">
-                      SAMBUT &bull; LAPORAN MANAJEMEN TAMU
+                      NAWALA JATI &bull; LAPORAN MANAJEMEN TAMU
                     </h1>
                     <p className="text-[10px] text-slate-500 font-mono tracking-wide mt-1 uppercase">
                       UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH (UIT JBT) &bull; SURAKARTA
@@ -704,7 +704,7 @@ export default function ReportModule({ visitors, activeStakeholder = 'ALL' }: Re
 
               {/* Document Overview text */}
               <div className="text-xs text-slate-700/90 leading-relaxed mb-6">
-                Dihasilkan secara otomatis oleh <strong>Sistem Administrasi Manajemen Buku Tamu (SAMBUT)</strong>, laporan berkala ini mendokumentasikan lalu lintas kunjungan tamu, personil kontraktor, auditor, dan personil eksternal di area vital operasional ketenagalistrikan PT PLN (Persero). Laporan evaluasi ini mencakup indikator frekuensi harian, mingguan, bulanan, serta demografi tujuan tamu guna mendukung asessment kepatuhan standardisasi keselamatan kerja ketenagalistrikan K3.
+                Dihasilkan secara otomatis oleh <strong>Notifikasi, Akses, Warta &amp; Layanan Tamu Tanjung Jati B (NAWALA JATI)</strong>, laporan berkala ini mendokumentasikan lalu lintas kunjungan tamu, personil kontraktor, auditor, dan personil eksternal di area vital operasional ketenagalistrikan PT PLN (Persero). Laporan evaluasi ini mencakup indikator frekuensi harian, mingguan, bulanan, serta demografi tujuan tamu guna mendukung asessment kepatuhan standardisasi keselamatan kerja ketenagalistrikan K3.
               </div>
 
               {/* Key KPI Metrics grid */}
@@ -818,7 +818,7 @@ export default function ReportModule({ visitors, activeStakeholder = 'ALL' }: Re
 
               {/* Hard Copy Disclaimer */}
               <div className="mt-12 text-[9px] text-slate-400 italic text-center border-t pt-3 font-mono uppercase tracking-wider">
-                Dokumen ini sah, dicetak secara elektronik oleh SAMBUT PLN pada {new Date().toLocaleDateString('id-ID')} {selectedYear} WIB.
+                Dokumen ini sah, dicetak secara elektronik oleh NAWALA JATI PLN pada {new Date().toLocaleDateString('id-ID')} {selectedYear} WIB.
               </div>
 
             </div>

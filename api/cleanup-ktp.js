@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * SAMBUT PLN - Pembersihan Foto KTP (Vercel Cron)
+ * NAWALA JATI PLN - Pembersihan Foto KTP (Vercel Cron)
  *
  * Dijalankan sekali sehari. Tiga tahap:
  *   1. Retensi  — hapus foto 7 hari setelah tamu check-out (belum check-out:

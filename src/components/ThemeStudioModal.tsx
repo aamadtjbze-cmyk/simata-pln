@@ -170,7 +170,7 @@ export default function ThemeStudioModal({
               </span>
             </div>
             <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none mt-1.5 font-display">
-              Pilihan Tema & Kontras Visual SAMBUT
+              Pilihan Tema & Kontras Visual NAWALA JATI
             </h2>
             <p className="text-[11px] text-slate-500 mt-1 font-bold">
               Konfigurasi skema warna resmi korporasi PT PLN (Persero) untuk buku tamu terpadu yang cerah, bersahaja, dan nyaman dibaca siang hari.
@@ -398,7 +398,7 @@ export default function ThemeStudioModal({
             <span className="w-5 h-5 bg-slate-100 text-[#005DA6] flex items-center justify-center font-black text-[10px] rounded-none">3</span>
             <span className="text-xs font-black tracking-wider uppercase text-[#005DA6] flex items-center gap-1.5">
               <Eye size={13} />
-              Pratinjau Instan SAMBUT (Sesuai Konfigurasi Pilihan)
+              Pratinjau Instan NAWALA JATI (Sesuai Konfigurasi Pilihan)
             </span>
           </div>
 

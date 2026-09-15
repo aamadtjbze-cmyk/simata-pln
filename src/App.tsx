@@ -223,11 +223,11 @@ export default function App() {
       try {
         const parsed = JSON.parse(savedNotifs);
         // Notifikasi menyimpan teks pesannya apa adanya saat dibuat, sehingga yang
-        // dibuat sebelum penggantian nama masih berbunyi "SIMATA". Ganti sekali di
+        // dibuat sebelum penggantian nama masih berbunyi "SIMATA" / "SAMBUT". Ganti sekali di
         // sini agar riwayat lama ikut seragam di browser tiap petugas.
-        const perluGanti = savedNotifs.includes('SIMATA');
+        const perluGanti = /SIMATA|SAMBUT/.test(savedNotifs);
         const bersih = perluGanti
-          ? JSON.parse(savedNotifs.replace(/SIMATA/g, 'SAMBUT').replace(/Simata/g, 'Sambut'))
+          ? JSON.parse(savedNotifs.replace(/SIMATA|SAMBUT/g, 'NAWALA JATI').replace(/Simata/g, 'Nawala Jati'))
           : parsed;
         setNotifications(bersih);
         if (perluGanti) localStorage.setItem('simata_notifications', JSON.stringify(bersih));
@@ -1050,7 +1050,7 @@ export default function App() {
 
   // Reset database back to rich defaults
   const handleResetDatabase = () => {
-    if (confirm('Apakah Anda ingin mereset seluruh data kembali ke setelan bawaan SAMBUT PLN? Semua penambahan tamu baru akan terhapus.')) {
+    if (confirm('Apakah Anda ingin mereset seluruh data kembali ke setelan bawaan NAWALA JATI PLN? Semua penambahan tamu baru akan terhapus.')) {
       saveAndSync(INITIAL_VISITORS);
       setNotifications([]);
       localStorage.removeItem('simata_notifications');
@@ -1439,7 +1439,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Navigation Tabs (SAMBUT Workspace Deck) */}
+        {/* Navigation Tabs (NAWALA JATI Workspace Deck) */}
         <div className="mb-3 border-b-2 border-slate-200 dark:border-slate-800 flex items-center justify-start gap-1 select-none flex-shrink-0 overflow-x-auto pb-0.5">
           {/* Form Pengajuan Tamu - Always Accessible for Guests & Admin */}
           <button
@@ -1710,7 +1710,7 @@ export default function App() {
       <footer className="bg-white dark:bg-[#111c30]/80 border-t border-slate-250 dark:border-slate-850 py-2.5 text-center text-[10px] text-slate-400 font-sans flex-shrink-0 select-none transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <p className="font-semibold text-slate-500 dark:text-slate-400">
-            &copy; 2026 PT PLN (Persero). SAMBUT — Sistem Administrasi Manajemen Buku Tamu. All rights reserved.
+            &copy; 2026 PT PLN (Persero). NAWALA JATI — Notifikasi, Akses, Warta &amp; Layanan Tamu Tanjung Jati B. All rights reserved.
           </p>
           <div className="flex gap-4 font-mono text-[9px]">
             <span>Version 3.0.12 (Stable)</span>
@@ -1817,7 +1817,7 @@ export default function App() {
                   1. Verifikasi Identitas Utama
                 </h5>
                 <p className="leading-relaxed pl-2.5">
-                  Tamu wajib menyerahkan kartu identitas resmi (KTP atau SIM) di pos penjagaan utama. Petugas berkewajiban mencocokkan wajah tamu dengan foto yang tertera pada kartu identitas sebelum mendaftarkan data ke sistem SAMBUT.
+                  Tamu wajib menyerahkan kartu identitas resmi (KTP atau SIM) di pos penjagaan utama. Petugas berkewajiban mencocokkan wajah tamu dengan foto yang tertera pada kartu identitas sebelum mendaftarkan data ke sistem NAWALA JATI.
                 </p>
               </div>
               
@@ -1837,7 +1837,7 @@ export default function App() {
                   3. Proses Check-Out & Pengembalian
                 </h5>
                 <p className="leading-relaxed pl-2.5">
-                  Ketika kunjungan selesai, tamu harus diarahkan untuk menyerahkan kembali Gate Pass kepada petugas resepsionis. Petugas wajib menekan tombol <strong>Check-Out</strong> di baris nama tamu dalam sistem SAMBUT untuk mendokumentasikan jam kepulangan secara akurat.
+                  Ketika kunjungan selesai, tamu harus diarahkan untuk menyerahkan kembali Gate Pass kepada petugas resepsionis. Petugas wajib menekan tombol <strong>Check-Out</strong> di baris nama tamu dalam sistem NAWALA JATI untuk mendokumentasikan jam kepulangan secara akurat.
                 </p>
               </div>
             </div>

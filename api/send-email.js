@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * SAMBUT PLN - Secure Serverless Email Relay (Brevo Transactional API)
+ * NAWALA JATI PLN - Secure Serverless Email Relay (Brevo Transactional API)
  * Runs safely on Vercel Serverless Functions to keep API keys hidden from public client.
  */
 
@@ -25,7 +25,7 @@ function getBrevoAccounts() {
 }
 
 async function sendViaBrevoAccount(account, payloadBase) {
-  const payload = { ...payloadBase, sender: { name: 'SAMBUT PLN UIK TJB', email: account.sender } };
+  const payload = { ...payloadBase, sender: { name: 'NAWALA JATI PLN UIK TJB', email: account.sender } };
   const brevoResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
@@ -82,7 +82,7 @@ export default async function handler(req, res) {
 
     const defaultHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 2px solid #005DA6; padding: 20px;">
-        <h2 style="color: #005DA6; text-transform: uppercase;">SAMBUT PLN - Persetujuan Janji Temu</h2>
+        <h2 style="color: #005DA6; text-transform: uppercase;">NAWALA JATI PLN - Persetujuan Janji Temu</h2>
         <p>Halo <strong>${visitor.visitorName || 'Tamu'}</strong>,</p>
         <p>Permohonan janji temu Anda ke PT PLN (Persero) UIK Tanjung Jati B telah <strong>DISETUJUI</strong>.</p>
         <p><strong>Rencana Kunjungan:</strong> ${visitor.schedule || '-'}</p>
@@ -97,7 +97,7 @@ export default async function handler(req, res) {
 
     const payloadBase = {
       to: [{ email: visitor.email, name: visitor.visitorName || 'Tamu PLN' }],
-      subject: `[SAMBUT PLN] Persetujuan Janji Temu & QR Pass - ${visitor.visitorName || ''}`,
+      subject: `[NAWALA JATI PLN] Persetujuan Janji Temu & QR Pass - ${visitor.visitorName || ''}`,
       htmlContent: htmlContent || defaultHtml,
     };
 

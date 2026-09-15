@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * SAMBUT PLN - Admin User Management (Vercel Serverless Function)
+ * NAWALA JATI PLN - Admin User Management (Vercel Serverless Function)
  *
  * Creates/lists/updates/deletes Supabase Auth users on behalf of the app.
  * Requires SUPABASE_SERVICE_ROLE_KEY, which stays server-side only — never

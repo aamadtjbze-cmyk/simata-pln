@@ -75,8 +75,11 @@ export default function PLNLogo({ className = '', size = 'md', showText = true }
           <span className={`font-sans font-bold text-slate-700 dark:text-slate-200 leading-tight mt-1 ${dimensions.unitText}`}>
             UIK Tanjung Jati B
           </span>
+          {/* Layar HP: kepanjangan pecah 4 baris & mendorong "PLN | PERSERO" terpotong di atas,
+              jadi cukup nama singkatnya; kepanjangan lengkap mulai lebar tablet. */}
           <span className={`font-sans font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider leading-tight mt-0.5 ${dimensions.subText}`}>
-            Sistem Administrasi Manajemen Buku Tamu
+            <span className="sm:hidden">NAWALA JATI</span>
+            <span className="hidden sm:inline">Notifikasi, Akses, Warta & Layanan Tamu Tanjung Jati B</span>
           </span>
         </div>
       )}

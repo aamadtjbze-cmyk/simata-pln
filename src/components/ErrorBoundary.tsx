@@ -27,7 +27,7 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[SAMBUT PLN Uncaught Error]:', error, errorInfo);
+    console.error('[NAWALA JATI PLN Uncaught Error]:', error, errorInfo);
     this.setState({ errorInfo });
   }
 
@@ -56,7 +56,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               <PLNLogo showText={false} size="sm" />
               <div>
                 <span className="text-[10px] font-mono font-bold text-[#FFD500] uppercase tracking-widest block">
-                  SAMBUT PLN UIK TJB
+                  NAWALA JATI PLN UIK TJB
                 </span>
                 <h3 className="text-base font-black text-white uppercase">
                   Pemulihan Sistem Otomatis

@@ -78,7 +78,7 @@ export default function StatsDashboard({ visitors, scopeLabel }: StatsDashboardP
         </div>
         <div className="mt-4 pt-3 border-t border-white/10">
           <p className="text-xs font-semibold text-sky-200">{formatDayDate(time)}</p>
-          <p className="text-[10px] text-slate-350">Sistem Terintegrasi SAMBUT PLN</p>
+          <p className="text-[10px] text-slate-350">Sistem Terintegrasi NAWALA JATI PLN</p>
         </div>
       </div>
 

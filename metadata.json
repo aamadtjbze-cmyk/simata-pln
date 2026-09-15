@@ -1,6 +1,6 @@
 {
-  "name": "SAMBUT PLN",
-  "description": "Sistem Administrasi Manajemen Buku Tamu (SAMBUT) PT PLN (Persero) untuk pencatatan, pemantauan, dan penerbitan kartu masuk tamu (gate pass) secara digital.",
+  "name": "NAWALA JATI PLN",
+  "description": "Notifikasi, Akses, Warta & Layanan Tamu Tanjung Jati B (NAWALA JATI) PT PLN (Persero) untuk pencatatan, pemantauan, dan penerbitan kartu masuk tamu (gate pass) secara digital.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

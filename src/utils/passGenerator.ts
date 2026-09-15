@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * Daily Sequential Pass Number Generator for SAMBUT PLN
+ * Daily Sequential Pass Number Generator for NAWALA JATI PLN
  * Automatically computes the next available sequence for the current day.
  */
 
