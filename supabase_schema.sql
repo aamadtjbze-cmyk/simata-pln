@@ -128,7 +128,9 @@ USING (bucket_id = 'ktp-photos');
 --
 -- Penggantinya: api/cleanup-ktp.js, dijalankan Vercel Cron sekali sehari
 -- (03:00 UTC / 10:00 WIB) memakai Storage API resmi. Aturannya:
---   1. Retensi  - hapus foto 7 hari setelah valid_until_ts terlampaui (data tamu tetap).
+--   1. Retensi  - hapus foto 7 hari setelah check-out (checked_out_at); belum
+--                 check-out: 7 hari setelah valid_until_ts, lalu created_at.
+--                 Data tamu tetap tersimpan, hanya file foto & path-nya.
 --   2. Pengaman - bila isi bucket melewati 800 MB, hapus yang terlama
 --                 sampai turun sekitar 100 MB (batas paket Free: 1 GB).
 
@@ -151,3 +153,36 @@ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = public AS $$
 $$;
 REVOKE ALL ON FUNCTION public.next_visitor_id() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.next_visitor_id() TO anon, authenticated;
+
+-- ==============================================================================
+-- 11. WAKTU CHECK-OUT TERBACA MESIN (ACUAN RETENSI FOTO KTP)
+-- ==============================================================================
+-- out_time berupa teks tampilan ("11 September 2026 - 14.17"). Pemicu ini
+-- mencatat checked_out_at (timestamptz) dari jam server setiap kali jam OUT
+-- terisi / berubah, dan mengosongkannya bila check-out dibatalkan. Upsert dari
+-- aplikasi yang tidak mengubah out_time tidak menggeser nilainya.
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS checked_out_at TIMESTAMPTZ;
+
+-- Isi data lama dari teks out_time (jam WIB).
+UPDATE public.visitors
+SET checked_out_at = (to_timestamp(replace(out_time, ':', '.'), 'FMDD FMMonth YYYY - HH24.MI')::timestamp AT TIME ZONE 'Asia/Jakarta')
+WHERE checked_out_at IS NULL
+  AND out_time ~ '^[0-9]{1,2} [A-Za-z]+ [0-9]{4} - [0-9]{1,2}[.:][0-9]{2}$';
+
+CREATE OR REPLACE FUNCTION public.stamp_checked_out_at() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF coalesce(NEW.out_time, '') = '' THEN
+    NEW.checked_out_at := NULL;
+  ELSIF TG_OP = 'INSERT' THEN
+    NEW.checked_out_at := coalesce(NEW.checked_out_at, now());
+  ELSIF NEW.out_time IS DISTINCT FROM OLD.out_time OR NEW.checked_out_at IS NULL THEN
+    NEW.checked_out_at := now();
+  END IF;
+  RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS visitors_stamp_checked_out_at ON public.visitors;
+CREATE TRIGGER visitors_stamp_checked_out_at
+BEFORE INSERT OR UPDATE ON public.visitors
+FOR EACH ROW EXECUTE FUNCTION public.stamp_checked_out_at();

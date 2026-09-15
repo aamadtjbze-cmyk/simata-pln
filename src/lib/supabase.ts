@@ -237,11 +237,15 @@ export const deleteVisitorFromSupabase = async (id: string): Promise<boolean> =>
   if (!supabase) return false;
 
   try {
-    const { error } = await supabase.from('visitors').delete().eq('id', id);
+    const { data, error } = await supabase.from('visitors').delete().eq('id', id).select('ktp_photo_path');
     if (error) {
       console.error('Supabase delete error:', error.message);
       return false;
     }
+    // Data tamunya sudah tiada, jadi foto KTP tidak punya pemilik lagi — hapus sekarang juga,
+    // jangan menunggu pembersih harian.
+    const paths = (data || []).map((r: any) => r.ktp_photo_path).filter(Boolean);
+    if (paths.length) await supabase.storage.from(KTP_PHOTO_BUCKET).remove(paths);
     return true;
   } catch (err) {
     console.error('Supabase delete error:', err);

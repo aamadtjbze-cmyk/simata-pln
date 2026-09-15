@@ -5,9 +5,9 @@
  * SAMBUT PLN - Pembersihan Foto KTP (Vercel Cron)
  *
  * Dijalankan sekali sehari. Tiga tahap:
- *   1. Retensi  — hapus foto 7 hari setelah masa berlaku pass tamu habis
- *               (data tamu tetap tersimpan; hanya file foto & path-nya).
- *   2. Yatim    — hapus foto tanpa data tamu (pengajuan gagal tersimpan).
+ *   1. Retensi  — hapus foto 7 hari setelah tamu check-out (belum check-out:
+ *               7 hari setelah pass habis). Data tamu tetap; hanya fotonya.
+ *   2. Yatim    — hapus foto tanpa data tamu (pengajuan gagal / data dihapus).
  *   3. Pengaman — bila storage melewati 800 MB, hapus yang terlama sampai
  *                 turun sekitar 100 MB.
  *
@@ -66,13 +66,19 @@ async function hapusFile(sb, namaFile) {
 /** Tahap 1 — retensi berdasarkan waktu. */
 async function bersihkanKadaluarsa(sb) {
   const batas = new Date(Date.now() - RETENSI_HARI * 86400000).toISOString();
-  // Pass tanpa waktu kedaluwarsa terbaca mesin (masa berlaku "CUSTOM" berupa teks
-  // bebas, atau data lama) dihitung dari tanggal registrasi, agar fotonya tetap terhapus.
+  // Acuan utama: waktu check-out (checked_out_at, diisi pemicu database saat jam OUT
+  // tercatat). Tamu yang tidak pernah check-out memakai waktu kedaluwarsa pass, dan
+  // bila itu pun kosong (masa berlaku "CUSTOM" berupa teks bebas) tanggal registrasi —
+  // agar fotonya tidak tersimpan selamanya.
   const { data, error } = await sb
     .from('visitors')
     .select('ktp_photo_path')
     .not('ktp_photo_path', 'is', null)
-    .or(`valid_until_ts.lt.${batas},and(valid_until_ts.is.null,created_at.lt.${batas})`);
+    .or(
+      `checked_out_at.lt.${batas},` +
+      `and(checked_out_at.is.null,valid_until_ts.lt.${batas}),` +
+      `and(checked_out_at.is.null,valid_until_ts.is.null,created_at.lt.${batas})`
+    );
   if (error) throw new Error(`Gagal membaca data tamu: ${error.message}`);
 
   const nama = [...new Set(data.map((v) => v.ktp_photo_path).filter(Boolean))];
@@ -163,7 +169,7 @@ export default async function handler(req, res) {
     const kapasitas = await bersihkanKapasitas(sb, await daftarFoto(sb));
     const ringkas = {
       waktu: new Date().toISOString(),
-      retensi: { aturan: `${RETENSI_HARI} hari setelah pass kedaluwarsa`, ...retensi },
+      retensi: { aturan: `${RETENSI_HARI} hari setelah check-out (cadangan: pass habis / registrasi)`, ...retensi },
       yatim,
       kapasitas: { ambangMB: AMBANG_BYTE / 1048576, ...kapasitas },
     };
